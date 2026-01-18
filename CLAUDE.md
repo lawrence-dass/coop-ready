@@ -8,9 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Project State
 
-- **Phase**: Planning (Product Brief complete)
-- **Next Steps**: PRD creation, then Architecture, then Epics/Stories
+- **Phase**: Implementation (ready to start)
+- **Next Workflow**: `/bmad:bmm:workflows:sprint-planning`
 - **Workflow Status**: `_bmad-output/planning-artifacts/bmm-workflow-status.yaml`
+
+## Session Management
+
+- Run `/session-start` at beginning of new sessions
+- Run `/session-end` before ending significant sessions
+- Session state: `.claude/handoff/CURRENT.md`
+- Development flow: `_bmad-output/bmad-development-flow.md`
 
 ## BMAD Method Framework
 
@@ -53,13 +60,15 @@ _bmad-output/
 - **Deployment**: Vercel
 - **Budget**: $50/month operational cost
 
-## Key Planning Documents
+## Key Documents
 
 | Document | Location |
 |----------|----------|
-| Product Brief | `_bmad-output/planning-artifacts/product-brief-CoopReady-2026-01-18.md` |
-| Application Idea | `intial_docs/application-idea.md` |
-| Workflow Status | `_bmad-output/planning-artifacts/bmm-workflow-status.yaml` |
+| PRD | `_bmad-output/planning-artifacts/prd.md` |
+| Architecture | `_bmad-output/planning-artifacts/architecture.md` |
+| Epics & Stories | `_bmad-output/planning-artifacts/epics.md` |
+| Project Context | `_bmad-output/project-context.md` |
+| Dev Flow Guide | `_bmad-output/bmad-development-flow.md` |
 
 ## Product Context
 

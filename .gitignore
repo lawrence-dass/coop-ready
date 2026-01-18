@@ -40,9 +40,11 @@ pnpm-debug.log*
 .cursor/
 
 # AI Tools
-.claude/
 .codex/
 .gemini/
+
+# Claude Code (keep handoff and commands, ignore local settings)
+.claude/settings.local.json
 *.swp
 *.swo
 *~
