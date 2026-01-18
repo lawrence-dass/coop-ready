@@ -1,0 +1,108 @@
+# Sprint Status File for CoopReady
+# generated: 2026-01-18
+# project: CVconfig
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-01-18
+project: CVconfig
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Project Foundation & User Authentication
+  epic-1: in-progress
+  1-1-project-initialization: ready-for-dev
+  1-2-design-system-layout-shell: backlog
+  1-3-user-registration: backlog
+  1-4-user-login: backlog
+  1-5-user-logout: backlog
+  1-6-password-reset: backlog
+  1-7-protected-dashboard-route: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: User Onboarding & Profile Management
+  epic-2: backlog
+  2-1-onboarding-flow-experience-level-target-role: backlog
+  2-2-profile-settings-page: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Resume & Job Description Input
+  epic-3: backlog
+  3-1-resume-upload-with-validation: backlog
+  3-2-resume-text-extraction: backlog
+  3-3-resume-section-parsing: backlog
+  3-4-resume-preview-display: backlog
+  3-5-job-description-input: backlog
+  3-6-new-scan-page-integration: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: ATS Analysis Engine
+  epic-4: backlog
+  4-1-openai-integration-setup: backlog
+  4-2-ats-score-calculation: backlog
+  4-3-missing-keywords-detection: backlog
+  4-4-section-level-score-breakdown: backlog
+  4-5-experience-level-aware-analysis: backlog
+  4-6-resume-format-issues-detection: backlog
+  4-7-analysis-results-page: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Suggestions & Optimization Workflow
+  epic-5: backlog
+  5-1-bullet-point-rewrite-generation: backlog
+  5-2-transferable-skills-detection-mapping: backlog
+  5-3-action-verb-quantification-suggestions: backlog
+  5-4-skills-expansion-suggestions: backlog
+  5-5-format-content-removal-suggestions: backlog
+  5-6-suggestions-display-by-section: backlog
+  5-7-accept-reject-individual-suggestions: backlog
+  5-8-optimized-resume-preview: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Resume Export & Download
+  epic-6: backlog
+  6-1-resume-content-merging: backlog
+  6-2-pdf-resume-generation: backlog
+  6-3-docx-resume-generation: backlog
+  6-4-download-ui-format-selection: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Subscription & Billing
+  epic-7: backlog
+  7-1-stripe-integration-setup: backlog
+  7-2-scan-usage-tracking: backlog
+  7-3-free-tier-rate-limiting: backlog
+  7-4-scan-counter-display: backlog
+  7-5-upgrade-to-paid-subscription: backlog
+  7-6-subscription-management: backlog
+  epic-7-retrospective: optional
