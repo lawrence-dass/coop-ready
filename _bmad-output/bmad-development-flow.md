@@ -8,10 +8,11 @@ _A practical guide for efficient AI-assisted development using BMAD Method, opti
 
 1. [Overview](#overview)
 2. [Development Lifecycle](#development-lifecycle)
-3. [Workflow Commands Reference](#workflow-commands-reference)
-4. [Context Management Strategies](#context-management-strategies)
-5. [Session Boundaries](#session-boundaries)
-6. [Best Practices](#best-practices)
+3. [Git Branching Strategy](#git-branching-strategy)
+4. [Workflow Commands Reference](#workflow-commands-reference)
+5. [Context Management Strategies](#context-management-strategies)
+6. [Session Boundaries](#session-boundaries)
+7. [Best Practices](#best-practices)
 
 ---
 
@@ -221,6 +222,173 @@ After code review passes:
 - Before starting next epic
 
 **Context impact:** Medium-high - loads all story files for the epic.
+
+---
+
+## Git Branching Strategy
+
+### Branch Per Story (Recommended)
+
+For BMAD workflows, **one branch per story** is the recommended approach:
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Per Story** ✓ | Small PRs, easy review, easy revert, matches BMAD flow | More branches |
+| Per Epic | Fewer branches | Large PRs, hard to review/revert |
+
+### Branch Naming Convention
+
+```
+story/{epic}-{story}-{short-title}
+```
+
+**Examples:**
+```
+story/1-1-project-init
+story/1-2-design-system
+story/2-1-onboarding-flow
+story/3-1-resume-upload
+```
+
+### Git Flow with BMAD
+
+```mermaid
+gitGraph
+    commit id: "initial"
+    branch story/1-1-project-init
+    checkout story/1-1-project-init
+    commit id: "feat: project setup"
+    commit id: "feat: add dependencies"
+    checkout main
+    merge story/1-1-project-init id: "merge 1-1" tag: "story-1-1-done"
+    branch story/1-2-design-system
+    checkout story/1-2-design-system
+    commit id: "feat: tailwind theme"
+    commit id: "feat: layout components"
+    checkout main
+    merge story/1-2-design-system id: "merge 1-2" tag: "story-1-2-done"
+    branch story/1-3-registration
+    checkout story/1-3-registration
+    commit id: "feat: signup form"
+    commit id: "test: auth tests"
+    checkout main
+    merge story/1-3-registration id: "merge 1-3" tag: "story-1-3-done"
+```
+
+### Complete Story Workflow
+
+```mermaid
+flowchart TD
+    subgraph "1. Start Story"
+        A[sprint-status] --> B{Story ready?}
+        B -->|No| C[create-story]
+        C --> D[Create branch]
+        B -->|Yes| D
+        D --> E["git checkout -b story/X-X-title"]
+    end
+
+    subgraph "2. Implement"
+        E --> F[dev-story workflow]
+        F --> G[Write code & tests]
+        G --> H{All tasks done?}
+        H -->|No| G
+        H -->|Yes| I[Commit changes]
+    end
+
+    subgraph "3. Review & Merge"
+        I --> J[code-review workflow]
+        J --> K{Approved?}
+        K -->|No| G
+        K -->|Yes| L[git checkout main]
+        L --> M[git merge story/X-X-title]
+        M --> N[git branch -d story/X-X-title]
+        N --> O[git push]
+    end
+
+    O --> A
+```
+
+### Branch Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created: git checkout -b story/X-X
+    Created --> InProgress: dev-story starts
+    InProgress --> InProgress: commits during development
+    InProgress --> Review: dev-story completes
+    Review --> InProgress: code-review finds issues
+    Review --> Merged: code-review passes
+    Merged --> Deleted: git branch -d
+    Deleted --> [*]
+```
+
+### Git Commands Reference
+
+| Phase | Command | Description |
+|-------|---------|-------------|
+| **Start** | `git checkout main && git pull` | Ensure main is current |
+| **Start** | `git checkout -b story/1-1-project-init` | Create story branch |
+| **During** | `git add . && git commit -m "feat: ..."` | Commit progress |
+| **Finish** | `git checkout main` | Switch to main |
+| **Finish** | `git merge story/1-1-project-init` | Merge story |
+| **Finish** | `git branch -d story/1-1-project-init` | Delete story branch |
+| **Finish** | `git push` | Push to remote |
+
+### Commit Message Format
+
+Follow conventional commits tied to story:
+
+```
+feat(1-1): initialize Next.js with Supabase starter
+
+- Run create-next-app with supabase template
+- Install additional dependencies
+- Configure environment variables
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**Prefixes:**
+- `feat(X-X):` - New feature for story X-X
+- `fix(X-X):` - Bug fix within story
+- `test(X-X):` - Adding tests
+- `refactor(X-X):` - Code restructure
+- `docs(X-X):` - Documentation
+
+### Epic Completion
+
+When all stories in an epic are merged:
+
+```mermaid
+flowchart LR
+    A[All Epic Stories Done] --> B[retrospective workflow]
+    B --> C[Tag release]
+    C --> D["git tag -a epic-1-complete -m 'Epic 1: Foundation'"]
+    D --> E[git push --tags]
+    E --> F[Start next epic]
+```
+
+### Quick Reference
+
+```
+# Start new story
+git checkout main && git pull
+git checkout -b story/1-2-design-system
+
+# During development (after each task)
+git add .
+git commit -m "feat(1-2): implement sidebar component"
+
+# After code review passes
+git checkout main
+git merge story/1-2-design-system
+git branch -d story/1-2-design-system
+git push
+
+# After epic completion
+git tag -a epic-1-complete -m "Epic 1: Project Foundation & Auth"
+git push --tags
+```
 
 ---
 
