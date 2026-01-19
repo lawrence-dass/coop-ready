@@ -39,23 +39,34 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  // IMPORTANT: getUser() refreshes the session if valid
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // List of protected routes that require authentication
+  const protectedPaths = ['/dashboard', '/settings', '/history', '/scan'];
+  const isProtectedRoute = protectedPaths.some(path =>
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  // Redirect unauthenticated users to login
+  if (isProtectedRoute && !user) {
+    // Preserve original URL for post-login redirect
+    const redirectTo = encodeURIComponent(request.nextUrl.pathname);
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = '/auth/login';
+    url.searchParams.set('redirectTo', redirectTo);
+
+    // If there was an error getting user (expired/invalid session), add expired flag
+    if (error) {
+      url.searchParams.set('expired', 'true');
+    }
+
     return NextResponse.redirect(url);
   }
 

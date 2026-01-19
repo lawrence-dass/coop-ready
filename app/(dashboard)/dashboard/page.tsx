@@ -1,16 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
 
 async function UserWelcome() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getUser();
 
-  // Verify authentication
-  if (error || !data?.user) {
-    redirect("/auth/login");
-  }
+  // No auth check needed - middleware handles route protection
 
   return (
     <h1 className="text-3xl font-bold" data-testid="dashboard-header">
