@@ -1,7 +1,6 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { createClient } from "@/lib/supabase/client";
+import { useLogout } from "@/lib/hooks/use-logout";
 import Link from "next/link";
 
 interface HeaderProps {
@@ -22,13 +21,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick, userEmail, userName }: HeaderProps) {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
-  };
+  const { handleLogout, isPending } = useLogout();
 
   // Derive display name and initials
   const displayName = userName || userEmail?.split("@")[0] || "User";
@@ -59,7 +52,12 @@ export function Header({ onMenuClick, userEmail, userName }: HeaderProps) {
       {/* User Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button
+            data-testid="user-menu-button"
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+          >
             <Avatar className="h-8 w-8">
               <AvatarImage src="/placeholder-avatar.png" alt="User" />
               <AvatarFallback className="bg-primary text-primary-foreground">
@@ -81,7 +79,13 @@ export function Header({ onMenuClick, userEmail, userName }: HeaderProps) {
             <Link href="/settings">Settings</Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+          <DropdownMenuItem
+            data-testid="logout-button"
+            onClick={handleLogout}
+            disabled={isPending}
+          >
+            {isPending ? "Logging out..." : "Logout"}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
