@@ -27,6 +27,13 @@
 .DS_Store
 *.pem
 
+# IDE / Editor configs
+.codex/
+.cursor/
+.gemini/
+.idea/
+.vscode/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
