@@ -156,7 +156,7 @@ if (!parsed.success) {
 | Variable | Scope | Required |
 |----------|-------|----------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Client | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client | Yes |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client | Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Yes |
 | `OPENAI_API_KEY` | Server only | Yes |
 | `STRIPE_SECRET_KEY` | Server only | Yes |

@@ -1,6 +1,6 @@
 # Story 1.1: Project Initialization
 
-Status: review
+Status: done
 
 ## Story
 
@@ -115,7 +115,7 @@ Create `.env.example` with these variables:
 ```bash
 # Supabase - Required
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # OpenAI - Required for AI features
@@ -274,11 +274,13 @@ Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 - components.json
 - .env.example
 - .env.local
+- README.md
 - app/layout.tsx
 - app/page.tsx
 - app/globals.css
 - app/favicon.ico
 - app/auth/* (confirm, error, forgot-password, login, sign-up, sign-up-success, update-password)
+- app/protected/layout.tsx
 - app/protected/page.tsx
 - components/ui/badge.tsx
 - components/ui/button.tsx
@@ -289,9 +291,12 @@ Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 - components/ui/input.tsx
 - components/ui/label.tsx
 - components/ui/sonner.tsx
+- components/auth-button.tsx
 - components/forgot-password-form.tsx
 - components/login-form.tsx
+- components/logout-button.tsx
 - components/sign-up-form.tsx
+- components/theme-switcher.tsx
 - components/update-password-form.tsx
 - lib/supabase/client.ts
 - lib/supabase/server.ts
@@ -304,9 +309,27 @@ Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 - eslint.config.mjs (added ignore patterns for .next/)
 - tailwind.config.ts (converted require to import)
 
+**Removed (Code Review Cleanup):**
+- components/tutorial/* (5 files - starter template scaffolding)
+- components/hero.tsx (starter template)
+- components/deploy-button.tsx (starter template)
+- components/env-var-warning.tsx (starter template)
+- components/next-logo.tsx (starter template)
+- components/supabase-logo.tsx (starter template)
+
 ---
 
 ## Change Log
+
+**2026-01-18** - Code Review Fixes Applied
+- Fixed env var naming: aligned .env.example to use NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (matching code)
+- Fixed components.json: added tailwind.config.ts path
+- Added Toaster component to app/layout.tsx for toast notifications
+- Updated app metadata: title and description now reflect CoopReady branding
+- Replaced starter template README with CoopReady-specific documentation
+- Removed tutorial components and unused starter template files
+- Updated home page and protected layout with CoopReady branding
+- Updated project-context.md env var documentation
 
 **2026-01-18** - Story 1.1 Implementation Complete
 - Initialized CoopReady project with Next.js 16, Supabase, and all required dependencies
