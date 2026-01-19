@@ -1,4 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from .env.local
+// Use process.cwd() for reliable path resolution in all contexts
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 /**
  * CoopReady E2E Test Configuration

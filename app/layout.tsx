@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Open_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -14,10 +14,11 @@ export const metadata: Metadata = {
   description: "Optimize your resume for tech co-ops and internships with AI-powered ATS scoring and suggestions",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
   display: "swap",
   subsets: ["latin"],
+  weight: ["300", "400", "600", "700"],
 });
 
 export default function RootLayout({
@@ -27,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${openSans.className} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
