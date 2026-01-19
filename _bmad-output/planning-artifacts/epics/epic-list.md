@@ -55,3 +55,11 @@ Free users are limited to 3 scans/month; paid users ($5/mo) get unlimited scans 
 **NFRs:** NFR10 (PCI via Stripe), NFR18 (Stripe webhook handling)
 
 ---
+
+## Epic 8: Test Infrastructure
+Production-ready E2E testing framework with Playwright, enabling quality gates for all features.
+
+**Enables:** Quality assurance for all epics
+**Includes:** Playwright setup, fixture architecture, data factories, CI/CD pipeline
+
+---
