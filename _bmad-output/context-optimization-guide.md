@@ -181,6 +181,71 @@ _bmad-output/archive/
 
 **Recommended Model**: `--model haiku` (procedural task)
 
+### When to Trigger `/context-optimize`
+
+#### Automatic Triggers (Reminders)
+
+You'll be reminded to run optimization at these points:
+
+| Workflow | What Happens | Suggested Action |
+|----------|--------------|------------------|
+| `/code-review` | Shows context health status | Run if ⚠️ warning appears |
+| `/retrospective` | Prompts archive after epic | Run `/context-optimize archive` |
+
+#### Manual Triggers (User-Initiated)
+
+| Scenario | When | Command |
+|----------|------|---------|
+| **Epic completed** | After retrospective | `/context-optimize archive` |
+| **Context warning** | Code review shows ⚠️ | `/context-optimize` |
+| **Slow responses** | Workflows feeling sluggish | `/context-optimize` |
+| **New sprint** | Before starting new epic | `/context-optimize archive` |
+| **Monthly maintenance** | First of month | `/context-optimize full` |
+| **Large doc added** | After adding big planning doc | `/context-optimize` |
+
+#### Decision Flow
+
+```
+Code review shows context status
+         │
+         ├── ✅ Healthy → Continue to next story
+         │
+         └── ⚠️ Over budget
+                  │
+                  ├── Mid-epic? → Run `/context-optimize` (analyze)
+                  │                    │
+                  │                    └── Review suggestions, fix manually
+                  │
+                  └── Epic done? → Run `/context-optimize archive`
+                                        │
+                                        └── Artifacts moved to archive/
+```
+
+#### What Each Mode Does
+
+**`/context-optimize`** (analyze - default)
+- Scans all artifact folders
+- Calculates sizes and counts
+- Identifies archivable files
+- Reports large documents (sharding candidates)
+- Checks CLAUDE.md health
+- **Does NOT modify any files**
+
+**`/context-optimize archive`**
+- Runs analyze first
+- Creates archive folder structure
+- Moves completed epic artifacts (ATDD, summaries)
+- Moves redundant planning files
+- Updates archive README
+- **Modifies file locations only**
+
+**`/context-optimize full`**
+- Runs archive first
+- Suggests documents for sharding (doesn't auto-shard)
+- Updates CLAUDE.md if outdated
+- Generates comprehensive report
+- **Use for periodic deep cleanup**
+
 ### Hook: Code Review Context Check
 
 A lightweight context health check runs at the end of every `/code-review`:
