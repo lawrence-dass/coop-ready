@@ -2,12 +2,23 @@
 description: 'Create the next user story from epics+stories with enhanced context analysis and direct ready-for-dev marking'
 ---
 
-IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
+<STOP>
+⚠️ THIS WORKFLOW REQUIRES MODEL: haiku
 
-<steps CRITICAL="TRUE">
-1. Always LOAD the FULL @_bmad/core/tasks/workflow.xml
-2. READ its entire contents - this is the CORE OS for EXECUTING the specific workflow-config @_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml
-3. Pass the yaml path _bmad/bmm/workflows/4-implementation/create-story/workflow.yaml as 'workflow-config' parameter to the workflow.xml instructions
-4. Follow workflow.xml instructions EXACTLY as written to process and follow the specific workflow config and its instructions
-5. Save outputs after EACH section when generating any documents from templates
-</steps>
+DO NOT EXECUTE THIS WORKFLOW DIRECTLY.
+
+You MUST use the Task tool to spawn a Haiku agent:
+
+Example:
+```
+Task(
+  subagent_type: "general-purpose",
+  model: "haiku",
+  prompt: "Execute the create-story workflow for Story [X.X]. Load @_bmad/core/tasks/workflow.xml and follow it to execute @_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml"
+)
+```
+
+WHY: Haiku provides 70% cost savings for template-filling tasks.
+
+DO NOT PROCEED. USE TASK TOOL NOW.
+</STOP>

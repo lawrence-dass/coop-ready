@@ -2,12 +2,23 @@
 description: 'Perform an ADVERSARIAL Senior Developer code review that finds 3-10 specific problems in every story. Challenges everything: code quality, test coverage, architecture compliance, security, performance. NEVER accepts `looks good` - must find minimum issues and can auto-fix with user approval.'
 ---
 
-IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
+<STOP>
+⚠️ THIS WORKFLOW REQUIRES MODEL: opus
 
-<steps CRITICAL="TRUE">
-1. Always LOAD the FULL @_bmad/core/tasks/workflow.xml
-2. READ its entire contents - this is the CORE OS for EXECUTING the specific workflow-config @_bmad/bmm/workflows/4-implementation/code-review/workflow.yaml
-3. Pass the yaml path _bmad/bmm/workflows/4-implementation/code-review/workflow.yaml as 'workflow-config' parameter to the workflow.xml instructions
-4. Follow workflow.xml instructions EXACTLY as written to process and follow the specific workflow config and its instructions
-5. Save outputs after EACH section when generating any documents from templates
-</steps>
+DO NOT EXECUTE THIS WORKFLOW DIRECTLY.
+
+You MUST use the Task tool to spawn an Opus agent:
+
+Example:
+```
+Task(
+  subagent_type: "general-purpose",
+  model: "opus",
+  prompt: "Execute the code-review workflow for Story [X.X]. Load @_bmad/core/tasks/workflow.xml and follow it to execute @_bmad/bmm/workflows/4-implementation/code-review/workflow.yaml"
+)
+```
+
+WHY: Opus provides comprehensive analysis and finds 30-50% more issues than Sonnet in a single pass.
+
+DO NOT PROCEED. USE TASK TOOL NOW.
+</STOP>

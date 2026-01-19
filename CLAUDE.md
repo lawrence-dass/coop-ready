@@ -2,6 +2,28 @@
 
 Project guidance for Claude Code. Keep this file minimal - detailed docs are in `_bmad-output/`.
 
+## ⚠️ CRITICAL: Workflow Model Requirements
+
+**BEFORE executing these workflows, you MUST spawn them via Task tool with the correct model:**
+
+| Workflow | Model | Why |
+|----------|-------|-----|
+| `code-review` | `opus` | Comprehensive analysis, finds more issues |
+| `create-story` | `haiku` | Template filling, 70% cost savings |
+| `sprint-planning` | `haiku` | Simple extraction task |
+
+**How to execute correctly:**
+```
+Use Task tool:
+  subagent_type: "general-purpose"
+  model: "opus" (or "haiku" as required)
+  prompt: "Execute /bmad:bmm:workflows:code-review for Story X.X"
+```
+
+**NEVER execute these workflows directly in your current session. Always use Task tool.**
+
+---
+
 ## Project: CoopReady
 
 AI-powered resume optimization for students and career changers.
