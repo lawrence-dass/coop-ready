@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import { test as base, expect } from '@playwright/test';
 import { UserFactory } from './factories/user-factory';
 import { ResumeFactory } from './factories/resume-factory';

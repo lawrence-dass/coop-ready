@@ -34,7 +34,7 @@ test.describe('Homepage', () => {
 });
 
 test.describe('Resume Scan Flow', () => {
-  test.skip('should display ATS score after scan', async ({ page, userFactory, resumeFactory }) => {
+  test.skip('should display ATS score after scan', async ({ userFactory, resumeFactory }) => {
     // This test is skipped until API endpoints are implemented
     // Demonstrates factory usage pattern
 
