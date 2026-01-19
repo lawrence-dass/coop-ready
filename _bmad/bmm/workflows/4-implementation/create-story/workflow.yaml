@@ -2,6 +2,11 @@ name: create-story
 description: "Create the next user story from epics+stories with enhanced context analysis and direct ready-for-dev marking"
 author: "BMad"
 
+# Model recommendation for optimal cost/quality balance
+# Usage: /bmad:bmm:workflows:create-story --model haiku
+recommended_model: haiku
+model_rationale: "Story creation is primarily template filling and requirement extraction - doesn't require advanced reasoning. Haiku provides ~70% cost savings with equivalent quality for this task."
+
 # Critical variables from config
 config_source: "{project-root}/_bmad/bmm/config.yaml"
 user_name: "{config_source}:user_name"

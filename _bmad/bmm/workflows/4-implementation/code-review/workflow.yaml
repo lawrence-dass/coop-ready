@@ -3,6 +3,11 @@ name: code-review
 description: "Perform an ADVERSARIAL Senior Developer code review that finds 3-10 specific problems in every story. Challenges everything: code quality, test coverage, architecture compliance, security, performance. NEVER accepts `looks good` - must find minimum issues and can auto-fix with user approval."
 author: "BMad"
 
+# Model recommendation for optimal thoroughness
+# Usage: /bmad:bmm:workflows:code-review --model opus
+recommended_model: opus
+model_rationale: "Adversarial code review requires comprehensive analysis. Opus finds more issues in a single pass, reducing iterations and total context usage by 30-50% compared to multiple Sonnet passes."
+
 # Critical variables from config
 config_source: "{project-root}/_bmad/bmm/config.yaml"
 user_name: "{config_source}:user_name"

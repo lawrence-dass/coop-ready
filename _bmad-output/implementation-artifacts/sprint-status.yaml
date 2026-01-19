@@ -40,7 +40,7 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Project Foundation & User Authentication
-  epic-1: in-progress
+  epic-1: done
   1-1-project-initialization: done
   1-2-design-system-layout-shell: done
   1-3-user-registration: done
