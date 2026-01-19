@@ -14,6 +14,10 @@ npx playwright install
 # Run all tests
 npm run test:e2e
 
+# Run by priority tag
+npm run test:e2e:p0  # Critical paths only
+npm run test:e2e:p1  # P0 + P1 tests
+
 # Run tests with UI mode (recommended for development)
 npx playwright test --ui
 
@@ -21,19 +25,38 @@ npx playwright test --ui
 npx playwright test --headed
 
 # Run specific test file
-npx playwright test tests/e2e/example.spec.ts
+npx playwright test tests/e2e/dashboard-layout.spec.ts
 
 # Debug a test
 npx playwright test --debug
+```
+
+## Priority System
+
+All tests are tagged with priority levels for selective execution:
+
+| Priority | Description | When to Run |
+|----------|-------------|-------------|
+| **[P0]** | Critical user paths that must always work | Every commit, pre-commit hooks |
+| **[P1]** | High priority features with significant user impact | PR checks, before merge to main |
+| **[P2]** | Medium priority edge cases and variations | Nightly CI builds |
+| **[P3]** | Low priority nice-to-have validations | On-demand, weekly runs |
+
+**Example:**
+```typescript
+test('[P0] should login with valid credentials', async ({ page }) => { ... });
+test('[P1] should display error for invalid credentials', async ({ page }) => { ... });
+test('[P2] should remember login preference', async ({ page }) => { ... });
 ```
 
 ## Directory Structure
 
 ```
 tests/
-├── e2e/                    # E2E test files
-│   └── example.spec.ts     # Example tests (modify/replace)
-├── support/                # Test infrastructure
+├── e2e/                      # E2E test files
+│   ├── dashboard-layout.spec.ts  # Dashboard layout & design system tests
+│   └── example.spec.ts           # Example tests (modify/replace)
+├── support/                  # Test infrastructure
 │   ├── fixtures/           # Playwright fixtures
 │   │   ├── index.ts        # Main fixture exports
 │   │   └── factories/      # Data factories
@@ -176,6 +199,21 @@ View test results:
 npx playwright show-report
 ```
 
+## Test Coverage
+
+### Dashboard Layout Tests (Story 1.2)
+
+Comprehensive tests for design system and layout:
+- **[P0]** Dashboard layout renders with sidebar and main content
+- **[P1]** Navigation items visible and functional
+- **[P1]** Sidebar collapse/expand functionality
+- **[P1]** Theme colors applied correctly
+- **[P1]** Mobile responsive behavior (<768px)
+- **[P1]** Desktop responsive behavior (>1024px)
+- **[P2]** Full-width layout optimization
+
+Location: `tests/e2e/dashboard-layout.spec.ts`
+
 ## Before Tests Will Pass
 
 You'll need to implement test API routes for the factories:
@@ -187,6 +225,8 @@ You'll need to implement test API routes for the factories:
 - `DELETE /api/test/scans/:id` - Delete test scan
 
 See Story 8.3 in Epic 8 for details.
+
+**Note**: Dashboard layout tests require Supabase authentication to be properly configured for testing environment.
 
 ## Knowledge Base References
 
