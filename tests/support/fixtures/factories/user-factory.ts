@@ -83,6 +83,37 @@ export class UserFactory {
   }
 
   /**
+   * Create a user with password (for login tests)
+   * Creates user in Supabase Auth with email/password authentication
+   */
+  async createWithPassword(
+    params: CreateUserParams & { password: string }
+  ): Promise<User & { password: string }> {
+    const userData = this.build(params);
+    const { password } = params;
+
+    const response = await this.request.post('/api/test/users/with-auth', {
+      data: {
+        ...userData,
+        password,
+      },
+    });
+
+    if (!response.ok()) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create user with auth: ${response.status()} ${errorText}`);
+    }
+
+    const user = (await response.json()) as User;
+    this.createdUserIds.push(user.id);
+
+    return {
+      ...user,
+      password, // Return password for login tests
+    };
+  }
+
+  /**
    * Clean up all created users
    */
   async cleanup(): Promise<void> {
