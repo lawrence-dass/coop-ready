@@ -13,7 +13,7 @@ async function UserWelcome() {
   }
 
   return (
-    <h1 className="text-3xl font-bold">
+    <h1 className="text-3xl font-bold" data-testid="dashboard-header">
       Welcome{data?.user?.email ? `, ${data.user.email.split("@")[0]}` : ""}!
     </h1>
   );

@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod'
-import { signUpSchema } from '@/lib/validations/auth'
+import { signUpSchema, loginSchema } from '@/lib/validations/auth'
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -46,6 +46,31 @@ export async function signUp(input: z.infer<typeof signUpSchema>): Promise<Actio
     return { data: { email: parsed.data.email }, error: null }
   } catch (e) {
     console.error('[signUp]', e)
+    return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
+  }
+}
+
+export async function signIn(input: z.infer<typeof loginSchema>): Promise<ActionResponse<{ email: string }>> {
+  const parsed = loginSchema.safeParse(input)
+  if (!parsed.success) {
+    return { data: null, error: { message: 'Invalid input', code: 'VALIDATION_ERROR' } }
+  }
+
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: parsed.data.email,
+      password: parsed.data.password,
+    })
+
+    if (error) {
+      // SECURITY: Always return generic error - don't reveal if email exists
+      return { data: null, error: { message: 'Invalid email or password', code: 'AUTH_ERROR' } }
+    }
+
+    return { data: { email: data.user.email ?? '' }, error: null }
+  } catch (e) {
+    console.error('[signIn]', e)
     return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
   }
 }
