@@ -1410,6 +1410,14 @@ Epic {{epic_number}} delivered {{completed_stories}} stories with {{velocity_sum
 
 ---
 
+💡 **Context Optimization Reminder**
+Epic {{epic_number}} is complete. Consider running `/context-optimize archive` to:
+- Archive ATDD checklists and test summaries
+- Clean up redundant planning files
+- Reduce active context for future workflows
+
+---
+
 Bob (Scrum Master): "Great session today, {user_name}. The team did excellent work."
 
 Alice (Product Owner): "See you at epic planning!"
