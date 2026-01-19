@@ -74,3 +74,20 @@ export async function signIn(input: z.infer<typeof loginSchema>): Promise<Action
     return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
   }
 }
+
+export async function signOut(): Promise<ActionResponse<null>> {
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      console.error('[signOut]', error)
+      return { data: null, error: { message: 'Failed to sign out', code: 'AUTH_ERROR' } }
+    }
+
+    return { data: null, error: null }
+  } catch (e) {
+    console.error('[signOut]', e)
+    return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
+  }
+}
