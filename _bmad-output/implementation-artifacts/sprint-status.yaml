@@ -106,3 +106,10 @@ development_status:
   7-5-upgrade-to-paid-subscription: backlog
   7-6-subscription-management: backlog
   epic-7-retrospective: optional
+
+  # Epic 8: Test Infrastructure
+  epic-8: in-progress
+  8-1-initialize-playwright-framework: in-progress
+  8-2-ci-cd-test-pipeline: backlog
+  8-3-test-api-endpoints: backlog
+  epic-8-retrospective: optional
