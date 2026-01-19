@@ -76,7 +76,7 @@ export function Header({ onMenuClick, userEmail, userName }: HeaderProps) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/settings">Settings</Link>
+            <Link href="/settings" data-testid="settings-link">Settings</Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

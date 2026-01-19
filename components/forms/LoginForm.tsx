@@ -42,9 +42,19 @@ export function LoginForm({
 
     const verified = searchParams.get('verified') === 'true'
     const reset = searchParams.get('reset') === 'true'
+    const expired = searchParams.get('expired') === 'true'
 
-    // Show only one toast (prioritize reset over verified)
-    if (reset) {
+    // Show only one toast (prioritize expired > reset > verified)
+    if (expired) {
+      toast.error('Your session has expired. Please log in again.')
+      toastShownRef.current = true
+      // Don't clear redirectTo param - user wants to return to original page
+      const redirectTo = searchParams.get('redirectTo')
+      const newUrl = redirectTo
+        ? `/auth/login?redirectTo=${redirectTo}`
+        : '/auth/login'
+      router.replace(newUrl, { scroll: false })
+    } else if (reset) {
       toast.success('Password updated successfully! Please log in.')
       toastShownRef.current = true
       // Clear URL params to prevent toast on refresh
@@ -57,6 +67,13 @@ export function LoginForm({
     }
   }, [searchParams, router])
 
+  // Helper to prevent open redirect vulnerabilities
+  function isValidRedirectUrl(url: string): boolean {
+    // Only allow internal paths starting with /
+    const decoded = decodeURIComponent(url)
+    return decoded.startsWith('/') && !decoded.startsWith('//')
+  }
+
   function onSubmit(data: LoginInput) {
     startTransition(async () => {
       const { error } = await signIn(data)
@@ -64,7 +81,14 @@ export function LoginForm({
         toast.error(error.message)
         return
       }
-      router.push('/dashboard')
+
+      // Handle redirect preservation
+      const redirectTo = searchParams.get('redirectTo')
+      if (redirectTo && isValidRedirectUrl(redirectTo)) {
+        router.push(decodeURIComponent(redirectTo))
+      } else {
+        router.push('/dashboard')
+      }
     })
   }
 

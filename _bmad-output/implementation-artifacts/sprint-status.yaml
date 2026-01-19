@@ -47,7 +47,7 @@ development_status:
   1-4-user-login: done
   1-5-user-logout: done
   1-6-password-reset: done
-  1-7-protected-dashboard-route: backlog
+  1-7-protected-dashboard-route: done
   epic-1-retrospective: optional
 
   # Epic 2: User Onboarding & Profile Management
