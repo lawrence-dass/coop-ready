@@ -46,7 +46,7 @@ development_status:
   1-3-user-registration: done
   1-4-user-login: done
   1-5-user-logout: done
-  1-6-password-reset: backlog
+  1-6-password-reset: done
   1-7-protected-dashboard-route: backlog
   epic-1-retrospective: optional
 

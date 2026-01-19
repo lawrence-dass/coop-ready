@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod'
-import { signUpSchema, loginSchema } from '@/lib/validations/auth'
+import { signUpSchema, loginSchema, forgotPasswordSchema, updatePasswordSchema } from '@/lib/validations/auth'
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -88,6 +88,57 @@ export async function signOut(): Promise<ActionResponse<null>> {
     return { data: null, error: null }
   } catch (e) {
     console.error('[signOut]', e)
+    return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
+  }
+}
+
+export async function requestPasswordReset(
+  input: z.infer<typeof forgotPasswordSchema>
+): Promise<ActionResponse<null>> {
+  const parsed = forgotPasswordSchema.safeParse(input)
+  if (!parsed.success) {
+    return { data: null, error: { message: 'Invalid input', code: 'VALIDATION_ERROR' } }
+  }
+
+  try {
+    const supabase = await createClient()
+    // SECURITY: Always show success - don't reveal if email exists
+    await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/update-password`,
+    })
+
+    return { data: null, error: null }
+  } catch (e) {
+    console.error('[requestPasswordReset]', e)
+    return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
+  }
+}
+
+export async function updatePassword(
+  input: z.infer<typeof updatePasswordSchema>
+): Promise<ActionResponse<null>> {
+  const parsed = updatePasswordSchema.safeParse(input)
+  if (!parsed.success) {
+    return { data: null, error: { message: 'Invalid input', code: 'VALIDATION_ERROR' } }
+  }
+
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.updateUser({
+      password: parsed.data.password,
+    })
+
+    if (error) {
+      // Handle expired link
+      if (error.message.includes('expired') || error.message.includes('invalid')) {
+        return { data: null, error: { message: 'This reset link has expired. Please request a new one.', code: 'LINK_EXPIRED' } }
+      }
+      return { data: null, error: { message: error.message, code: 'AUTH_ERROR' } }
+    }
+
+    return { data: null, error: null }
+  } catch (e) {
+    console.error('[updatePassword]', e)
     return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
   }
 }

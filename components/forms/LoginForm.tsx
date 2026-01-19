@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useTransition, useEffect } from 'react'
+import { useTransition, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema, LoginInput } from '@/lib/validations/auth'
@@ -33,11 +33,29 @@ export function LoginForm({
     defaultValues: { email: '', password: '' },
   })
 
+  // Track if toast was already shown to prevent duplicates
+  const toastShownRef = useRef(false)
+
   useEffect(() => {
-    if (searchParams.get('verified') === 'true') {
+    // Guard against multiple invocations
+    if (toastShownRef.current) return
+
+    const verified = searchParams.get('verified') === 'true'
+    const reset = searchParams.get('reset') === 'true'
+
+    // Show only one toast (prioritize reset over verified)
+    if (reset) {
+      toast.success('Password updated successfully! Please log in.')
+      toastShownRef.current = true
+      // Clear URL params to prevent toast on refresh
+      router.replace('/auth/login', { scroll: false })
+    } else if (verified) {
       toast.success('Email verified successfully! You can now log in.')
+      toastShownRef.current = true
+      // Clear URL params to prevent toast on refresh
+      router.replace('/auth/login', { scroll: false })
     }
-  }, [searchParams])
+  }, [searchParams, router])
 
   function onSubmit(data: LoginInput) {
     startTransition(async () => {
@@ -87,6 +105,7 @@ export function LoginForm({
                   <Link
                     href="/auth/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                    data-testid="forgot-password-link"
                   >
                     Forgot your password?
                   </Link>
