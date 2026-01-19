@@ -4,14 +4,43 @@ import { Suspense } from "react";
 
 async function UserWelcome() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // No auth check needed - middleware handles route protection
+  // Middleware guarantees user exists on protected routes
+  if (!user) {
+    return <h1 className="text-3xl font-bold">Welcome!</h1>;
+  }
+
+  // Fetch user profile for personalized welcome
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('experience_level, target_role, custom_role')
+    .eq('user_id', user.id)
+    .single()
+
+  // Format experience level for display
+  const experienceLevelText = profile?.experience_level === 'student'
+    ? 'Student/Recent Graduate'
+    : profile?.experience_level === 'career_changer'
+    ? 'Career Changer'
+    : null
+
+  // Use custom role if set, otherwise use target role
+  const roleText = profile?.custom_role || profile?.target_role
 
   return (
-    <h1 className="text-3xl font-bold" data-testid="dashboard-header">
-      Welcome{data?.user?.email ? `, ${data.user.email.split("@")[0]}` : ""}!
-    </h1>
+    <div>
+      <h1 className="text-3xl font-bold" data-testid="dashboard-header">
+        Welcome{user.email ? `, ${user.email.split("@")[0]}` : ""}!
+      </h1>
+      {profile && (experienceLevelText || roleText) && (
+        <p className="text-muted-foreground mt-2">
+          {experienceLevelText && roleText
+            ? `${experienceLevelText} • ${roleText}`
+            : experienceLevelText || roleText}
+        </p>
+      )}
+    </div>
   );
 }
 

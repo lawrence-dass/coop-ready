@@ -49,7 +49,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // List of protected routes that require authentication
-  const protectedPaths = ['/dashboard', '/settings', '/history', '/scan'];
+  const protectedPaths = ['/dashboard', '/settings', '/history', '/scan', '/onboarding'];
   const isProtectedRoute = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   );
@@ -68,6 +68,38 @@ export async function updateSession(request: NextRequest) {
     }
 
     return NextResponse.redirect(url);
+  }
+
+  // Check onboarding status for authenticated users
+  if (user && isProtectedRoute) {
+    // Check if user has completed onboarding
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('onboarding_completed')
+      .eq('user_id', user.id)
+      .single()
+
+    const isOnboardingPage = request.nextUrl.pathname.startsWith('/onboarding')
+
+    // If user hasn't completed onboarding (or profile doesn't exist)
+    if (!profile?.onboarding_completed) {
+      // Allow access to onboarding page
+      if (isOnboardingPage) {
+        return supabaseResponse
+      }
+      // Redirect to onboarding from other protected routes
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      return NextResponse.redirect(url)
+    }
+
+    // If user has completed onboarding but tries to access onboarding page
+    if (profile?.onboarding_completed && isOnboardingPage) {
+      // Redirect to dashboard
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.

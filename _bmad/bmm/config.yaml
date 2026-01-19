@@ -17,15 +17,15 @@ communication_language: English
 document_output_language: English
 output_folder: "{project-root}/_bmad-output"
 
-# Model Recommendations per Workflow
-# These are recommendations - pass --model <model> when invoking workflows
-# Example: /bmad:bmm:workflows:create-story --model haiku
+# Model Requirements per Workflow
+# CRITICAL: AI agents MUST use Task tool with specified model parameter when executing these workflows
+# Do NOT execute these workflows directly - spawn via Task tool with the correct model
 workflow_models:
-  # Template/extraction tasks - use Haiku for cost efficiency
+  # Template/extraction tasks - use Haiku for cost efficiency (~70% savings)
   create-story: haiku
   sprint-planning: haiku
 
-  # Complex reasoning tasks - use Opus for thoroughness
+  # Complex reasoning tasks - use Opus for thoroughness (fewer iterations)
   code-review: opus
 
   # Default for unlisted workflows

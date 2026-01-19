@@ -3,6 +3,7 @@ import { test as base, expect, Page } from '@playwright/test';
 import { UserFactory } from './factories/user-factory';
 import { ResumeFactory } from './factories/resume-factory';
 import { ScanFactory } from './factories/scan-factory';
+import { ProfileFactory } from './factories/profile-factory';
 
 /**
  * CoopReady Test Fixtures
@@ -17,6 +18,7 @@ type TestFixtures = {
   userFactory: UserFactory;
   resumeFactory: ResumeFactory;
   scanFactory: ScanFactory;
+  profileFactory: ProfileFactory;
   authenticatedPage: Page;
 };
 
@@ -35,6 +37,12 @@ export const test = base.extend<TestFixtures>({
 
   scanFactory: async ({ request }, use) => {
     const factory = new ScanFactory(request);
+    await use(factory);
+    await factory.cleanup();
+  },
+
+  profileFactory: async ({ request }, use) => {
+    const factory = new ProfileFactory(request);
     await use(factory);
     await factory.cleanup();
   },

@@ -1,42 +1,44 @@
 # Session Handoff
-Last updated: 2026-01-18
+Last updated: 2026-01-19
 
 ## Current Focus
-Completed planning phase setup and project infrastructure. Ready for implementation.
+Context optimization for BMAD workflows completed. Created `/context-optimize` skill and integrated hooks.
 
 ## BMAD Status
-- **Phase**: Implementation (ready to start)
-- **Last workflow**: `create-epics-and-stories` (completed with 7 epics, 40 stories)
-- **Active story**: None - sprint-planning not yet run
-- **Workflow status**: `_bmad-output/planning-artifacts/bmm-workflow-status.yaml`
+- **Phase**: Implementation
+- **Epic 1**: Done (7/7 stories)
+- **Epic 8**: In-progress (test infrastructure)
+- **Next**: Epic 2 (Onboarding & Profile)
+- **Sprint status**: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ## Session Context
 
-### Key Decisions
-- Git branching: **branch-per-story** strategy (not per-epic)
-- Branch naming: `story/{epic}-{story}-{short-title}` (e.g., `story/1-1-project-init`)
-- Session management: lightweight handoff via `.claude/handoff/CURRENT.md`
+### Completed This Session
+1. **Architecture sharding**: 791 → 108 lines (86% reduction)
+2. **Archive structure**: Created `_bmad-output/archive/` (~149KB moved)
+3. **CLAUDE.md optimization**: 90 → 59 lines (34% reduction)
+4. **Model recommendations**: Added to workflow configs (haiku/opus)
+5. **`/context-optimize` skill**: New workflow with analyze/archive/full modes
+6. **Code review hook**: Context health check after every review
+7. **Retrospective hook**: Archive reminder after epic completion
 
-### Files Modified This Session
-- `.gitignore` - Added AI tool ignores, kept `.claude/` for handoff
-- `CLAUDE.md` - Updated phase, added session management section
-- `_bmad-output/bmad-development-flow.md` - Added Git Branching Strategy with mermaid diagrams
-- `.claude/handoff/CURRENT.md` - Created session state file
-- `.claude/commands/session-start.md` - Created slash command
-- `.claude/commands/session-end.md` - Created slash command
-
-### Git Commits
-1. `d752d68` - Initial commit: BMAD planning artifacts
-2. `08c8cb7` - Add session management for context continuity
-3. `c534f1c` - Add Git branching strategy to development flow guide
-
-### Blockers
-None
+### Key Files Created/Modified
+- `_bmad/bmm/workflows/4-implementation/context-optimize/` (new skill)
+- `_bmad-output/context-optimization-guide.md` (documentation)
+- `_bmad-output/planning-artifacts/architecture/` (5 shards)
+- `_bmad-output/archive/` (archived artifacts)
 
 ## Notes for Next Session
-1. Run `/bmad:bmm:workflows:sprint-planning` to initialize sprint-status.yaml
-2. Then run `/bmad:bmm:workflows:create-story` for Story 1.1 (Project Initialization)
-3. Create branch: `git checkout -b story/1-1-project-init`
-4. Story 1.1 will run: `npx create-next-app -e with-supabase coopready`
 
-**Tip**: Use `/session-start` to resume with context + sprint status check.
+### Immediate Next Action
+- Start Epic 2 Story 2-1, or continue Epic 8 Story 8-1
+
+### New Commands Available
+```bash
+/context-optimize           # Analyze context health
+/context-optimize archive   # Archive completed artifacts
+/bmad:bmm:workflows:create-story --model haiku
+/bmad:bmm:workflows:code-review --model opus
+```
+
+**Tip**: Use `/session-start` to check sprint status and continue.
