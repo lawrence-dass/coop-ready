@@ -181,6 +181,24 @@ _bmad-output/archive/
 
 **Recommended Model**: `--model haiku` (procedural task)
 
+### Hook: Code Review Context Check
+
+A lightweight context health check runs at the end of every `/code-review`:
+
+```
+📊 Context Health: 245KB (budget: 300KB) ✅
+```
+
+If over budget:
+```
+📊 Context Health: 320KB (budget: 300KB) ⚠️
+💡 Context over budget. Run `/context-optimize` to investigate.
+```
+
+**Location**: `_bmad/bmm/workflows/4-implementation/code-review/instructions.xml` (Step 5)
+
+**Why here?**: Code review is a natural checkpoint after each story - non-intrusive visibility without action required.
+
 ### Hook: Retrospective Reminder
 
 A context optimization reminder is automatically shown at the end of the `/retrospective` workflow:
@@ -239,3 +257,4 @@ Epic {N} is complete. Consider running `/context-optimize archive` to:
 
 **Files Modified**:
 - `_bmad/bmm/workflows/4-implementation/retrospective/instructions.md` (added reminder)
+- `_bmad/bmm/workflows/4-implementation/code-review/instructions.xml` (added context health check)

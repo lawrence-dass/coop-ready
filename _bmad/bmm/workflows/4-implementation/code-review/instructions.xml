@@ -222,6 +222,24 @@
 
       {{#if new_status == "done"}}Code review complete!{{else}}Address the action items and continue development.{{/if}}
     </output>
+
+    <!-- Context Health Check -->
+    <action>Calculate context sizes:
+      - Count files in {output_folder} root (excluding archive/)
+      - Count files in planning_artifacts/
+      - Count files in implementation_artifacts/
+      - Sum total active context size
+    </action>
+    <action>Set {{context_budget}} = 300KB</action>
+    <action>Set {{context_status}} = "healthy" if under budget, "attention" if over</action>
+
+    <output>
+      ---
+      📊 **Context Health:** {{context_size}} (budget: {{context_budget}}) {{#if context_status == "healthy"}}✅{{else}}⚠️{{/if}}
+      {{#if context_status == "attention"}}
+      💡 Context over budget. Run `/context-optimize` to investigate.
+      {{/if}}
+    </output>
   </step>
 
 </workflow>
