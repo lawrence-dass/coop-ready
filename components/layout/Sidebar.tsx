@@ -91,6 +91,7 @@ export function Sidebar({
                   isCollapsed && "justify-center px-2"
                 )}
                 onClick={() => isMobile && onClose()}
+                data-testid={item.href === "/settings" ? "settings-nav-link" : undefined}
               >
                 <Link href={item.href}>
                   <Icon className={cn("h-5 w-5", !isCollapsed && "mr-3")} />

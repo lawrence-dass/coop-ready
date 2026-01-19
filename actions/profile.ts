@@ -120,6 +120,67 @@ export async function completeOnboarding(
 }
 
 /**
+ * Update user profile (experience level and target role)
+ * Does NOT change onboarding_completed status - keeps it as true
+ * @see Story 2.2: Profile Settings Page
+ */
+export async function updateProfile(
+  input: z.infer<typeof onboardingInputSchema>
+): Promise<ActionResponse<UserProfile>> {
+  const parsed = onboardingInputSchema.safeParse(input)
+  if (!parsed.success) {
+    return { data: null, error: { message: 'Invalid input', code: 'VALIDATION_ERROR' } }
+  }
+
+  try {
+    const supabase = await createClient()
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { data: null, error: { message: 'Not authenticated', code: 'AUTH_ERROR' } }
+    }
+
+    // Update profile - NOT onboarding_completed, keep it true
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({
+        experience_level: parsed.data.experienceLevel,
+        target_role: parsed.data.targetRole,
+        custom_role: parsed.data.customRole || null,
+      })
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('[updateProfile]', error)
+      return { data: null, error: { message: 'Failed to update profile', code: 'DB_ERROR' } }
+    }
+
+    // Transform snake_case to camelCase at boundary
+    const transformedProfile: UserProfile = {
+      id: data.id,
+      userId: data.user_id,
+      experienceLevel: data.experience_level,
+      targetRole: data.target_role,
+      customRole: data.custom_role,
+      onboardingCompleted: data.onboarding_completed,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    }
+
+    // Revalidate settings page to ensure fresh data
+    revalidatePath('/settings')
+
+    return { data: transformedProfile, error: null }
+  } catch (e) {
+    console.error('[updateProfile]', e)
+    return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
+  }
+}
+
+/**
  * Get user profile to check onboarding status
  * Returns null if profile doesn't exist (user hasn't completed onboarding)
  */

@@ -11,7 +11,10 @@
 import { z } from 'zod'
 
 // Experience level validation - must match DB CHECK constraint
-export const experienceLevelSchema = z.enum(['student', 'career_changer'])
+// Custom error message for AC5: "Please select an experience level"
+export const experienceLevelSchema = z.enum(['student', 'career_changer'], {
+  message: 'Please select an experience level',
+})
 
 // Target role validation - accepts predefined roles or custom input
 export const targetRoleSchema = z.string().min(1, 'Target role is required').max(100, 'Target role must be less than 100 characters')
