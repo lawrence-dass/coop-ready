@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { resumeFileSchema, getFileExtension } from '@/lib/validations/resume'
 import { createClient } from '@/lib/supabase/server'
+import { extractResumeText } from '@/lib/parsers/extraction'
 
 /**
  * Resume Server Actions
@@ -26,6 +27,9 @@ export type ResumeData = {
   fileType: string
   fileSize: number
   createdAt: string
+  extractedText: string | null
+  extractionStatus: 'pending' | 'completed' | 'failed'
+  extractionError: string | null
 }
 
 /**
@@ -95,7 +99,7 @@ export async function uploadResume(formData: FormData): Promise<ActionResponse<R
       return { data: null, error: { message: 'Failed to upload file', code: 'STORAGE_ERROR' } }
     }
 
-    // Create resume record in database
+    // Create resume record in database with initial extraction_status='pending'
     const { data: resumeRecord, error: dbError } = await supabase
       .from('resumes')
       .insert({
@@ -104,6 +108,7 @@ export async function uploadResume(formData: FormData): Promise<ActionResponse<R
         file_name: file.name,
         file_type: fileExtension,
         file_size: file.size,
+        extraction_status: 'pending',
       })
       .select()
       .single()
@@ -117,6 +122,57 @@ export async function uploadResume(formData: FormData): Promise<ActionResponse<R
       return { data: null, error: { message: 'Failed to save resume record', code: 'DB_ERROR' } }
     }
 
+    // Attempt text extraction (non-blocking - upload succeeds even if extraction fails)
+    let extractedText: string | null = null
+    let extractionStatus: 'pending' | 'completed' | 'failed' = 'pending'
+    let extractionError: string | null = null
+
+    try {
+      // Download file from storage to extract text
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('resume-uploads')
+        .download(uploadData.path)
+
+      if (downloadError) {
+        throw new Error('Failed to download file for extraction')
+      }
+
+      // Convert Blob to Buffer for extraction
+      const arrayBuffer = await fileData.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
+      // Extract text using appropriate parser
+      extractedText = await extractResumeText(buffer, fileExtension)
+      extractionStatus = 'completed'
+
+      console.log('[uploadResume] Text extraction successful:', extractedText.length, 'characters')
+    } catch (error) {
+      const err = error as Error
+      console.error('[uploadResume] Text extraction failed:', err)
+
+      // Set extraction status to failed with error message
+      extractionStatus = 'failed'
+      extractionError = err.message || 'Unable to extract text from file'
+
+      // Upload should still succeed even if extraction fails
+      // User can re-upload or handle extraction failure separately
+    }
+
+    // Update resume record with extraction results
+    const { error: updateError } = await supabase
+      .from('resumes')
+      .update({
+        extracted_text: extractedText,
+        extraction_status: extractionStatus,
+        extraction_error: extractionError,
+      })
+      .eq('id', resumeRecord.id)
+
+    if (updateError) {
+      console.error('[uploadResume] Failed to update extraction results:', updateError)
+      // Continue anyway - upload succeeded
+    }
+
     // Transform snake_case to camelCase at boundary
     const transformedResume: ResumeData = {
       id: resumeRecord.id,
@@ -126,6 +182,9 @@ export async function uploadResume(formData: FormData): Promise<ActionResponse<R
       fileType: resumeRecord.file_type,
       fileSize: resumeRecord.file_size,
       createdAt: resumeRecord.created_at,
+      extractedText: extractedText,
+      extractionStatus: extractionStatus,
+      extractionError: extractionError,
     }
 
     // Revalidate scan page to show updated resume

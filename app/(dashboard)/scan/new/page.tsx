@@ -57,6 +57,14 @@ export default function NewScanPage() {
         toast.success('Resume uploaded successfully')
         setUploadedResume(data)
         setUploadProgress(0)
+
+        // Show warning if text extraction failed (non-blocking)
+        if (data.extractionStatus === 'failed') {
+          toast.warning(
+            data.extractionError || 'Text extraction failed. You can still proceed with the upload.',
+            { duration: 5000 }
+          )
+        }
       } catch (e) {
         clearInterval(progressInterval)
         setUploadProgress(0)
