@@ -2,43 +2,45 @@
 Last updated: 2026-01-19
 
 ## Current Focus
-Context optimization for BMAD workflows completed. Created `/context-optimize` skill and integrated hooks.
+Completed Story 2-1 (Onboarding Flow). PR merged to main.
 
 ## BMAD Status
 - **Phase**: Implementation
 - **Epic 1**: Done (7/7 stories)
-- **Epic 8**: In-progress (test infrastructure)
-- **Next**: Epic 2 (Onboarding & Profile)
+- **Epic 2**: In-progress (1/2 stories done)
+- **Epic 8**: In-progress (test infrastructure, paused)
 - **Sprint status**: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ## Session Context
 
 ### Completed This Session
-1. **Architecture sharding**: 791 → 108 lines (86% reduction)
-2. **Archive structure**: Created `_bmad-output/archive/` (~149KB moved)
-3. **CLAUDE.md optimization**: 90 → 59 lines (34% reduction)
-4. **Model recommendations**: Added to workflow configs (haiku/opus)
-5. **`/context-optimize` skill**: New workflow with analyze/archive/full modes
-6. **Code review hook**: Context health check after every review
-7. **Retrospective hook**: Archive reminder after epic completion
+1. **Story 2-1 created**: Used create-story workflow (ran on Sonnet, not Haiku)
+2. **Story 2-1 implemented**: Full onboarding flow with:
+   - `user_profiles` table with RLS
+   - Multi-step form (experience level + target role)
+   - Route protection via proxy.ts
+   - E2E tests
+3. **Config updated**: Changed workflow_models from "recommendations" to "requirements"
+   - AI agents MUST use Task tool with specified model parameter
+4. **Branch merged**: `feat/2-1-onboarding-flow` → main (21 files, +2825 lines)
 
-### Key Files Created/Modified
-- `_bmad/bmm/workflows/4-implementation/context-optimize/` (new skill)
-- `_bmad-output/context-optimization-guide.md` (documentation)
-- `_bmad-output/planning-artifacts/architecture/` (5 shards)
-- `_bmad-output/archive/` (archived artifacts)
+### Key Files Created
+- `app/(dashboard)/onboarding/page.tsx`
+- `actions/profile.ts`
+- `config/experience-levels.ts`
+- `lib/validations/profile.ts`
+- `supabase/migrations/002_create_user_profiles_table.sql`
+- `tests/e2e/onboarding-flow.spec.ts`
 
 ## Notes for Next Session
 
 ### Immediate Next Action
-- Start Epic 2 Story 2-1, or continue Epic 8 Story 8-1
+- Create story 2-2 (Profile Settings Page) to complete Epic 2, OR
+- Continue Epic 8 (test infrastructure)
 
-### New Commands Available
-```bash
-/context-optimize           # Analyze context health
-/context-optimize archive   # Archive completed artifacts
-/bmad:bmm:workflows:create-story --model haiku
-/bmad:bmm:workflows:code-review --model opus
-```
+### Model Usage Reminder
+Per `_bmad/bmm/config.yaml`:
+- `create-story`: Use Task tool with `model: "haiku"`
+- `code-review`: Use Task tool with `model: "opus"`
 
 **Tip**: Use `/session-start` to check sprint status and continue.

@@ -51,7 +51,7 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: User Onboarding & Profile Management
-  epic-2: in-progress
+  epic-2: done
   2-1-onboarding-flow-experience-level-target-role: done
   2-2-profile-settings-page: done
   epic-2-retrospective: optional

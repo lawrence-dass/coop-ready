@@ -3,7 +3,7 @@
 # Version: 6.0.0-alpha.23
 # Date: 2026-01-18T09:14:10.588Z
 
-project_name: CVconfig
+project_name: CoopReady
 user_skill_level: intermediate
 planning_artifacts: "{project-root}/_bmad-output/planning-artifacts"
 implementation_artifacts: "{project-root}/_bmad-output/implementation-artifacts"
@@ -16,17 +16,3 @@ user_name: Lawrence
 communication_language: English
 document_output_language: English
 output_folder: "{project-root}/_bmad-output"
-
-# Model Requirements per Workflow
-# CRITICAL: AI agents MUST use Task tool with specified model parameter when executing these workflows
-# Do NOT execute these workflows directly - spawn via Task tool with the correct model
-workflow_models:
-  # Template/extraction tasks - use Haiku for cost efficiency (~70% savings)
-  create-story: haiku
-  sprint-planning: haiku
-
-  # Complex reasoning tasks - use Opus for thoroughness (fewer iterations)
-  code-review: opus
-
-  # Default for unlisted workflows
-  default: sonnet
