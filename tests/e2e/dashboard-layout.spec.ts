@@ -85,12 +85,10 @@ test.describe('Dashboard Layout', () => {
     const sidebar = authenticatedPage.locator('[data-testid="sidebar"]');
     await expect(sidebar).toBeVisible();
 
-    // Wait for any initial re-renders to settle (user data fetch)
-    await authenticatedPage.waitForTimeout(500);
-
-    // THEN: Toggle button exists
+    // THEN: Toggle button exists and is stable (wait for initial render to complete)
     const toggleButton = authenticatedPage.locator('[data-testid="sidebar-toggle"]');
     await expect(toggleButton).toBeVisible();
+    await expect(toggleButton).toBeEnabled();
 
     // WHEN: User clicks toggle to collapse (use force to handle any transition instability)
     await toggleButton.click({ force: true });
