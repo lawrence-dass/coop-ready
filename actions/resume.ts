@@ -348,6 +348,63 @@ export async function parseResumeSection(resumeId: string): Promise<ActionRespon
 }
 
 /**
+ * Get resume data by ID
+ *
+ * Fetches resume record with parsed sections and status.
+ * Used for polling status updates during processing.
+ *
+ * @see Story 3.4: Resume Preview Display - Task 6.2
+ */
+export async function getResume(resumeId: string): Promise<ActionResponse<ResumeData>> {
+  try {
+    const supabase = await createClient()
+
+    // Get current user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { data: null, error: { message: 'Not authenticated', code: 'AUTH_ERROR' } }
+    }
+
+    // Fetch resume record (RLS ensures user can only access own records)
+    const { data: resume, error: fetchError } = await supabase
+      .from('resumes')
+      .select('*')
+      .eq('id', resumeId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (fetchError || !resume) {
+      return { data: null, error: { message: 'Resume not found', code: 'NOT_FOUND' } }
+    }
+
+    // Transform snake_case to camelCase at boundary
+    const transformedResume: ResumeData = {
+      id: resume.id,
+      userId: resume.user_id,
+      filePath: resume.file_path,
+      fileName: resume.file_name,
+      fileType: resume.file_type,
+      fileSize: resume.file_size,
+      createdAt: resume.created_at,
+      extractedText: resume.extracted_text,
+      extractionStatus: resume.extraction_status,
+      extractionError: resume.extraction_error,
+      parsedSections: resume.parsed_sections,
+      parsingStatus: resume.parsing_status,
+      parsingError: resume.parsing_error,
+    }
+
+    return { data: transformedResume, error: null }
+  } catch (e) {
+    console.error('[getResume]', e)
+    return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
+  }
+}
+
+/**
  * Delete resume file and database record
  */
 export async function deleteResume(resumeId: string): Promise<ActionResponse<{ success: true }>> {
