@@ -1,46 +1,40 @@
 # Session Handoff
-Last updated: 2026-01-19
+Last updated: 2026-01-20
 
 ## Current Focus
-Completed Story 2-1 (Onboarding Flow). PR merged to main.
+Session ended. Ready for next development cycle on Epic 3 (stories 3-5 or 3-6).
 
 ## BMAD Status
-- **Phase**: Implementation
-- **Epic 1**: Done (7/7 stories)
-- **Epic 2**: In-progress (1/2 stories done)
-- **Epic 8**: In-progress (test infrastructure, paused)
-- **Sprint status**: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- **Phase**: Implementation (mid-Epic 3)
+- **Last active story**: 3-4-resume-preview-display (DONE)
+- **Sprint status**: See `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- **Branch**: `feat/3-4-resume-preview-display` (ready for merge)
 
-## Session Context
+### Epic Progress Summary
+- **Epic 1**: Done (7/7)
+- **Epic 2**: Done (2/2)
+- **Epic 3**: In-progress (4/6 done)
+  - ✅ 3-1, 3-2, 3-3, 3-4
+  - ⏳ 3-5, 3-6 (ready-for-dev)
+- **Epic 8**: In-progress (test infrastructure - 8-1 in-progress)
 
-### Completed This Session
-1. **Story 2-1 created**: Used create-story workflow (ran on Sonnet, not Haiku)
-2. **Story 2-1 implemented**: Full onboarding flow with:
-   - `user_profiles` table with RLS
-   - Multi-step form (experience level + target role)
-   - Route protection via proxy.ts
-   - E2E tests
-3. **Config updated**: Changed workflow_models from "recommendations" to "requirements"
-   - AI agents MUST use Task tool with specified model parameter
-4. **Branch merged**: `feat/2-1-onboarding-flow` → main (21 files, +2825 lines)
+## Session Context (2026-01-20)
 
-### Key Files Created
-- `app/(dashboard)/onboarding/page.tsx`
-- `actions/profile.ts`
-- `config/experience-levels.ts`
-- `lib/validations/profile.ts`
-- `supabase/migrations/002_create_user_profiles_table.sql`
-- `tests/e2e/onboarding-flow.spec.ts`
+### What Was Done
+Previous session completed Story 3-4 code review with 10 issues identified and fixed. All HIGH/MEDIUM severity items resolved:
+- Implemented `getResume` server action for polling
+- Fixed server/client component boundaries
+- Fixed E2E test variable scoping
+- Added accessibility & test IDs
 
-## Notes for Next Session
+Branch committed and pushed for merge.
 
-### Immediate Next Action
-- Create story 2-2 (Profile Settings Page) to complete Epic 2, OR
-- Continue Epic 8 (test infrastructure)
+## Next Session Checklist
 
-### Model Usage Reminder
-Per `_bmad/bmm/config.yaml`:
-- `create-story`: Use Task tool with `model: "haiku"`
-- `code-review`: Use Task tool with `model: "opus"`
+1. **Before starting**: Run `/session-start` to refresh sprint status
+2. **Immediate action**:
+   - Verify PR #17 merged (or merge via GitHub)
+   - Create next story: 3-5 (Job Description Input) via `/create-story`
+3. **Context**: See architecture in `_bmad-output/planning-artifacts/architecture/`
 
-**Tip**: Use `/session-start` to check sprint status and continue.
+**Note**: Output folder is 740KB (budget 300KB). Schedule archival of completed epic artifacts.
