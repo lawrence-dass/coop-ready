@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { resumeFileSchema, getFileExtension } from '@/lib/validations/resume'
 import { createClient } from '@/lib/supabase/server'
 import { extractResumeText } from '@/lib/parsers/extraction'
+import { parseResumeText } from '@/lib/parsers/resume'
+import { parsedResumeSchema, type ParsedResume } from '@/lib/parsers/types'
 
 /**
  * Resume Server Actions
@@ -30,6 +32,9 @@ export type ResumeData = {
   extractedText: string | null
   extractionStatus: 'pending' | 'completed' | 'failed'
   extractionError: string | null
+  parsedSections: ParsedResume | null
+  parsingStatus: 'pending' | 'completed' | 'failed'
+  parsingError: string | null
 }
 
 /**
@@ -158,18 +163,53 @@ export async function uploadResume(formData: FormData): Promise<ActionResponse<R
       // User can re-upload or handle extraction failure separately
     }
 
-    // Update resume record with extraction results
+    // Attempt resume parsing (non-blocking - extraction succeeds even if parsing fails)
+    let parsedSections: ParsedResume | null = null
+    let parsingStatus: 'pending' | 'completed' | 'failed' = 'pending'
+    let parsingError: string | null = null
+
+    if (extractionStatus === 'completed' && extractedText) {
+      try {
+        // Parse extracted text into structured sections
+        const parsed = parseResumeText(extractedText)
+
+        // Validate parsed output with Zod schema
+        const validation = parsedResumeSchema.safeParse(parsed)
+
+        if (validation.success) {
+          parsedSections = validation.data
+          parsingStatus = 'completed'
+          console.log('[uploadResume] Resume parsing successful')
+        } else {
+          throw new Error('Parsed data validation failed')
+        }
+      } catch (error) {
+        const err = error as Error
+        console.error('[uploadResume] Resume parsing failed:', err)
+
+        // Set parsing status to failed with error message
+        parsingStatus = 'failed'
+        parsingError = err.message || 'Unable to parse resume sections'
+
+        // Extraction still succeeded - parsing failure is non-blocking
+      }
+    }
+
+    // Update resume record with extraction and parsing results
     const { error: updateError } = await supabase
       .from('resumes')
       .update({
         extracted_text: extractedText,
         extraction_status: extractionStatus,
         extraction_error: extractionError,
+        parsed_sections: parsedSections,
+        parsing_status: parsingStatus,
+        parsing_error: parsingError,
       })
       .eq('id', resumeRecord.id)
 
     if (updateError) {
-      console.error('[uploadResume] Failed to update extraction results:', updateError)
+      console.error('[uploadResume] Failed to update extraction/parsing results:', updateError)
       // Continue anyway - upload succeeded
     }
 
@@ -185,6 +225,9 @@ export async function uploadResume(formData: FormData): Promise<ActionResponse<R
       extractedText: extractedText,
       extractionStatus: extractionStatus,
       extractionError: extractionError,
+      parsedSections: parsedSections,
+      parsingStatus: parsingStatus,
+      parsingError: parsingError,
     }
 
     // Revalidate scan page to show updated resume
@@ -193,6 +236,113 @@ export async function uploadResume(formData: FormData): Promise<ActionResponse<R
     return { data: transformedResume, error: null }
   } catch (e) {
     console.error('[uploadResume]', e)
+    return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
+  }
+}
+
+/**
+ * Parse resume sections from extracted text
+ *
+ * Can be called separately to retry parsing if needed.
+ * Requires that text extraction has already completed.
+ */
+export async function parseResumeSection(resumeId: string): Promise<ActionResponse<ParsedResume>> {
+  try {
+    const supabase = await createClient()
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { data: null, error: { message: 'Not authenticated', code: 'AUTH_ERROR' } }
+    }
+
+    // Get resume record to verify ownership and get extracted text
+    const { data: resume, error: fetchError } = await supabase
+      .from('resumes')
+      .select('id, user_id, extracted_text, extraction_status')
+      .eq('id', resumeId)
+      .single()
+
+    if (fetchError || !resume) {
+      return { data: null, error: { message: 'Resume not found', code: 'NOT_FOUND' } }
+    }
+
+    // Verify ownership
+    if (resume.user_id !== user.id) {
+      return { data: null, error: { message: 'Permission denied', code: 'PERMISSION_ERROR' } }
+    }
+
+    // Check if extraction completed
+    if (resume.extraction_status !== 'completed' || !resume.extracted_text) {
+      return {
+        data: null,
+        error: {
+          message: 'Text extraction must complete before parsing',
+          code: 'EXTRACTION_REQUIRED',
+        },
+      }
+    }
+
+    // Parse the extracted text
+    try {
+      const parsed = parseResumeText(resume.extracted_text)
+
+      // Validate parsed output
+      const validation = parsedResumeSchema.safeParse(parsed)
+
+      if (!validation.success) {
+        console.error('[parseResumeSection] Validation failed:', validation.error)
+
+        // Update status to failed
+        await supabase
+          .from('resumes')
+          .update({
+            parsing_status: 'failed',
+            parsing_error: 'Parsed data validation failed',
+          })
+          .eq('id', resumeId)
+
+        return {
+          data: null,
+          error: { message: 'Failed to validate parsed resume', code: 'VALIDATION_ERROR' },
+        }
+      }
+
+      // Update resume record with parsed sections
+      const { error: updateError } = await supabase
+        .from('resumes')
+        .update({
+          parsed_sections: validation.data,
+          parsing_status: 'completed',
+          parsing_error: null,
+        })
+        .eq('id', resumeId)
+
+      if (updateError) {
+        console.error('[parseResumeSection] Failed to update resume:', updateError)
+        return { data: null, error: { message: 'Failed to save parsed sections', code: 'DB_ERROR' } }
+      }
+
+      revalidatePath('/scan/new')
+
+      return { data: validation.data, error: null }
+    } catch (error) {
+      const err = error as Error
+      console.error('[parseResumeSection] Parsing error:', err)
+
+      // Update status to failed
+      await supabase
+        .from('resumes')
+        .update({
+          parsing_status: 'failed',
+          parsing_error: err.message || 'Unable to parse resume sections',
+        })
+        .eq('id', resumeId)
+
+      return { data: null, error: { message: 'Failed to parse resume', code: 'PARSING_ERROR' } }
+    }
+  } catch (e) {
+    console.error('[parseResumeSection]', e)
     return { data: null, error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' } }
   }
 }
