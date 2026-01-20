@@ -14,8 +14,9 @@ import { extractDocxText } from './docx'
 
 /**
  * Supported file types for extraction
+ * Must match ALLOWED_FILE_EXTENSIONS in lib/validations/resume.ts
  */
-export const SUPPORTED_FILE_TYPES = ['pdf', 'docx', 'doc'] as const
+export const SUPPORTED_FILE_TYPES = ['pdf', 'docx'] as const
 
 export type SupportedFileType = typeof SUPPORTED_FILE_TYPES[number]
 
@@ -37,7 +38,7 @@ export const EXTRACTION_ERROR_CODES = {
  * Handles errors gracefully with descriptive messages.
  *
  * @param buffer - File content as Buffer
- * @param fileType - File extension (pdf, docx, doc)
+ * @param fileType - File extension (pdf, docx)
  * @returns Extracted text content
  * @throws Error with code property for specific failure types
  *
@@ -72,8 +73,6 @@ export async function extractResumeText(
         return await extractPdfText(buffer)
 
       case 'docx':
-      case 'doc':
-        // Both .doc and .docx use same parser (mammoth handles both)
         return await extractDocxText(buffer)
 
       default:

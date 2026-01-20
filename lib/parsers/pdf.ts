@@ -92,8 +92,10 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
     // pdf-parse throws various errors for malformed PDFs
     if (
       err.message?.includes('Invalid PDF') ||
+      err.message?.includes('invalid') ||
       err.message?.includes('PDF header') ||
-      err.message?.includes('Failed to parse')
+      err.message?.includes('Failed to parse') ||
+      err.message?.includes('pages dictionary')
     ) {
       const corruptedError = new Error('File appears to be corrupted. Try another PDF') as Error & { code: string }
       corruptedError.code = PDF_ERROR_CODES.CORRUPTED_FILE

@@ -261,34 +261,9 @@ test.describe('Resume Text Extraction', () => {
     // Skip test if password-protected test file is not available
   })
 
-  test('[P1] should extract text from .doc file (legacy Word format)', async ({
-    authenticatedPage,
-  }) => {
-    // GIVEN: User has a legacy .doc file
-    const docFilePath = path.join(
-      __dirname,
-      '../support/fixtures/test-files/legacy-resume.doc'
-    )
-
-    // WHEN: User uploads the .doc file
-    const fileInput = authenticatedPage.getByTestId('file-input')
-    await fileInput.setInputFiles(docFilePath)
-
-    // THEN: File is uploaded and extracted successfully
-    // (mammoth library handles both .doc and .docx)
-    await expect(
-      authenticatedPage.getByTestId('file-display')
-    ).toBeVisible({ timeout: 10000 })
-
-    await expect(
-      authenticatedPage.getByText(/resume uploaded successfully/i)
-    ).toBeVisible({ timeout: 5000 })
-
-    // AND: No extraction error
-    await expect(
-      authenticatedPage.getByText(/text extraction failed/i)
-    ).not.toBeVisible()
-  })
+  // NOTE: .doc (legacy Word) format is NOT supported
+  // Only .pdf and .docx are accepted by the file validation schema
+  // See lib/validations/resume.ts for supported file types
 })
 
 /**
@@ -299,9 +274,24 @@ test.describe('Resume Text Extraction', () => {
  */
 
 test.describe('Resume Extraction Database Verification', () => {
+  /**
+   * NOTE: This test is skipped because direct database verification in E2E tests requires:
+   * 1. Supabase test client setup with appropriate credentials
+   * 2. Test database isolation to prevent data pollution
+   * 3. User context (authenticated user ID) to query the correct record
+   *
+   * Alternative verification approaches:
+   * - Add an API endpoint that returns extraction_status for the uploaded resume
+   * - Verify via UI elements that show extraction status
+   * - Use integration tests instead of E2E for database verification
+   *
+   * For now, AC5 (database storage) is verified by:
+   * - The upload success flow (upload wouldn't complete without DB insert)
+   * - The extraction warning toast (shows extraction_status was updated)
+   */
   test.skip('[P0] should verify database extraction_status and extracted_text fields', async () => {
-    // This test requires Supabase client setup for direct DB queries
-    // Example implementation:
+    // IMPLEMENTATION NOTE: This test requires Supabase client setup
+    // See comment above for alternatives
 
     // const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     // const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

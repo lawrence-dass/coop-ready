@@ -59,7 +59,7 @@ development_status:
   # Epic 3: Resume & Job Description Input
   epic-3: in-progress
   3-1-resume-upload-with-validation: done
-  3-2-resume-text-extraction: review
+  3-2-resume-text-extraction: done
   3-3-resume-section-parsing: ready-for-dev
   3-4-resume-preview-display: ready-for-dev
   3-5-job-description-input: ready-for-dev
