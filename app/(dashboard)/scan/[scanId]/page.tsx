@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Loader2, ChevronRight, Home } from 'lucide-react'
 import Link from 'next/link'
+import { runAnalysis } from '@/actions/analysis'
 import { useScanPolling } from '@/lib/hooks/useScanPolling'
 import { ScoreCard } from '@/components/analysis/ScoreCard'
 import { SectionBreakdown } from '@/components/analysis/SectionBreakdown'
@@ -28,6 +29,21 @@ export default function ScanResultsPage() {
 
   // Use polling hook with exponential backoff
   const { scan, isLoading, error } = useScanPolling(scanId)
+  const analysisTriggeredRef = useRef(false)
+
+  // Trigger analysis when scan is first loaded in pending status
+  useEffect(() => {
+    if (!scan || !scanId || analysisTriggeredRef.current) return
+
+    // If scan is pending or processing, trigger analysis
+    if (scan.status === 'pending' || scan.status === 'processing') {
+      analysisTriggeredRef.current = true
+      runAnalysis({ scanId }).catch((err) => {
+        console.error('[ScanResultsPage] Failed to trigger analysis:', err)
+        // Analysis will continue retrying via polling
+      })
+    }
+  }, [scan, scanId])
 
   // Retry analysis (navigate back to trigger new analysis)
   const handleRetry = useCallback(() => {
