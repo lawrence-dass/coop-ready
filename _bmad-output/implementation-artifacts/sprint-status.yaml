@@ -69,7 +69,7 @@ development_status:
   # Epic 4: ATS Analysis Engine
   epic-4: in-progress
   4-1-openai-integration-setup: done
-  4-2-ats-score-calculation: backlog
+  4-2-ats-score-calculation: done
   4-3-missing-keywords-detection: backlog
   4-4-section-level-score-breakdown: backlog
   4-5-experience-level-aware-analysis: backlog
