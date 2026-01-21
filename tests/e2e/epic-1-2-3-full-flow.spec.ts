@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 const BASE_URL = 'http://localhost:3000'
-const TEST_EMAIL = 'test@example.com'
+const TEST_EMAIL = 'lawrence.dass@outlook.in'
 const TEST_PASSWORD = 'test123'
 
 // Setup: Create test user before running tests
@@ -24,7 +24,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       // Verify form elements
       await expect(page.locator('input[type="email"]')).toBeVisible()
       await expect(page.locator('input[type="password"]')).toBeVisible()
-      await expect(page.locator('button:has-text("Log in")')).toBeVisible()
+      await expect(page.locator('button:has-text("Login")')).toBeVisible()
 
       // Verify sign-up link
       await expect(page.locator('a:has-text("Sign up")')).toBeVisible()
@@ -38,7 +38,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.fill('input[type="password"]', TEST_PASSWORD)
 
       // Submit login
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
 
       // Verify redirect (either dashboard or onboarding)
       await page.waitForURL(/\/(dashboard|onboarding)/)
@@ -52,7 +52,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       // Try invalid email
       await page.fill('input[type="email"]', 'invalid-email')
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
 
       // Should show error or stay on login page
       await expect(page).toHaveURL(/\/auth\/login/)
@@ -68,7 +68,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
 
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', 'wrongpassword')
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
 
       // Verify error displayed
       await page.waitForTimeout(1000)
@@ -100,7 +100,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       // Verify form is still usable on mobile
       await expect(page.locator('input[type="email"]')).toBeVisible()
       await expect(page.locator('input[type="password"]')).toBeVisible()
-      await expect(page.locator('button:has-text("Log in")')).toBeVisible()
+      await expect(page.locator('button:has-text("Login")')).toBeVisible()
     })
 
     test('1.7 - Navigation after login', async ({ page }) => {
@@ -109,7 +109,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       // Login
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       // Verify sidebar/navigation visible
@@ -122,7 +122,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       // Find and click logout
@@ -151,7 +151,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
 
       // Wait for redirect
       await page.waitForURL(/\/(dashboard|onboarding)/)
@@ -174,7 +174,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       // Navigate to onboarding if needed
@@ -191,7 +191,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       // Navigate to onboarding if needed
@@ -234,7 +234,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       // Navigate to new scan
@@ -255,7 +255,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       // Go to scan page
@@ -276,7 +276,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       await page.goto(`${BASE_URL}/scan/new`)
@@ -298,7 +298,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       await page.goto(`${BASE_URL}/scan/new`)
@@ -322,7 +322,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       await page.goto(`${BASE_URL}/scan/new`)
@@ -340,7 +340,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
 
       await page.goto(`${BASE_URL}/scan/new`)
@@ -390,7 +390,7 @@ test.describe('Epic 1-3: Full User Flow - Authentication, Onboarding, Resume & S
       await page.goto(`${BASE_URL}/auth/login`)
       await page.fill('input[type="email"]', TEST_EMAIL)
       await page.fill('input[type="password"]', TEST_PASSWORD)
-      await page.click('button:has-text("Log in")')
+      await page.click('button:has-text("Login")')
       await page.waitForURL(/\/(dashboard|onboarding)/)
       console.log('✅ Step 1: Login successful')
 
