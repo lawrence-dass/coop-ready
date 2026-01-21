@@ -20,7 +20,12 @@ import {
   parseSectionScoresResponse,
   isValidSectionScoresResult,
 } from '@/lib/openai/prompts/parseSectionScores'
+import {
+  parseFormatIssuesResponse,
+  mergeFormatIssues,
+} from '@/lib/openai/prompts/parseFormatIssues'
 import { detectSections } from '@/lib/utils/resumeSectionDetector'
+import { analyzeResumeFormat } from '@/lib/utils/formatAnalyzer'
 import { analysisInputSchema } from '@/lib/validations/analysis'
 import type {
   AnalysisInput,
@@ -52,6 +57,7 @@ function normalizeExperienceLevel(level: string): ExperienceLevel {
  * @see Story 4.3: Missing Keywords Detection
  * @see Story 4.4: Section-Level Score Breakdown
  * @see Story 4.5: Experience-Level-Aware Analysis
+ * @see Story 4.6: Resume Format Issues Detection
  */
 
 type ActionResponse<T> =
@@ -244,20 +250,31 @@ export async function runAnalysis(
 
     // Detect resume sections for section-level scoring (Story 4.4)
     let detectedSections: ReturnType<typeof detectSections> = []
+    let ruleBasedFormatIssues: ReturnType<typeof analyzeResumeFormat> = []
+
     if (resume.parsed_resume) {
       try {
         const parsedResume = resume.parsed_resume as unknown as ParsedResume
+
+        // Detect sections
         detectedSections = detectSections(parsedResume)
         console.log('[runAnalysis] Detected resume sections', {
           scanId: parsed.data.scanId,
           sections: detectedSections,
         })
+
+        // Run rule-based format analysis (Story 4.6)
+        ruleBasedFormatIssues = analyzeResumeFormat(parsedResume, validatedLevel)
+        console.log('[runAnalysis] Rule-based format analysis completed', {
+          scanId: parsed.data.scanId,
+          issuesFound: ruleBasedFormatIssues.length,
+        })
       } catch (error) {
-        console.warn('[runAnalysis] Failed to detect resume sections', {
+        console.warn('[runAnalysis] Failed to detect resume sections or analyze format', {
           scanId: parsed.data.scanId,
           error,
         })
-        // Continue with empty sections array
+        // Continue with empty arrays
       }
     }
 
@@ -288,6 +305,19 @@ export async function runAnalysis(
 
     // Parse section scores from response content (Story 4.4)
     const sectionScoresResult = parseSectionScoresResponse(parsedResponse.content)
+
+    // Parse AI-detected format issues from response content (Story 4.6)
+    const aiDetectedFormatIssues = parseFormatIssuesResponse(parsedResponse.content)
+
+    // Merge rule-based and AI-detected format issues (Story 4.6)
+    const allFormatIssues = mergeFormatIssues(ruleBasedFormatIssues, aiDetectedFormatIssues)
+
+    console.log('[runAnalysis] Format issues detected', {
+      scanId: parsed.data.scanId,
+      ruleBasedCount: ruleBasedFormatIssues.length,
+      aiDetectedCount: aiDetectedFormatIssues.length,
+      totalAfterMerge: allFormatIssues.length,
+    })
 
     // Validate analysis result
     if (!isValidAnalysisResult(analysisResult)) {
@@ -329,7 +359,7 @@ export async function runAnalysis(
       // Continue with empty section scores rather than failing the entire analysis
     }
 
-    // Update scan record with analysis results (includes experience_level_context from Story 4.5)
+    // Update scan record with analysis results (includes format_issues from Story 4.6)
     const { error: updateError } = await supabase
       .from('scans')
       .update({
@@ -339,6 +369,7 @@ export async function runAnalysis(
         keywords_missing: keywordAnalysis.keywordsMissing as unknown as Record<string, unknown>,
         section_scores: sectionScoresResult.sectionScores as unknown as Record<string, unknown>,
         experience_level_context: experienceContext, // Store context used for analysis (Story 4.5 AC 10)
+        format_issues: allFormatIssues as unknown as Record<string, unknown>, // Store format issues (Story 4.6 AC 9)
         status: 'completed',
       })
       .eq('id', parsed.data.scanId)
@@ -366,16 +397,18 @@ export async function runAnalysis(
       keywordsMissingCount: keywordAnalysis.keywordsMissing.length,
       majorKeywordsCoverage: keywordAnalysis.majorKeywordsCoverage,
       sectionsScored: Object.keys(sectionScoresResult.sectionScores).length,
+      formatIssuesCount: allFormatIssues.length,
       tokensUsed: parsedResponse.usage.totalTokens,
       costEstimate: parsedResponse.costEstimate,
     })
 
-    // Include keyword analysis, section scores, and experience context in returned result (Story 4.5)
+    // Include keyword analysis, section scores, format issues, and experience context in returned result
     const fullAnalysisResult: AnalysisResult = {
       ...analysisResult,
       keywords: keywordAnalysis,
       sectionScores: sectionScoresResult.sectionScores,
       experienceLevelContext: experienceContext, // Include context in result (Story 4.5 AC 10)
+      formatIssues: allFormatIssues, // Include format issues in result (Story 4.6 AC 9)
     }
 
     return {

@@ -238,6 +238,69 @@ Weaknesses:
   - Missing Docker/Kubernetes experience mentioned in JD
 ```
 
+### Format Issues Detection
+
+CoopReady automatically detects formatting problems that hurt your ATS compatibility score, categorized by severity to help you prioritize fixes.
+
+**How It Works:**
+
+1. **Rule-Based Analysis**: Checks your parsed resume for structural issues (section headers, length, contact info, date consistency)
+2. **AI-Detected Issues**: Analyzes resume text for content-based formatting problems (font descriptions, international format markers, outdated patterns)
+3. **Merged Results**: Combines both analyses, removes duplicates, and sorts by severity
+
+**Severity Levels:**
+
+| Level | Description | Examples | Priority |
+|-------|-------------|----------|----------|
+| **Critical** | Prevents ATS from parsing correctly | Missing section headers, unparseable format | Fix immediately |
+| **Warning** | Reduces ATS effectiveness | Resume length issues, missing contact info | Fix soon |
+| **Suggestion** | Best practice improvements | International format markers, outdated conventions | Nice to have |
+
+**Common Format Issues Detected:**
+
+**Structural Problems (Rule-Based):**
+- Missing or unclear section headers (Experience, Education, Skills)
+- Resume length inappropriate for experience level (e.g., 2 pages for entry-level)
+- Missing contact information (email, phone, location)
+- Inconsistent date formatting across resume
+
+**Content-Based Problems (AI-Detected):**
+- Font or color references indicating complex formatting
+- Photo/headshot references in resume text
+- Date of birth or age mentioned
+- "Curriculum Vitae" title instead of "Resume"
+- Objective statements (outdated, use Summary instead)
+- Excessive styling or decorative elements mentioned
+
+**Example Format Issue:**
+
+```json
+{
+  "type": "warning",
+  "message": "Resume is approximately 2 pages",
+  "detail": "Entry-level resumes are typically 1 page. Consider condensing to 1 page to improve ATS parsing and recruiter experience. Focus on most relevant experiences and achievements.",
+  "source": "rule-based"
+}
+```
+
+**No Issues Detected:**
+
+When your resume has excellent formatting, you'll see: **"No format issues detected"** with a visual indicator.
+
+**Best Practices Guide:**
+
+For detailed formatting guidelines, examples, and before/after comparisons, see:
+- [Format Best Practices Guide](docs/FORMAT_BEST_PRACTICES.md)
+
+**Key Recommendations:**
+- Use standard section headers (Experience, Education, Skills, Projects, Summary)
+- Keep resume to 1 page (students/entry-level) or 1-2 pages (experienced)
+- Include email, phone, and location in contact info
+- Use consistent date formatting throughout (e.g., MM/YYYY or Month YYYY)
+- Avoid photos, DOB, and personal details for North American applications
+- Use professional, ATS-friendly fonts (Arial, Calibri, Georgia, Times New Roman)
+- Stick to simple formatting (no text boxes, graphics, or complex layouts)
+
 ### Cost Estimates
 
 Average cost per analysis (GPT-4o-mini):

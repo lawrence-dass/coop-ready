@@ -5,6 +5,7 @@
  * @see Story 4.3: Missing Keywords Detection
  * @see Story 4.4: Section-Level Score Breakdown
  * @see Story 4.5: Experience-Level-Aware Analysis
+ * @see Story 4.6: Resume Format Issues Detection
  */
 
 /**
@@ -80,6 +81,7 @@ export interface AnalysisResult {
   keywords?: KeywordAnalysis // Keyword extraction results (added in Story 4.3)
   sectionScores?: SectionScores // Section-level scores (added in Story 4.4)
   experienceLevelContext?: string // Experience context used for analysis (added in Story 4.5)
+  formatIssues?: FormatIssue[] // Format issues detected (added in Story 4.6)
 }
 
 /**
@@ -105,6 +107,7 @@ export interface ScanRecord {
   keywordsMissing: MissingKeyword[] | null // Added in Story 4.3
   sectionScores: SectionScores | null // Added in Story 4.4
   experienceLevelContext: string | null // Added in Story 4.5
+  formatIssues: FormatIssue[] | null // Added in Story 4.6
   createdAt: string
   updatedAt: string
 }
@@ -162,4 +165,29 @@ export interface SectionScores {
  */
 export interface SectionScoresResult {
   sectionScores: SectionScores
+}
+
+/**
+ * Format issue severity levels
+ * Story: 4.6 - Resume Format Issues Detection
+ */
+export type FormatIssueSeverity = 'critical' | 'warning' | 'suggestion'
+
+/**
+ * Format issue detected in resume
+ * Story: 4.6 - Resume Format Issues Detection
+ */
+export interface FormatIssue {
+  type: FormatIssueSeverity // Severity level
+  message: string // User-friendly short message
+  detail: string // Longer explanation of issue and how to fix
+  source: 'rule-based' | 'ai-detected' // Whether detected by rules or AI
+}
+
+/**
+ * Result from format analysis
+ * Story: 4.6 - Resume Format Issues Detection
+ */
+export interface FormatAnalysisResult {
+  issues: FormatIssue[] // Array of format issues (empty if no issues found)
 }
