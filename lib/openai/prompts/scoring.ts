@@ -5,9 +5,11 @@
  *
  * @see Story 4.2: ATS Score Calculation
  * @see Story 4.3: Missing Keywords Detection
+ * @see Story 4.4: Section-Level Score Breakdown
  */
 
 import type { AnalysisContext } from '@/lib/types/analysis'
+import type { ScoredSection } from '@/lib/utils/resumeSectionDetector'
 
 /**
  * Create ATS scoring analysis prompt
@@ -26,9 +28,13 @@ import type { AnalysisContext } from '@/lib/types/analysis'
  * - Format (10%): ATS-parseable structure, section clarity
  *
  * @param context - Resume text, job description, and user profile
+ * @param sections - Optional array of sections to score (from detectSections)
  * @returns Array of chat completion messages
  */
-export function createATSScoringPrompt(context: AnalysisContext) {
+export function createATSScoringPrompt(
+  context: AnalysisContext,
+  sections?: ScoredSection[]
+) {
   const systemPrompt = `You are an expert ATS (Applicant Tracking System) optimization specialist with deep knowledge of how modern hiring systems parse and score resumes.
 
 Your role is to analyze resumes against job descriptions and provide:
@@ -115,7 +121,75 @@ Return ONLY valid JSON in this exact structure:
       }
     ],
     "majorKeywordsCoverage": <percentage 0-100 of high-priority keywords found>
+  },
+  "sectionScores": {
+    ${sections && sections.length > 0 ? sections.map((section) => `"${section}": {
+      "score": <number 0-100>,
+      "explanation": "<2-3 sentence explanation>",
+      "strengths": ["<strength 1>", "<strength 2>"],
+      "weaknesses": ["<weakness 1>", "<weakness 2>"]
+    }`).join(',\n    ') : ''}
   }
+}
+
+**Section-Level Scoring Instructions:**
+${
+  sections && sections.length > 0
+    ? `
+Score each of the following resume sections individually (0-100):
+**Sections to Score:** ${sections.join(', ')}
+
+For EACH section, provide:
+1. **Score (0-100)**: How well this section performs against the job description
+2. **Explanation (2-3 sentences)**: Why it scored this way, with specific examples
+3. **Strengths**: What's working well in this section (1-3 items)
+4. **Weaknesses**: Specific issues to address (1-3 items)
+
+**Section Scoring Guidelines:**
+
+**Experience Section:**
+- Relevance of roles to job description (keyword match, similar responsibilities)
+- Quantified achievements with metrics (e.g., "Increased sales by 30%")
+- Career progression and recency of experience
+- Action verbs and impact-oriented language
+- Example weakness: "Missing quantified metrics in bullet points"
+- Example strength: "Strong alignment with 3+ years React experience requirement"
+
+**Education Section:**
+- Relevance of degree to target role
+- School prestige or recognition (if notable)
+- GPA if strong (3.5+) and relevant for entry-level roles
+- Relevant coursework, honors, or academic achievements
+- Example weakness: "GPA not listed (if strong, include it)"
+- Example strength: "CS degree aligns with technical requirements"
+
+**Skills Section:**
+- Alignment with job description technical requirements
+- Breadth of technical skills coverage
+- Categorization (technical vs soft skills)
+- Inclusion of tools, frameworks, languages mentioned in JD
+- Example weakness: "Missing Docker and Kubernetes from JD requirements"
+- Example strength: "Comprehensive coverage of required tech stack"
+
+**Projects Section:**
+- Relevance to target role responsibilities
+- Technical complexity and skills demonstrated
+- Impact or results achieved
+- Clarity of project descriptions
+- Example weakness: "Projects lack technical detail about implementation"
+- Example strength: "Projects demonstrate full-stack capabilities mentioned in JD"
+
+**Summary/Objective Section:**
+- Personalization to job description
+- Keyword density and alignment
+- Clarity of career intent
+- Conciseness and impact
+- Example weakness: "Generic summary not tailored to role"
+- Example strength: "Strong keyword match and clear value proposition"
+
+Make section explanations SPECIFIC and ACTIONABLE - reference actual content where possible.
+`
+    : '**Section-Level Scoring:** No sections detected in resume - skip section scoring.'
 }
 
 **Keyword Extraction Instructions:**
@@ -192,6 +266,46 @@ Example 1 - High Match (75):
       { "keyword": "Redis", "frequency": 1, "priority": "low" }
     ],
     "majorKeywordsCoverage": 80
+  },
+  "sectionScores": {
+    "experience": {
+      "score": 75,
+      "explanation": "Experience section shows strong relevance with 3+ years in React and Node.js. Quantified achievements present but could be expanded. Recent roles align well with job requirements.",
+      "strengths": [
+        "Relevant tech stack experience (React, Node.js, AWS)",
+        "Quantified impact in at least 2 bullet points",
+        "Progressive career growth demonstrated"
+      ],
+      "weaknesses": [
+        "Could add more quantified metrics to older roles",
+        "Missing Docker/Kubernetes experience mentioned in JD"
+      ]
+    },
+    "education": {
+      "score": 70,
+      "explanation": "CS degree aligns with technical requirements. Recent graduation supports entry-level consideration. GPA not listed which could strengthen application if 3.5+.",
+      "strengths": [
+        "Computer Science degree directly relevant",
+        "Recent graduation shows current knowledge"
+      ],
+      "weaknesses": [
+        "No GPA listed (include if 3.5+)",
+        "Could highlight relevant coursework"
+      ]
+    },
+    "skills": {
+      "score": 85,
+      "explanation": "Skills section demonstrates strong coverage of required technologies. Well-categorized and ATS-friendly. Missing only a few nice-to-have tools from JD.",
+      "strengths": [
+        "Covers 8/10 required technologies",
+        "Clean categorization (Frontend, Backend, DevOps)",
+        "Includes frameworks and tools, not just languages"
+      ],
+      "weaknesses": [
+        "Missing Docker and Kubernetes from requirements",
+        "Could add soft skills section"
+      ]
+    }
   }
 }
 
@@ -234,20 +348,51 @@ Example 2 - Low Match (35):
       { "keyword": "CI/CD", "frequency": 1, "priority": "low" }
     ],
     "majorKeywordsCoverage": 0
+  },
+  "sectionScores": {
+    "experience": {
+      "score": 30,
+      "explanation": "Experience section lacks quantified achievements and specific technical details. Job titles don't align with target software engineering role. Bullet points are vague without measurable outcomes.",
+      "strengths": [
+        "Clean formatting with clear role separation"
+      ],
+      "weaknesses": [
+        "No quantified metrics or measurable results",
+        "Missing technical keywords from job description",
+        "Vague responsibilities without specific examples",
+        "Job titles not aligned with target role"
+      ]
+    },
+    "education": {
+      "score": 60,
+      "explanation": "Education section is well-formatted and includes relevant degree. However, lacks details that could strengthen entry-level candidacy like GPA or relevant coursework.",
+      "strengths": [
+        "Clear degree and institution",
+        "Recent graduation date"
+      ],
+      "weaknesses": [
+        "No GPA listed",
+        "Missing relevant coursework or projects",
+        "Could include academic honors or achievements"
+      ]
+    }
   }
 }
 
 **Important Instructions:**
 1. Return ONLY the JSON object - no additional text before or after
 2. Be objective and evidence-based in scoring
-3. Limit strengths and weaknesses to 3-5 items each
+3. Limit strengths and weaknesses to 3-5 items each (both overall and per-section)
 4. Make feedback actionable and specific
 5. Consider the candidate's experience level when scoring
 6. Ensure justification aligns with score breakdown
 7. Extract ALL relevant keywords from job description - be comprehensive
 8. Include at least top 10-15 missing keywords in results
 9. Sort missing keywords by priority (high first), then frequency (most common first)
-10. Recognize keyword variants and note them in the variant field`
+10. Recognize keyword variants and note them in the variant field
+11. Score ONLY the sections that were detected in the resume (listed above)
+12. Section explanations must be 2-3 sentences with SPECIFIC examples from resume
+13. Section strengths and weaknesses should be actionable and targeted to that section`
 
   return [
     {

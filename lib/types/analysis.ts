@@ -60,6 +60,7 @@ export interface AnalysisResult {
   strengths: string[] // What's working well (max 5 items)
   weaknesses: string[] // Areas to improve (max 5 items)
   keywords?: KeywordAnalysis // Keyword extraction results (added in Story 4.3)
+  sectionScores?: SectionScores // Section-level scores (added in Story 4.4)
 }
 
 /**
@@ -83,6 +84,7 @@ export interface ScanRecord {
   scoreJustification: string | null
   keywordsFound: Keyword[] | null // Added in Story 4.3
   keywordsMissing: MissingKeyword[] | null // Added in Story 4.3
+  sectionScores: SectionScores | null // Added in Story 4.4
   createdAt: string
   updatedAt: string
 }
@@ -102,4 +104,41 @@ export interface AnalysisContext {
   resumeText: string
   jobDescription: string
   userProfile: UserProfile
+}
+
+/**
+ * Resume section names that can be scored
+ * Story: 4.4 - Section-Level Score Breakdown
+ */
+export type ScoredSection = 'experience' | 'education' | 'skills' | 'projects' | 'summary'
+
+/**
+ * Section-level score with explanation
+ * Story: 4.4 - Section-Level Score Breakdown
+ */
+export interface SectionScore {
+  score: number // 0-100 score for this section
+  explanation: string // 2-3 sentence explanation
+  strengths: string[] // What's working well in this section
+  weaknesses: string[] // Specific issues to address
+}
+
+/**
+ * Section scores object - only includes sections that exist in resume
+ * Story: 4.4 - Section-Level Score Breakdown
+ */
+export interface SectionScores {
+  experience?: SectionScore
+  education?: SectionScore
+  skills?: SectionScore
+  projects?: SectionScore
+  summary?: SectionScore
+}
+
+/**
+ * Result from section scores parsing
+ * Story: 4.4 - Section-Level Score Breakdown
+ */
+export interface SectionScoresResult {
+  sectionScores: SectionScores
 }
