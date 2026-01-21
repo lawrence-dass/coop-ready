@@ -1,95 +1,49 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
-import { useParams } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getScan, type ScanData } from '@/actions/scan'
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useCallback } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { Loader2, ChevronRight, Home } from 'lucide-react'
+import Link from 'next/link'
+import { useScanPolling } from '@/lib/hooks/useScanPolling'
+import { ScoreCard } from '@/components/analysis/ScoreCard'
+import { SectionBreakdown } from '@/components/analysis/SectionBreakdown'
+import { KeywordList } from '@/components/analysis/KeywordList'
+import { FormatIssues } from '@/components/analysis/FormatIssues'
+import { AnalysisError } from '@/components/analysis/AnalysisError'
 
 /**
  * Scan Results Page
  *
- * Displays scan processing status and will show results when Epic 4 is implemented.
- * Polls for status updates when scan is in pending/processing state.
+ * Displays comprehensive ATS analysis results including score, keywords,
+ * section breakdown, and format issues.
  *
- * @see Story 3.6: New Scan Page Integration - AC4
- * @see Epic 4: ATS Analysis Engine (future implementation)
+ * @see Story 4.7: Analysis Results Page
+ * @see Story 3.6: New Scan Page Integration - AC4 (initial polling)
  */
-
-// Poll interval in milliseconds (5 seconds)
-const POLL_INTERVAL = 5000
-// Terminal states that stop polling
-const TERMINAL_STATES = ['completed', 'failed'] as const
 
 export default function ScanResultsPage() {
   const params = useParams()
+  const router = useRouter()
   const scanId = params?.scanId as string | undefined
 
-  const [scan, setScan] = useState<ScanData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  // Use polling hook with exponential backoff
+  const { scan, isLoading, error } = useScanPolling(scanId)
 
-  // Fetch scan data
-  const fetchScan = useCallback(async (showLoading = false) => {
-    if (!scanId) return
+  // Retry analysis (navigate back to trigger new analysis)
+  const handleRetry = useCallback(() => {
+    router.push(`/scan/new?resumeId=${scan?.resumeId}`)
+  }, [router, scan])
 
-    if (showLoading) setIsLoading(true)
-
-    const { data, error: scanError } = await getScan(scanId)
-
-    if (scanError || !data) {
-      setError(scanError?.message || 'Failed to load scan')
-      setIsLoading(false)
-      return
-    }
-
-    setScan(data)
-    setIsLoading(false)
-
-    // Stop polling if scan reached terminal state
-    if (TERMINAL_STATES.includes(data.status as typeof TERMINAL_STATES[number])) {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-  }, [scanId])
-
-  // Initial load and polling setup
-  useEffect(() => {
-    if (!scanId) {
-      setError('No scan ID provided')
-      setIsLoading(false)
-      return
-    }
-
-    // Initial fetch with loading state
-    fetchScan(true)
-
-    // Start polling for status updates
-    pollIntervalRef.current = setInterval(() => {
-      fetchScan(false)
-    }, POLL_INTERVAL)
-
-    // Cleanup on unmount
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-  }, [scanId, fetchScan])
-
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
           <div>
-            <p className="text-lg font-medium">Analysis in progress</p>
+            <p className="text-lg font-medium">Loading analysis results</p>
             <p className="text-sm text-muted-foreground">
-              Loading your scan results...
+              Please wait...
             </p>
           </div>
         </div>
@@ -97,128 +51,130 @@ export default function ScanResultsPage() {
     )
   }
 
+  // Error state
   if (error || !scan) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              Error Loading Scan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {error || 'Scan not found'}
+      <AnalysisError
+        scanId={scanId || ''}
+        errorMessage={error || 'Scan not found'}
+        onRetry={handleRetry}
+      />
+    )
+  }
+
+  // Processing state
+  if (scan.status === 'pending' || scan.status === 'processing') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Analyzing Your Resume</h1>
+          <p className="text-muted-foreground mt-2">Scan ID: {scan.id}</p>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <div>
+              <p className="font-semibold text-blue-900 text-lg">
+                Analysis in progress...
+              </p>
+              <p className="text-sm text-blue-700">
+                This usually takes 10-20 seconds
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 mt-4">
+            <p className="text-sm font-medium mb-2 text-gray-700">
+              What&apos;s happening:
             </p>
-          </CardContent>
-        </Card>
+            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+              <li>Extracting keywords from job description</li>
+              <li>Analyzing resume structure and content</li>
+              <li>Calculating ATS compatibility score</li>
+              <li>Detecting format issues</li>
+              <li>Generating section-level scores</li>
+            </ul>
+          </div>
+        </div>
       </div>
     )
   }
 
+  // Failed state
+  if (scan.status === 'failed') {
+    return (
+      <AnalysisError
+        scanId={scan.id}
+        errorMessage="Analysis failed. This could be due to an unsupported file format or temporary service issues."
+        onRetry={handleRetry}
+      />
+    )
+  }
+
+  // Completed state - show results
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground">
+        <Link
+          href="/dashboard"
+          className="hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          <Home className="h-4 w-4" />
+          <span>Dashboard</span>
+        </Link>
+        <ChevronRight className="h-4 w-4" />
+        <Link href="/history" className="hover:text-foreground transition-colors">
+          Scans
+        </Link>
+        <ChevronRight className="h-4 w-4" />
+        <span className="text-foreground font-medium">Results</span>
+      </nav>
+
+      {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold">Scan Results</h1>
-        <p className="text-muted-foreground mt-2">Scan ID: {scan.id}</p>
+        <h1 className="text-3xl font-bold">Analysis Results</h1>
+        <p className="text-muted-foreground mt-2">
+          Comprehensive ATS analysis for your resume
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Processing Status</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Status Indicator */}
-          {(scan.status === 'pending' || scan.status === 'processing') && (
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <div>
-                <p className="font-medium">Analysis in progress</p>
-                <p className="text-sm text-muted-foreground">
-                  Status: {scan.status} (auto-refreshing every 5s)
-                </p>
-              </div>
-            </div>
-          )}
+      {/* ATS Score Card - above the fold */}
+      <ScoreCard
+        atsScore={scan.atsScore}
+        justification={scan.scoreJustification}
+      />
 
-          {scan.status === 'completed' && (
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="font-medium text-green-800">Analysis Complete</p>
-                <p className="text-sm text-muted-foreground">
-                  Your scan results are ready
-                </p>
-              </div>
-            </div>
-          )}
+      {/* Section Breakdown */}
+      <SectionBreakdown sectionScores={scan.sectionScores} />
 
-          {scan.status === 'failed' && (
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <div>
-                <p className="font-medium text-red-800">Analysis Failed</p>
-                <p className="text-sm text-muted-foreground">
-                  There was an error processing your scan
-                </p>
-              </div>
-            </div>
-          )}
+      {/* Keywords Analysis */}
+      <KeywordList
+        keywordsFound={scan.keywordsFound}
+        keywordsMissing={scan.keywordsMissing}
+      />
 
-          {(scan.status === 'pending' || scan.status === 'processing') && (
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-sm font-medium mb-2">What&apos;s happening:</p>
-              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Extracting keywords from job description</li>
-                <li>Analyzing resume structure and content</li>
-                <li>Calculating ATS compatibility score</li>
-                <li>Generating optimization suggestions</li>
-              </ul>
-            </div>
-          )}
+      {/* Format Issues */}
+      <FormatIssues issues={scan.formatIssues} />
 
-          <div className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
-            <p className="text-sm font-medium text-blue-900">
-              Coming in Epic 4: ATS Analysis Engine
-            </p>
-            <p className="text-sm text-blue-700 mt-1">
-              This page will display your ATS score, missing keywords,
-              section-level breakdown, and optimization suggestions once the
-              analysis engine is implemented.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Experience Context (if available) */}
+      {scan.experienceLevelContext && (
+        <div className="bg-muted rounded-lg p-4">
+          <p className="text-sm font-medium text-muted-foreground mb-1">
+            Analysis Context:
+          </p>
+          <p className="text-sm">{scan.experienceLevelContext}</p>
+        </div>
+      )}
 
-      {/* Debug Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Scan Details (Debug)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-2 text-sm">
-            <dt className="font-medium">Scan ID:</dt>
-            <dd className="text-muted-foreground">{scan.id}</dd>
-
-            <dt className="font-medium">Resume ID:</dt>
-            <dd className="text-muted-foreground">{scan.resumeId}</dd>
-
-            <dt className="font-medium">Status:</dt>
-            <dd className="text-muted-foreground">{scan.status}</dd>
-
-            <dt className="font-medium">Created:</dt>
-            <dd className="text-muted-foreground">
-              {new Date(scan.createdAt).toLocaleString()}
-            </dd>
-
-            <dt className="font-medium">JD Length:</dt>
-            <dd className="text-muted-foreground">
-              {scan.jobDescription.length} characters
-            </dd>
-          </dl>
-        </CardContent>
-      </Card>
+      {/* Metadata Footer */}
+      <div className="text-xs text-muted-foreground text-center pt-4 border-t">
+        <p>
+          Analysis completed on{' '}
+          {new Date(scan.updatedAt).toLocaleString()}
+        </p>
+      </div>
     </div>
   )
 }
