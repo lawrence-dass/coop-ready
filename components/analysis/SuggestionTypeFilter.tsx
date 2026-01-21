@@ -2,10 +2,9 @@
 
 /**
  * SuggestionTypeFilter - Filter Buttons/Tabs Component
- * Allows users to filter suggestions by type
+ * Allows users to filter suggestions by type (controlled component)
  */
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ALL_SUGGESTION_TYPES,
@@ -13,24 +12,24 @@ import {
 } from "@/lib/utils/suggestion-types";
 
 interface SuggestionTypeFilterProps {
-  scanId: string;
+  selectedTypes: string[];
+  onFilterChange: (types: string[]) => void;
 }
 
 export function SuggestionTypeFilter({
-  scanId,
+  selectedTypes,
+  onFilterChange,
 }: SuggestionTypeFilterProps) {
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-
   const toggleType = (type: string) => {
-    setSelectedTypes((prev) =>
-      prev.includes(type)
-        ? prev.filter((t) => t !== type)
-        : [...prev, type]
-    );
+    if (selectedTypes.includes(type)) {
+      onFilterChange(selectedTypes.filter((t) => t !== type));
+    } else {
+      onFilterChange([...selectedTypes, type]);
+    }
   };
 
   const clearFilters = () => {
-    setSelectedTypes([]);
+    onFilterChange([]);
   };
 
   return (
@@ -52,11 +51,7 @@ export function SuggestionTypeFilter({
         );
       })}
       {selectedTypes.length > 0 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearFilters}
-        >
+        <Button variant="ghost" size="sm" onClick={clearFilters}>
           Clear filters
         </Button>
       )}

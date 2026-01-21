@@ -42,7 +42,7 @@ function transformSuggestion(row: SuggestionRow): DisplaySuggestion {
 export async function fetchSuggestionsBySection(
   scanId: string
 ): Promise<Record<string, DisplaySuggestion[]>> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("suggestions")
@@ -80,7 +80,7 @@ export async function fetchSuggestionsByType(
   scanId: string,
   types: string[]
 ): Promise<DisplaySuggestion[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("suggestions")
@@ -100,7 +100,7 @@ export async function fetchSuggestionsByType(
     throw error;
   }
 
-  return (data || []).map((row) => transformSuggestion(row as SuggestionRow));
+  return (data || []).map((row: SuggestionRow) => transformSuggestion(row));
 }
 
 /**
@@ -109,7 +109,7 @@ export async function fetchSuggestionsByType(
 export async function countSuggestionsByType(
   scanId: string
 ): Promise<Record<string, number>> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("suggestions")
@@ -142,7 +142,7 @@ export async function getSuggestionStats(
   byType: Record<string, number>;
   bySectionAndType: Record<string, Record<string, number>>;
 }> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("suggestions")

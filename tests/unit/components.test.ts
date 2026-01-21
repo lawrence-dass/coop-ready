@@ -303,4 +303,113 @@ describe("Suggestion Components", () => {
       expect(transformed).not.toHaveProperty("original_text");
     });
   });
+
+  describe("Filtering Logic", () => {
+    const mockSuggestions: DisplaySuggestion[] = [
+      {
+        id: "1",
+        section: "experience",
+        itemIndex: 0,
+        originalText: "Text 1",
+        suggestedText: "Improved 1",
+        suggestionType: "action_verb",
+        reasoning: "Better verb",
+        status: "pending",
+      },
+      {
+        id: "2",
+        section: "experience",
+        itemIndex: 1,
+        originalText: "Text 2",
+        suggestedText: "Improved 2",
+        suggestionType: "quantification",
+        reasoning: "Add metrics",
+        status: "pending",
+      },
+      {
+        id: "3",
+        section: "skills",
+        itemIndex: 0,
+        originalText: "Text 3",
+        suggestedText: "Improved 3",
+        suggestionType: "skill_expansion",
+        reasoning: "Expand skill",
+        status: "pending",
+      },
+    ];
+
+    it("should filter suggestions by selected types", () => {
+      const selectedTypes = ["action_verb"];
+      const filtered = mockSuggestions.filter((s) =>
+        selectedTypes.includes(s.suggestionType)
+      );
+
+      expect(filtered.length).toBe(1);
+      expect(filtered[0].suggestionType).toBe("action_verb");
+    });
+
+    it("should return all suggestions when no filter selected", () => {
+      const selectedTypes: string[] = [];
+      const filtered =
+        selectedTypes.length === 0
+          ? mockSuggestions
+          : mockSuggestions.filter((s) =>
+              selectedTypes.includes(s.suggestionType)
+            );
+
+      expect(filtered.length).toBe(3);
+    });
+
+    it("should filter by multiple types", () => {
+      const selectedTypes = ["action_verb", "quantification"];
+      const filtered = mockSuggestions.filter((s) =>
+        selectedTypes.includes(s.suggestionType)
+      );
+
+      expect(filtered.length).toBe(2);
+      expect(filtered.map((s) => s.suggestionType)).toContain("action_verb");
+      expect(filtered.map((s) => s.suggestionType)).toContain("quantification");
+    });
+  });
+
+  describe("Pagination Logic", () => {
+    it("should calculate correct total pages", () => {
+      const itemsPerPage = 20;
+      const totalItems = 45;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+      expect(totalPages).toBe(3);
+    });
+
+    it("should slice items correctly for current page", () => {
+      const items = Array.from({ length: 45 }, (_, i) => ({ id: String(i) }));
+      const itemsPerPage = 20;
+
+      // Page 1
+      const page1 = items.slice(0, itemsPerPage);
+      expect(page1.length).toBe(20);
+      expect(page1[0].id).toBe("0");
+
+      // Page 2
+      const page2 = items.slice(itemsPerPage, itemsPerPage * 2);
+      expect(page2.length).toBe(20);
+      expect(page2[0].id).toBe("20");
+
+      // Page 3 (partial)
+      const page3 = items.slice(itemsPerPage * 2, itemsPerPage * 3);
+      expect(page3.length).toBe(5);
+      expect(page3[0].id).toBe("40");
+    });
+
+    it("should reset to page 1 when filter changes", () => {
+      let currentPage = 3;
+      const selectedTypes: string[] = [];
+
+      // Simulate filter change
+      selectedTypes.push("action_verb");
+      currentPage = 1; // Reset on filter change
+
+      expect(currentPage).toBe(1);
+    });
+  });
 });

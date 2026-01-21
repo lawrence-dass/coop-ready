@@ -1,6 +1,6 @@
 # Story 5.6: Suggestions Display by Section
 
-**Status:** review
+**Status:** done
 **Epic:** 5 - Suggestions & Optimization Workflow
 **Branch:** feat/5-6-suggestions-display-by-section
 **Dependency:** Stories 5-1, 5-2, 5-3, 5-4, 5-5 (all suggestion generation)
@@ -832,9 +832,10 @@ export function SuggestionTypeFilter({
 - [x] Create `components/analysis/SuggestionSection.tsx` (Client Component)
 - [x] Create `components/analysis/SuggestionCard.tsx` (Client Component)
 - [x] Create `components/analysis/SuggestionTypeFilter.tsx` (Client Component)
-- [x] Write component tests (32 tests written)
+- [x] Write component tests (38 tests written)
 - [x] Validate all tests pass
 - [x] Mark story as review
+- [x] Code review fixes applied (see Review Follow-ups below)
 
 ---
 
@@ -880,15 +881,27 @@ Haiku 4.5
 ### File List
 
 **Created Files:**
-- `lib/utils/suggestion-types.ts` - Type metadata and constants (89 lines)
-- `lib/supabase/suggestions.ts` - Database queries and transformations (155 lines)
-- `components/analysis/SuggestionList.tsx` - Server component for suggestion display (74 lines)
-- `components/analysis/SuggestionSection.tsx` - Collapsible section component (66 lines)
-- `components/analysis/SuggestionCard.tsx` - Individual suggestion card (76 lines)
-- `components/analysis/SuggestionTypeFilter.tsx` - Filter UI component (64 lines)
-- `tests/unit/suggestion-types.test.ts` - Type metadata tests (79 lines)
-- `tests/unit/suggestions.test.ts` - Data transformation tests (134 lines)
-- `tests/unit/components.test.ts` - Component logic tests (227 lines)
+- `lib/utils/suggestion-types.ts` - Type metadata and constants (100 lines)
+- `lib/supabase/suggestions.ts` - Database queries and transformations (182 lines)
+- `components/analysis/SuggestionList.tsx` - Server component wrapper (27 lines)
+- `components/analysis/SuggestionListClient.tsx` - Client component with filtering/pagination (185 lines)
+- `components/analysis/SuggestionListSkeleton.tsx` - Loading skeleton component (47 lines)
+- `components/analysis/SuggestionSection.tsx` - Collapsible section with icons (99 lines)
+- `components/analysis/SuggestionCard.tsx` - Individual suggestion card (91 lines)
+- `components/analysis/SuggestionTypeFilter.tsx` - Controlled filter component (61 lines)
+- `tests/unit/suggestion-types.test.ts` - Type metadata tests (117 lines)
+- `tests/unit/suggestions.test.ts` - Data transformation tests (181 lines)
+- `tests/unit/components.test.ts` - Component and logic tests (415 lines)
+
+### Review Follow-ups (AI) - All Fixed
+
+- [x] [AI-Review][CRITICAL] Supabase client not awaited - added `await createClient()` to all 4 query functions
+- [x] [AI-Review][CRITICAL] Filter state not communicated - created SuggestionListClient.tsx with lifted state
+- [x] [AI-Review][CRITICAL] Pagination not implemented - added pagination with 20 items/page
+- [x] [AI-Review][MEDIUM] Section icons not rendered - imported actual Lucide icons
+- [x] [AI-Review][MEDIUM] Missing loading states - created SuggestionListSkeleton.tsx
+- [x] [AI-Review][LOW] Implicit `any` type in row mapping - added explicit type
+- [x] [AI-Review][LOW] Unused AlertCircle import - removed from SuggestionList.tsx
 
 ---
 
@@ -976,6 +989,7 @@ Suggestions should display on the analysis results page:
 ## Change Log
 
 - **2026-01-21**: Initial implementation - Created full suggestion display system with 6 components, database layer, and 32 comprehensive tests. All acceptance criteria satisfied.
+- **2026-01-21**: Code review fixes - Fixed 3 CRITICAL issues (Supabase await, filtering, pagination), 2 MEDIUM issues (icons, loading states), 2 LOW issues. Added SuggestionListClient.tsx and SuggestionListSkeleton.tsx. Tests expanded to 38.
 
 ---
 
