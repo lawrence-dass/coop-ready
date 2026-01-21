@@ -2,6 +2,7 @@
  * ATS Analysis Type Definitions
  *
  * @see Story 4.2: ATS Score Calculation
+ * @see Story 4.3: Missing Keywords Detection
  */
 
 /**
@@ -16,6 +17,40 @@ export interface ScoreBreakdown {
 }
 
 /**
+ * Keyword found in resume
+ */
+export interface Keyword {
+  keyword: string // The keyword text
+  frequency: number // How many times it appears in job description
+  variant?: string // If matched via variant (e.g., "JS" matched "JavaScript")
+}
+
+/**
+ * Keyword missing from resume
+ */
+export interface MissingKeyword {
+  keyword: string // The missing keyword text
+  frequency: number // How many times it appears in job description
+  priority: 'high' | 'medium' | 'low' // Importance level
+}
+
+/**
+ * Result from keyword extraction
+ */
+export interface KeywordExtractionResult {
+  keywordsFound: Keyword[] // Keywords present in resume
+  keywordsMissing: MissingKeyword[] // Keywords missing from resume
+  majorKeywordsCoverage: number // Percentage of high-priority keywords found (0-100)
+}
+
+/**
+ * Combined keyword analysis data
+ */
+export interface KeywordAnalysis extends KeywordExtractionResult {
+  allMajorKeywordsPresent: boolean // True if majorKeywordsCoverage >= 90
+}
+
+/**
  * Result from ATS analysis
  */
 export interface AnalysisResult {
@@ -24,6 +59,7 @@ export interface AnalysisResult {
   justification: string // Brief explanation of the score
   strengths: string[] // What's working well (max 5 items)
   weaknesses: string[] // Areas to improve (max 5 items)
+  keywords?: KeywordAnalysis // Keyword extraction results (added in Story 4.3)
 }
 
 /**
@@ -45,6 +81,8 @@ export interface ScanRecord {
   status: 'pending' | 'processing' | 'completed' | 'failed'
   atsScore: number | null
   scoreJustification: string | null
+  keywordsFound: Keyword[] | null // Added in Story 4.3
+  keywordsMissing: MissingKeyword[] | null // Added in Story 4.3
   createdAt: string
   updatedAt: string
 }

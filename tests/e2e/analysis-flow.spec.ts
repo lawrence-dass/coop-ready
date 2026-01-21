@@ -135,6 +135,13 @@ Nice to have:
       expect(analysisResult.data?.justification).toBeDefined()
       expect(Array.isArray(analysisResult.data?.strengths)).toBe(true)
       expect(Array.isArray(analysisResult.data?.weaknesses)).toBe(true)
+
+      // Story 4.3: Verify keyword extraction
+      expect(analysisResult.data?.keywords).toBeDefined()
+      expect(Array.isArray(analysisResult.data?.keywords?.keywordsFound)).toBe(true)
+      expect(Array.isArray(analysisResult.data?.keywords?.keywordsMissing)).toBe(true)
+      expect(analysisResult.data?.keywords?.majorKeywordsCoverage).toBeGreaterThanOrEqual(0)
+      expect(analysisResult.data?.keywords?.majorKeywordsCoverage).toBeLessThanOrEqual(100)
     }
 
     // Verify scan status was updated in database
@@ -152,6 +159,15 @@ Nice to have:
       expect(scanStatus.scan.atsScore).toBeGreaterThanOrEqual(0)
       expect(scanStatus.scan.atsScore).toBeLessThanOrEqual(100)
       expect(scanStatus.scan.scoreJustification).toBeDefined()
+
+      // Story 4.3: Verify keyword data was saved to database
+      // Note: keywords_found and keywords_missing may be null if OpenAI didn't include them
+      if (scanStatus.scan.keywordsFound !== null) {
+        expect(Array.isArray(scanStatus.scan.keywordsFound)).toBe(true)
+      }
+      if (scanStatus.scan.keywordsMissing !== null) {
+        expect(Array.isArray(scanStatus.scan.keywordsMissing)).toBe(true)
+      }
     }
   })
 

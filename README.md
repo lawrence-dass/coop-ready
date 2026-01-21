@@ -125,6 +125,38 @@ Analysis adapts to user experience level:
 - **Career Changers**: Emphasizes transferable skills and demonstrates growth narrative
 - **Experienced**: Focuses on quantified achievements and leadership impact
 
+### Keyword Detection
+
+CoopReady automatically extracts and analyzes keywords from job descriptions to identify:
+
+**What's Detected:**
+- **Technical Skills**: Programming languages, frameworks, tools, databases
+- **Soft Skills**: Communication, leadership, teamwork, problem-solving
+- **Certifications**: AWS, GCP, Azure, Kubernetes, Docker
+- **Experience Markers**: Years of experience, seniority level keywords
+- **Industry Terms**: Domain-specific vocabulary
+
+**Keyword Variants:**
+The system recognizes common abbreviations and alternative forms:
+- "JS" matches "JavaScript"
+- "TS" matches "TypeScript"
+- "React" matches "ReactJS" or "React.js"
+- "Node" matches "NodeJS" or "Node.js"
+- "API" matches "REST API" or "RESTful API"
+- "DB" matches "Database"
+- "SQL" matches "PostgreSQL" or "MySQL"
+
+**Priority Levels:**
+Missing keywords are categorized by importance:
+- **High Priority**: Required skills explicitly stated as "must have"
+- **Medium Priority**: Preferred skills or nice-to-have technologies
+- **Low Priority**: Keywords mentioned once or in passing
+
+**Coverage Metric:**
+- Shows percentage of high-priority keywords found in resume
+- ≥90% coverage displays "Great job! Your resume covers the key requirements"
+- Top 10-15 missing keywords displayed for actionable optimization
+
 ### Cost Estimates
 
 Average cost per analysis (GPT-4o-mini):

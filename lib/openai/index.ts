@@ -22,3 +22,10 @@ export * from './types'
 // Prompts (Story 4.2+)
 export { createATSScoringPrompt } from './prompts/scoring'
 export { parseAnalysisResponse, isValidAnalysisResult } from './prompts/parseAnalysis'
+
+// Keyword Extraction (Story 4.3)
+export {
+  parseKeywordsResponse,
+  toKeywordAnalysis,
+  isValidKeywordResult,
+} from './prompts/parseKeywords'
