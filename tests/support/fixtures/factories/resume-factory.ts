@@ -130,7 +130,11 @@ Technical: Excel, SQL (learning), Python (learning)
     const resumeData = this.build(params);
 
     const response = await this.request.post('/api/test/resumes', {
-      data: resumeData,
+      data: {
+        userId: resumeData.userId,
+        fileName: resumeData.fileName,
+        textContent: resumeData.extractedText,
+      },
     });
 
     if (!response.ok()) {
@@ -138,7 +142,21 @@ Technical: Excel, SQL (learning), Python (learning)
       throw new Error(`Failed to create resume: ${response.status()} ${errorText}`);
     }
 
-    const resume = (await response.json()) as Resume;
+    const result = await response.json();
+    if (result.error) {
+      throw new Error(`Failed to create resume: ${result.error.message}`);
+    }
+
+    const resume: Resume = {
+      id: result.data.resumeId,
+      userId: result.data.userId,
+      fileName: result.data.fileName,
+      fileType: resumeData.fileType,
+      fileSize: resumeData.fileSize,
+      extractedText: resumeData.extractedText,
+      uploadedAt: new Date().toISOString(),
+    };
+
     this.createdResumeIds.push(resume.id);
     return resume;
   }

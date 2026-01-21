@@ -55,7 +55,11 @@ export class UserFactory {
     const userData = this.build(overrides);
 
     const response = await this.request.post('/api/test/users', {
-      data: userData,
+      data: {
+        email: userData.email,
+        password: faker.internet.password({ length: 12 }), // Generate random password
+        experienceLevel: userData.experienceLevel,
+      },
     });
 
     if (!response.ok()) {
@@ -63,7 +67,20 @@ export class UserFactory {
       throw new Error(`Failed to create user: ${response.status()} ${errorText}`);
     }
 
-    const user = (await response.json()) as User;
+    const result = await response.json();
+    if (result.error) {
+      throw new Error(`Failed to create user: ${result.error.message}`);
+    }
+
+    const user: User = {
+      id: result.data.userId,
+      email: result.data.email,
+      name: userData.name,
+      experienceLevel: result.data.experienceLevel,
+      targetRole: userData.targetRole,
+      createdAt: new Date().toISOString(),
+    };
+
     this.createdUserIds.push(user.id);
     return user;
   }
@@ -92,10 +109,11 @@ export class UserFactory {
     const userData = this.build(params);
     const { password } = params;
 
-    const response = await this.request.post('/api/test/users/with-auth', {
+    const response = await this.request.post('/api/test/users', {
       data: {
-        ...userData,
+        email: userData.email,
         password,
+        experienceLevel: userData.experienceLevel,
       },
     });
 
@@ -104,7 +122,20 @@ export class UserFactory {
       throw new Error(`Failed to create user with auth: ${response.status()} ${errorText}`);
     }
 
-    const user = (await response.json()) as User;
+    const result = await response.json();
+    if (result.error) {
+      throw new Error(`Failed to create user: ${result.error.message}`);
+    }
+
+    const user: User = {
+      id: result.data.userId,
+      email: result.data.email,
+      name: userData.name,
+      experienceLevel: result.data.experienceLevel,
+      targetRole: userData.targetRole,
+      createdAt: new Date().toISOString(),
+    };
+
     this.createdUserIds.push(user.id);
 
     return {

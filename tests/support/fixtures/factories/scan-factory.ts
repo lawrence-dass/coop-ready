@@ -141,7 +141,11 @@ Benefits:
     const scanData = this.build(params);
 
     const response = await this.request.post('/api/test/scans', {
-      data: scanData,
+      data: {
+        userId: scanData.userId,
+        resumeId: scanData.resumeId,
+        jobDescription: scanData.jobDescription,
+      },
     });
 
     if (!response.ok()) {
@@ -149,7 +153,21 @@ Benefits:
       throw new Error(`Failed to create scan: ${response.status()} ${errorText}`);
     }
 
-    const scan = (await response.json()) as ScanResult;
+    const result = await response.json();
+    if (result.error) {
+      throw new Error(`Failed to create scan: ${result.error.message}`);
+    }
+
+    const scan: ScanResult = {
+      id: result.data.scanId,
+      userId: result.data.userId,
+      resumeId: result.data.resumeId,
+      jobDescription: scanData.jobDescription,
+      atsScore: scanData.atsScore,
+      analysis: scanData.analysis,
+      createdAt: result.data.createdAt,
+    };
+
     this.createdScanIds.push(scan.id);
     return scan;
   }

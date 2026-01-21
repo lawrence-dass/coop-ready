@@ -1,5 +1,7 @@
 # CoopReady
 
+![E2E Tests](https://github.com/lawrence-dass/coop-ready/actions/workflows/e2e-tests.yml/badge.svg)
+
 AI-powered resume optimization tool for students and career changers entering tech.
 
 ## Overview

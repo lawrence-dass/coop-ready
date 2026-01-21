@@ -214,17 +214,265 @@ Comprehensive tests for design system and layout:
 
 Location: `tests/e2e/dashboard-layout.spec.ts`
 
-## Before Tests Will Pass
+## CI/CD Integration
 
-You'll need to implement test API routes for the factories:
-- `POST /api/test/users` - Create test user
-- `DELETE /api/test/users/:id` - Delete test user
-- `POST /api/test/resumes` - Create test resume
-- `DELETE /api/test/resumes/:id` - Delete test resume
-- `POST /api/test/scans` - Create test scan
-- `DELETE /api/test/scans/:id` - Delete test scan
+### GitHub Actions Workflow
 
-See Story 8.3 in Epic 8 for details.
+The E2E tests run automatically in CI/CD via GitHub Actions.
+
+**Workflow Triggers:**
+- Pull requests to `main` branch
+- Direct pushes to `main` branch
+
+**Workflow Location:** `.github/workflows/e2e-tests.yml`
+
+**Key CI Configuration:**
+- Single worker (`--workers 1`) for test stability
+- 2 retries for flaky test recovery
+- 15-minute timeout for entire workflow
+- Artifacts uploaded only on test failure (30-day retention)
+
+**Status Badge:**
+The README.md includes a workflow status badge showing pass/fail status.
+
+### Viewing Test Results in CI
+
+**When tests pass:**
+- Green checkmark appears on PR
+- PR is eligible for merge
+
+**When tests fail:**
+- Red X appears on PR
+- PR merge is blocked until tests pass (requires branch protection - see below)
+- Artifacts available for download:
+  - `playwright-report/` - HTML report with detailed test results
+  - `test-results/` - Raw test results including traces and screenshots
+
+**Accessing Artifacts:**
+1. Go to the failed workflow run in GitHub Actions tab
+2. Scroll to "Artifacts" section
+3. Download `playwright-report` or `test-results`
+4. Unzip and open `index.html` from playwright-report
+
+### Troubleshooting CI Failures
+
+**Common Issues:**
+
+1. **Timeout errors:**
+   - Tests exceed 30-second timeout
+   - **Fix:** Optimize test setup, use API factories instead of UI setup
+
+2. **Flaky tests:**
+   - Tests pass locally but fail in CI
+   - **Fix:** Remove hardcoded waits, use Playwright's auto-waiting
+   - **Check:** Data factories cleaning up properly
+
+3. **Authentication failures:**
+   - Missing TEST_USER_EMAIL or TEST_USER_PASSWORD
+   - **Fix:** Add GitHub Secrets in repository settings
+
+4. **Database connection errors:**
+   - Cannot connect to Supabase in CI
+   - **Fix:** Ensure Supabase credentials in GitHub Secrets
+   - **Alternative:** Use test-only API endpoints (Story 8-3)
+
+5. **Dependency installation errors:**
+   - `npm ci` fails or Playwright browsers fail to install
+   - **Fix:** Update package-lock.json, ensure Node 18+ specified
+
+**Debugging Failed Tests:**
+1. Download the `playwright-report` artifact
+2. Open `index.html` in browser
+3. Click failed test to see:
+   - Screenshots at failure point
+   - Trace timeline showing each step
+   - Console logs and network requests
+4. Fix issue locally and push new commit
+
+### Local vs CI Differences
+
+| Aspect | Local | CI |
+|--------|-------|-----|
+| Workers | Parallel (faster) | Single (`--workers 1`) |
+| Retries | 0 | 2 |
+| Browser | Headed available | Headless only |
+| Artifacts | Manual capture | Automatic on failure |
+| Timeout | 30s per test | 30s per test, 15min total |
+
+### Required: Branch Protection Setup
+
+To enforce that tests must pass before merging PRs:
+
+1. Go to GitHub repo → Settings → Branches
+2. Click "Add branch protection rule"
+3. Set branch name pattern: `main`
+4. Enable "Require status checks to pass before merging"
+5. Search and select "Run E2E Tests" status check
+6. Save changes
+
+**Without this setup**, failed tests show as warnings but don't block merges.
+
+### Updating the Workflow
+
+If you need to modify the CI/CD workflow:
+
+1. Edit `.github/workflows/e2e-tests.yml`
+2. Common changes:
+   - Add environment variables
+   - Change timeout limits
+   - Modify trigger branches
+   - Add notification steps
+3. Test changes by creating a PR
+4. Verify workflow runs as expected
+
+## Test API Endpoints
+
+Test data management endpoints for E2E test factories.
+
+**SECURITY**: These endpoints are ONLY available in test/development environments (`NODE_ENV !== 'production'`).
+
+### User Endpoints
+
+**Create Test User:**
+```bash
+POST /api/test/users
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "testpassword123",
+  "experienceLevel": "student"  # or "career_changer"
+}
+
+# Response:
+{
+  "data": {
+    "userId": "uuid-here",
+    "email": "test@example.com",
+    "experienceLevel": "student"
+  },
+  "error": null
+}
+```
+
+**Delete Test User:**
+```bash
+DELETE /api/test/users/:userId
+
+# Response:
+{
+  "data": { "success": true },
+  "error": null
+}
+```
+
+### Resume Endpoints
+
+**Create Test Resume:**
+```bash
+POST /api/test/resumes
+Content-Type: application/json
+
+{
+  "userId": "user-uuid",
+  "fileName": "test-resume.pdf",
+  "textContent": "John Doe\nSoftware Engineer\n..."
+}
+
+# Response:
+{
+  "data": {
+    "resumeId": "uuid-here",
+    "fileName": "test-resume.pdf",
+    "fileUrl": "https://...",
+    "userId": "user-uuid"
+  },
+  "error": null
+}
+```
+
+**Delete Test Resume:**
+```bash
+DELETE /api/test/resumes/:resumeId
+
+# Response:
+{
+  "data": { "success": true },
+  "error": null
+}
+```
+
+### Scan Endpoints
+
+**Create Test Scan:**
+```bash
+POST /api/test/scans
+Content-Type: application/json
+
+{
+  "userId": "user-uuid",
+  "resumeId": "resume-uuid",
+  "jobDescription": "We are looking for a software engineer..."
+}
+
+# Response:
+{
+  "data": {
+    "scanId": "uuid-here",
+    "userId": "user-uuid",
+    "resumeId": "resume-uuid",
+    "createdAt": "2026-01-20T..."
+  },
+  "error": null
+}
+```
+
+**Delete Test Scan:**
+```bash
+DELETE /api/test/scans/:scanId
+
+# Response:
+{
+  "data": { "success": true },
+  "error": null
+}
+```
+
+### Error Responses
+
+All endpoints follow the `ActionResponse<T>` pattern:
+
+```json
+{
+  "data": null,
+  "error": {
+    "message": "User with this email already exists",
+    "code": "DUPLICATE_EMAIL"
+  }
+}
+```
+
+**Error Codes:**
+- `VALIDATION_ERROR` (400): Invalid request body
+- `DUPLICATE_EMAIL` (400): User email already exists
+- `MISSING_USER` (400): User not found for resume/scan creation
+- `NOT_FOUND` (404): Resource not found for deletion
+- `FORBIDDEN` (403): Endpoint accessed in production
+- `INTERNAL_ERROR` (500): Database or system error
+
+### Environment Variables
+
+Required for test endpoints (add to `.env.local`):
+
+```bash
+# Supabase (for auth and database)
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Required for test endpoints
+
+# Test environment
+NODE_ENV=development  # or test (NOT production)
+```
 
 **Note**: Dashboard layout tests require Supabase authentication to be properly configured for testing environment.
 
