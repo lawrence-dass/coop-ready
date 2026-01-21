@@ -78,8 +78,8 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Suggestions & Optimization Workflow
-  epic-5: backlog
-  5-1-bullet-point-rewrite-generation: backlog
+  epic-5: in-progress
+  5-1-bullet-point-rewrite-generation: ready-for-dev
   5-2-transferable-skills-detection-mapping: backlog
   5-3-action-verb-quantification-suggestions: backlog
   5-4-skills-expansion-suggestions: backlog
