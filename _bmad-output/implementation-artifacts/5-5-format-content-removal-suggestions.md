@@ -1,6 +1,6 @@
 # Story 5.5: Format & Content Removal Suggestions
 
-**Status:** ready-for-dev
+**Status:** done
 **Epic:** 5 - Suggestions & Optimization Workflow
 **Branch:** feat/5-5-format-content-removal-suggestions
 **Dependency:** Story 5-1 (Bullet Point Rewrite Generation) - for suggestions table
@@ -845,14 +845,14 @@ function estimatePages(content: string): number {
 
 ## Tasks/Subtasks
 
-- [ ] Create `lib/validations/resume-standards.ts` with standards and helpers
-- [ ] Create `lib/openai/prompts/format-removal.ts` for format/removal prompt
-- [ ] Extend `actions/suggestions.ts` with `generateFormatAndRemovalSuggestions` function
-- [ ] Create `transformFormatAndRemovalSuggestions` helper function
-- [ ] Write unit tests for resume standards (estimate 12 tests)
-- [ ] Write unit tests for format/removal suggestions (estimate 18 tests)
-- [ ] Validate all tests pass
-- [ ] Mark story as review
+- [x] Create `lib/validations/resume-standards.ts` with standards and helpers
+- [x] Create `lib/openai/prompts/format-removal.ts` for format/removal prompt
+- [x] Extend `actions/suggestions.ts` with `generateFormatAndRemovalSuggestions` function
+- [x] Create `transformFormatAndRemovalSuggestions` helper function
+- [x] Write unit tests for resume standards (37 tests)
+- [x] Write unit tests for format/removal suggestions (13 tests)
+- [x] Validate all tests pass
+- [x] Mark story as review
 
 ---
 
@@ -862,13 +862,31 @@ function estimatePages(content: string): number {
 Haiku 4.5
 
 ### Debug Log References
-(To be filled during implementation)
+- Resume standards validation: 37 tests, all passing
+- Format/removal server action: 29 tests, all passing
+- Total test coverage: 66 new tests added
 
 ### Completion Notes List
-(To be filled during implementation)
+- ✅ Created `lib/validations/resume-standards.ts` with North American resume standards, helper functions for prohibited/sensitive field detection, experience relevance classification, and resume length analysis
+- ✅ Created `lib/openai/prompts/format-removal.ts` with comprehensive prompt for OpenAI analysis including context awareness for international students
+- ✅ Extended `actions/suggestions.ts` with `generateFormatAndRemovalSuggestions` server action using hybrid approach (local validation + AI analysis)
+- ✅ Added `transformFormatAndRemovalSuggestions` helper to convert suggestions to database format
+- ✅ Implemented full test coverage: 37 tests for resume standards, 29 tests for server action
+- ✅ All tests passing - no regressions detected
+- ✅ Code follows project conventions: Server action error handling with ActionResponse pattern, Zod validation, proper TypeScript types
+- ✅ Story implementation complete and ready for code review
+
+#### Code Review Fixes (Opus 4.5)
+- ✅ Added comprehensive server action tests for `generateFormatAndRemovalSuggestions` (16 new tests covering all ACs)
+- ✅ Fixed unused `targetRole` parameter in `classifyExperienceRelevance` - renamed to `_targetRole`
+- ✅ Fixed unsafe type casting for AI urgency values - added `validateUrgency` helper function
 
 ### File List
-(To be filled during implementation)
+1. `lib/validations/resume-standards.ts` - NEW - Resume standards and validation helpers (modified in review)
+2. `lib/openai/prompts/format-removal.ts` - NEW - Format and removal analysis prompt
+3. `actions/suggestions.ts` - MODIFIED - Added generateFormatAndRemovalSuggestions and transformFormatAndRemovalSuggestions (modified in review)
+4. `tests/unit/lib/validations/resume-standards.test.ts` - NEW - 37 tests for resume standards
+5. `tests/unit/actions/format-removal-suggestions.test.ts` - NEW - 29 tests (13 transform + 16 server action)
 
 ---
 

@@ -8,7 +8,13 @@ import { createBulletRewritePrompt, type UserProfile } from '@/lib/openai/prompt
 import { createTransferableSkillsPrompt } from '@/lib/openai/prompts/skills'
 import { createActionVerbAndQuantificationPrompt } from '@/lib/openai/prompts/action-verbs'
 import { SKILL_EXPANSION_PROMPT } from '@/lib/openai/prompts/skills-expansion'
+import { FORMAT_AND_REMOVAL_PROMPT } from '@/lib/openai/prompts/format-removal'
 import { findSkillExpansion } from '@/lib/validations/skills'
+import {
+  getMaxPagesRecommendation,
+  isProhibitedField,
+  isSensitiveField,
+} from '@/lib/validations/resume-standards'
 import { z } from 'zod'
 
 /**
@@ -101,6 +107,19 @@ const generateSkillExpansionSchema = z.object({
   skills: z.array(z.string()).min(1),
   jdKeywords: z.array(z.string()).optional(),
   jdContent: z.string().optional(),
+})
+
+/**
+ * Input validation schema for generateFormatAndRemovalSuggestions
+ */
+const generateFormatAndRemovalSchema = z.object({
+  scanId: z.string().uuid(),
+  resumeContent: z.string(),
+  detectedFields: z.array(z.string()),
+  experienceYears: z.number().min(0),
+  targetRole: z.string(),
+  isInternationalStudent: z.boolean().optional(),
+  resumePages: z.number().min(1).optional(),
 })
 
 /**
@@ -1097,4 +1116,339 @@ export function transformSkillExpansionSuggestions(
       suggestionType: 'skill_expansion',
       reasoning: `${sugg.reasoning}\n\nKeywords matched: ${sugg.keywordsMatched.join(', ') || 'none'}`,
     }))
+}
+
+/**
+ * Generate AI-powered format and content removal suggestions
+ *
+ * Process:
+ * 1. Validate input parameters
+ * 2. Perform local analysis for prohibited/sensitive fields
+ * 3. Call OpenAI API for detailed format and content analysis
+ * 4. Parse and validate JSON response
+ * 5. Combine local and AI suggestions, deduplicating
+ * 6. Return suggestions organized by urgency (high, medium, low)
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - OpenAI API failure: Continue with local suggestions only
+ * - JSON parse failure: Return local suggestions only
+ *
+ * @param input - Scan ID, resume content, user context, and experience level
+ * @returns ActionResponse with format and removal suggestions or error
+ * @see Story 5.5: Format & Content Removal Suggestions
+ */
+export async function generateFormatAndRemovalSuggestions(
+  input: z.infer<typeof generateFormatAndRemovalSchema>
+): Promise<
+  ActionResponse<{
+    scanId: string
+    suggestions: Array<{
+      type: 'format' | 'removal'
+      original: string
+      suggested: string | null
+      reasoning: string
+      urgency: 'high' | 'medium' | 'low'
+    }>
+  }>
+> {
+  console.log('[generateFormatAndRemovalSuggestions] ====== ENTRY ======', {
+    scanId: input.scanId,
+    detectedFieldsCount: input.detectedFields?.length,
+    experienceYears: input.experienceYears,
+    isInternationalStudent: input.isInternationalStudent,
+    timestamp: new Date().toISOString(),
+  })
+
+  // Validate input
+  const parsed = generateFormatAndRemovalSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error('[generateFormatAndRemovalSuggestions] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  try {
+    const {
+      scanId,
+      resumeContent,
+      detectedFields,
+      experienceYears,
+      targetRole,
+      isInternationalStudent = false,
+      resumePages = 1,
+    } = parsed.data
+
+    // First, do local analysis for obvious issues
+    const localSuggestions: Array<{
+      type: 'format' | 'removal'
+      original: string
+      suggested: string | null
+      reasoning: string
+      urgency: 'high' | 'medium' | 'low'
+    }> = []
+
+    console.log('[generateFormatAndRemovalSuggestions] Performing local analysis...')
+
+    // Check for prohibited fields
+    for (const field of detectedFields) {
+      if (isProhibitedField(field)) {
+        localSuggestions.push({
+          type: 'removal',
+          original: field,
+          suggested: null,
+          reasoning: `${field} is not expected on North American resumes and may cause bias`,
+          urgency: 'high',
+        })
+      } else if (isSensitiveField(field)) {
+        const urgency = isInternationalStudent ? 'high' : 'medium'
+        localSuggestions.push({
+          type: 'removal',
+          original: field,
+          suggested: null,
+          reasoning: `Remove ${field} - may raise legal or bias concerns`,
+          urgency,
+        })
+      }
+    }
+
+    // Check resume length
+    const recommendation = getMaxPagesRecommendation(experienceYears)
+    if (resumePages > recommendation.maxPages) {
+      localSuggestions.push({
+        type: 'format',
+        original: `Resume is ${resumePages} pages`,
+        suggested: `Condense to ${recommendation.maxPages} page(s)`,
+        reasoning: recommendation.reasoning,
+        urgency: 'medium',
+      })
+    }
+
+    console.log('[generateFormatAndRemovalSuggestions] Local analysis complete:', {
+      localSuggestionCount: localSuggestions.length,
+    })
+
+    // Use AI for detailed analysis
+    const prompt = FORMAT_AND_REMOVAL_PROMPT(
+      resumeContent.substring(0, 2000), // Limit content to first 2000 chars
+      detectedFields,
+      experienceYears,
+      targetRole,
+      isInternationalStudent
+    )
+
+    console.log('[generateFormatAndRemovalSuggestions] Calling OpenAI API...')
+
+    const openai = getOpenAIClient()
+    const response = await withRetry(async () => {
+      return await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.5, // Lower temp for more consistent removal suggestions
+        max_tokens: 2000,
+      })
+    }, 'generateFormatAndRemovalSuggestions')
+
+    console.log('[generateFormatAndRemovalSuggestions] OpenAI response received')
+
+    // Parse OpenAI response
+    let parsedResponse
+    try {
+      parsedResponse = parseOpenAIResponse(response)
+    } catch (parseError) {
+      console.error(
+        '[generateFormatAndRemovalSuggestions] Failed to parse OpenAI response structure:',
+        parseError
+      )
+      // Return local suggestions even if parsing fails
+      return {
+        data: { scanId, suggestions: localSuggestions },
+        error: null,
+      }
+    }
+
+    const content = parsedResponse.content
+
+    // Parse JSON from content
+    interface AiAnalysis {
+      removal_suggestions?: Array<{
+        type: string
+        field: string
+        reasoning: string
+        urgency?: string
+      }>
+      format_suggestions?: Array<{
+        issue: string
+        current: string
+        recommended: string
+        reasoning: string
+      }>
+      length_assessment?: {
+        current_pages: number
+        recommended_pages: number
+        suggestion: string
+        sections_to_trim: string[]
+      }
+      content_relevance?: Array<{
+        content: string
+        years_ago: number
+        recommendation: string
+        reasoning: string
+      }>
+    }
+
+    let aiAnalysis: AiAnalysis
+    try {
+      aiAnalysis = JSON.parse(content)
+    } catch {
+      console.error(
+        '[generateFormatAndRemovalSuggestions] Failed to parse JSON from OpenAI response',
+        content
+      )
+      // Return local suggestions even if AI parsing fails
+      return {
+        data: { scanId, suggestions: localSuggestions },
+        error: null,
+      }
+    }
+
+    // Combine local and AI suggestions
+    const allSuggestions: Array<{
+      type: 'format' | 'removal'
+      original: string
+      suggested: string | null
+      reasoning: string
+      urgency: 'high' | 'medium' | 'low'
+    }> = [...localSuggestions]
+
+    // Helper to validate urgency from AI response
+    const validUrgencies = ['high', 'medium', 'low'] as const
+    const validateUrgency = (urgency: string | undefined): 'high' | 'medium' | 'low' => {
+      if (urgency && validUrgencies.includes(urgency as typeof validUrgencies[number])) {
+        return urgency as 'high' | 'medium' | 'low'
+      }
+      return 'medium' // Default to medium if invalid or missing
+    }
+
+    // Add removal suggestions from AI
+    if (aiAnalysis.removal_suggestions?.length) {
+      for (const aiSugg of aiAnalysis.removal_suggestions) {
+        // Avoid duplicates
+        if (
+          !localSuggestions.some(
+            (s) => s.original.toLowerCase() === aiSugg.field.toLowerCase()
+          )
+        ) {
+          allSuggestions.push({
+            type: 'removal',
+            original: aiSugg.field,
+            suggested: null,
+            reasoning: aiSugg.reasoning,
+            urgency: validateUrgency(aiSugg.urgency),
+          })
+        }
+      }
+    }
+
+    // Add format suggestions from AI
+    if (aiAnalysis.format_suggestions?.length) {
+      for (const formatSugg of aiAnalysis.format_suggestions) {
+        allSuggestions.push({
+          type: 'format',
+          original: formatSugg.issue,
+          suggested: formatSugg.recommended,
+          reasoning: formatSugg.reasoning,
+          urgency: 'low',
+        })
+      }
+    }
+
+    // Add content relevance suggestions
+    if (aiAnalysis.content_relevance?.length) {
+      for (const relevance of aiAnalysis.content_relevance) {
+        if (relevance.recommendation === 'remove') {
+          allSuggestions.push({
+            type: 'removal',
+            original: relevance.content,
+            suggested: null,
+            reasoning: `${relevance.reasoning} (${relevance.years_ago} years ago)`,
+            urgency: 'low',
+          })
+        } else if (relevance.recommendation === 'condense') {
+          allSuggestions.push({
+            type: 'format',
+            original: relevance.content,
+            suggested: 'Consider condensing this section',
+            reasoning: relevance.reasoning,
+            urgency: 'low',
+          })
+        }
+      }
+    }
+
+    console.log('[generateFormatAndRemovalSuggestions] ====== SUCCESS ======', {
+      totalSuggestions: allSuggestions.length,
+      highUrgency: allSuggestions.filter((s) => s.urgency === 'high').length,
+      mediumUrgency: allSuggestions.filter((s) => s.urgency === 'medium').length,
+      lowUrgency: allSuggestions.filter((s) => s.urgency === 'low').length,
+    })
+
+    return {
+      data: { scanId, suggestions: allSuggestions },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[generateFormatAndRemovalSuggestions] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: {
+        message: 'Failed to generate format and removal suggestions',
+        code: 'GENERATION_ERROR',
+      },
+    }
+  }
+}
+
+/**
+ * Transform format and removal suggestions to database-compatible format
+ *
+ * Converts the API response structure to the format expected by saveSuggestions.
+ * - Format suggestions have `suggestion_type: 'format'`
+ * - Removal suggestions have `suggestion_type: 'removal'`
+ * - Both use `section: 'format'` as a meta-section for resume-wide suggestions
+ *
+ * @param suggestions - Array of suggestions from generateFormatAndRemovalSuggestions
+ * @returns Array of suggestions in saveSuggestions format
+ */
+export function transformFormatAndRemovalSuggestions(
+  suggestions: Array<{
+    type: 'format' | 'removal'
+    original: string
+    suggested: string | null
+    reasoning: string
+    urgency: 'high' | 'medium' | 'low'
+  }>
+): Array<{
+  section: string
+  itemIndex: number
+  originalText: string
+  suggestedText: string
+  suggestionType: string
+  reasoning?: string
+}> {
+  return suggestions.map((sugg, index) => ({
+    section: 'format',
+    itemIndex: index,
+    originalText: sugg.original,
+    suggestedText: sugg.suggested || 'Remove',
+    suggestionType: sugg.type,
+    reasoning: `[${sugg.urgency.toUpperCase()}] ${sugg.reasoning}`,
+  }))
 }
