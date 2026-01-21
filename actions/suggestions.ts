@@ -7,6 +7,8 @@ import { parseOpenAIResponse } from '@/lib/openai'
 import { createBulletRewritePrompt, type UserProfile } from '@/lib/openai/prompts/suggestions'
 import { createTransferableSkillsPrompt } from '@/lib/openai/prompts/skills'
 import { createActionVerbAndQuantificationPrompt } from '@/lib/openai/prompts/action-verbs'
+import { SKILL_EXPANSION_PROMPT } from '@/lib/openai/prompts/skills-expansion'
+import { findSkillExpansion } from '@/lib/validations/skills'
 import { z } from 'zod'
 
 /**
@@ -15,6 +17,7 @@ import { z } from 'zod'
  * @see Story 5.1: Bullet Point Rewrite Generation
  * @see Story 5.2: Transferable Skills Detection & Mapping
  * @see Story 5.3: Action Verb & Quantification Suggestions
+ * @see Story 5.4: Skills Expansion Suggestions
  */
 
 type ActionResponse<T> =
@@ -88,6 +91,16 @@ const generateActionVerbAndQuantificationSchema = z.object({
   scanId: z.string().uuid(),
   bulletPoints: z.array(z.string()).min(1),
   achievementTypes: z.array(z.string()).optional(), // defaults to 'general'
+})
+
+/**
+ * Input validation schema for generateSkillExpansionSuggestions
+ */
+const generateSkillExpansionSchema = z.object({
+  scanId: z.string().uuid(),
+  skills: z.array(z.string()).min(1),
+  jdKeywords: z.array(z.string()).optional(),
+  jdContent: z.string().optional(),
 })
 
 /**
@@ -802,4 +815,286 @@ export async function saveSuggestions(
       error: { message: 'Failed to save suggestions', code: 'SAVE_ERROR' },
     }
   }
+}
+
+/**
+ * Generate AI-powered skill expansion suggestions
+ *
+ * Process:
+ * 1. Validate input parameters
+ * 2. Try local skill expansion mappings first for known skills (optimization)
+ * 3. For unknown skills, build prompt and call OpenAI API
+ * 4. Parse and validate JSON response
+ * 5. Filter matched keywords from JD if provided
+ * 6. Return only expandable skills with their expansions
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - OpenAI API failure: Return GENERATION_ERROR
+ * - JSON parse failure: Return PARSE_ERROR
+ *
+ * @param input - Scan ID, skills array, optional JD keywords and content
+ * @returns ActionResponse with skill expansion suggestions or error
+ * @see Story 5.4: Skills Expansion Suggestions
+ */
+export async function generateSkillExpansionSuggestions(
+  input: z.infer<typeof generateSkillExpansionSchema>
+): Promise<
+  ActionResponse<{
+    scanId: string
+    suggestions: Array<{
+      original: string
+      expansion: string | null
+      keywordsMatched: string[]
+      reasoning: string
+    }>
+  }>
+> {
+  console.log('[generateSkillExpansionSuggestions] ====== ENTRY ======', {
+    scanId: input.scanId,
+    skillsCount: input.skills?.length,
+    timestamp: new Date().toISOString(),
+  })
+
+  // Validate input
+  const parsed = generateSkillExpansionSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error('[generateSkillExpansionSuggestions] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  try {
+    const { scanId, skills, jdKeywords, jdContent } = parsed.data
+
+    // First, try local skill expansion mappings for known skills
+    const localExpansions = new Map<
+      string,
+      ReturnType<typeof findSkillExpansion>
+    >()
+    const unknownSkills: string[] = []
+
+    for (const skill of skills) {
+      const expansion = findSkillExpansion(skill)
+      if (expansion) {
+        localExpansions.set(skill, expansion)
+      } else {
+        unknownSkills.push(skill)
+      }
+    }
+
+    console.log('[generateSkillExpansionSuggestions] Skill classification:', {
+      totalSkills: skills.length,
+      knownSkills: localExpansions.size,
+      unknownSkills: unknownSkills.length,
+    })
+
+    // If all skills are known, use local mappings
+    let suggestions: Array<{
+      original: string
+      expansion: string | null
+      keywordsMatched: string[]
+      reasoning: string
+    }> = []
+
+    if (unknownSkills.length === 0) {
+      // Use local mappings for all skills
+      suggestions = skills.map((skill) => {
+        const expansion = localExpansions.get(skill)
+        if (expansion) {
+          // Match keywords bidirectionally: JD keyword contains related skill OR related skill contains JD keyword
+          const matchedKeywords = jdKeywords
+            ? expansion.relatedSkills.filter((rs) =>
+                jdKeywords.some((kw) => {
+                  const kwLower = kw.toLowerCase()
+                  const rsLower = rs.toLowerCase()
+                  return kwLower.includes(rsLower) || rsLower.includes(kwLower)
+                })
+              )
+            : [...expansion.relatedSkills]
+          return {
+            original: skill,
+            expansion: expansion.expandTo,
+            keywordsMatched: Array.from(matchedKeywords),
+            reasoning: `Expanded to include commonly-used libraries and frameworks: ${expansion.relatedSkills.join(', ')}`,
+          }
+        }
+        return {
+          original: skill,
+          expansion: null,
+          keywordsMatched: [],
+          reasoning: 'Cannot be meaningfully expanded',
+        }
+      })
+    } else {
+      // Use AI for unknown skills
+      console.log('[generateSkillExpansionSuggestions] Calling OpenAI for unknown skills...')
+
+      const prompt = SKILL_EXPANSION_PROMPT(unknownSkills, jdContent, jdKeywords)
+
+      const openai = getOpenAIClient()
+      const response = await withRetry(async () => {
+        return await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        })
+      }, 'generateSkillExpansionSuggestions')
+
+      console.log('[generateSkillExpansionSuggestions] OpenAI response received')
+
+      // Parse OpenAI response
+      let parsedResponse
+      try {
+        parsedResponse = parseOpenAIResponse(response)
+      } catch (parseError) {
+        console.error(
+          '[generateSkillExpansionSuggestions] Failed to parse OpenAI response structure:',
+          parseError
+        )
+        return {
+          data: null,
+          error: { message: 'Malformed OpenAI response', code: 'PARSE_ERROR' },
+        }
+      }
+
+      const content = parsedResponse.content
+
+      // Type for AI-generated skill expansion suggestions
+      interface AiSkillSuggestion {
+        original: string
+        can_expand: boolean
+        expansion: string | null
+        keywords_matched: string[]
+        reasoning: string
+      }
+
+      let aiSuggestions: AiSkillSuggestion[] | undefined
+      try {
+        const parsed = JSON.parse(content) as { suggestions: AiSkillSuggestion[] }
+        aiSuggestions = parsed.suggestions
+      } catch (jsonParseError) {
+        console.error(
+          '[generateSkillExpansionSuggestions] Failed to parse JSON from AI response',
+          content,
+          jsonParseError
+        )
+        return {
+          data: null,
+          error: { message: 'Failed to parse AI response', code: 'PARSE_ERROR' },
+        }
+      }
+
+      // Combine local and AI suggestions
+      suggestions = skills.map((skill) => {
+        const localExpansion = localExpansions.get(skill)
+        if (localExpansion) {
+          // Match keywords bidirectionally: JD keyword contains related skill OR related skill contains JD keyword
+          const matchedKeywords = jdKeywords
+            ? localExpansion.relatedSkills.filter((rs) =>
+                jdKeywords.some((kw) => {
+                  const kwLower = kw.toLowerCase()
+                  const rsLower = rs.toLowerCase()
+                  return kwLower.includes(rsLower) || rsLower.includes(kwLower)
+                })
+              )
+            : [...localExpansion.relatedSkills]
+          return {
+            original: skill,
+            expansion: localExpansion.expandTo,
+            keywordsMatched: Array.from(matchedKeywords),
+            reasoning: `Expanded to include commonly-used libraries and frameworks: ${localExpansion.relatedSkills.join(', ')}`,
+          }
+        }
+
+        // Find AI suggestion for this skill
+        const aiSugg = aiSuggestions?.find(
+          (s) => s.original.toLowerCase() === skill.toLowerCase()
+        )
+        if (aiSugg && aiSugg.can_expand && aiSugg.expansion) {
+          return {
+            original: skill,
+            expansion: aiSugg.expansion,
+            keywordsMatched: aiSugg.keywords_matched || [],
+            reasoning: aiSugg.reasoning,
+          }
+        }
+
+        return {
+          original: skill,
+          expansion: null,
+          keywordsMatched: [],
+          reasoning: 'Cannot be meaningfully expanded',
+        }
+      })
+    }
+
+    // Filter to only suggestions where expansion was found
+    const expandedSuggestions = suggestions.filter((s) => s.expansion !== null)
+
+    console.log('[generateSkillExpansionSuggestions] ====== SUCCESS ======', {
+      totalSuggestions: expandedSuggestions.length,
+    })
+
+    return {
+      data: { scanId, suggestions: expandedSuggestions },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[generateSkillExpansionSuggestions] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: {
+        message: 'Failed to generate skill expansion suggestions',
+        code: 'GENERATION_ERROR',
+      },
+    }
+  }
+}
+
+/**
+ * Transform skill expansion suggestions to database-compatible format
+ *
+ * Converts the API response structure to the format expected by saveSuggestions.
+ * - Filters out null expansions
+ * - Sets section to 'skills'
+ * - Sets suggestion_type to 'skill_expansion'
+ * - Includes keywords matched in reasoning
+ *
+ * @param suggestions - Array of suggestions from generateSkillExpansionSuggestions
+ * @returns Array of suggestions in saveSuggestions format
+ */
+export function transformSkillExpansionSuggestions(
+  suggestions: Array<{
+    original: string
+    expansion: string | null
+    keywordsMatched: string[]
+    reasoning: string
+  }>
+): Array<{
+  section: string
+  itemIndex: number
+  originalText: string
+  suggestedText: string
+  suggestionType: string
+  reasoning?: string
+}> {
+  return suggestions
+    .filter((sugg) => sugg.expansion !== null)
+    .map((sugg, index) => ({
+      section: 'skills',
+      itemIndex: index,
+      originalText: sugg.original,
+      suggestedText: sugg.expansion!,
+      suggestionType: 'skill_expansion',
+      reasoning: `${sugg.reasoning}\n\nKeywords matched: ${sugg.keywordsMatched.join(', ') || 'none'}`,
+    }))
 }
