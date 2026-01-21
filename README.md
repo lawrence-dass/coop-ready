@@ -70,6 +70,31 @@ CoopReady helps job seekers optimize their resumes for Applicant Tracking System
 
 6. Open [http://localhost:3000](http://localhost:3000)
 
+## OpenAI Setup
+
+CoopReady uses OpenAI's GPT-4o-mini model for resume analysis. To get started:
+
+1. **Obtain an API key**:
+   - Visit [OpenAI Platform](https://platform.openai.com)
+   - Sign up or log in
+   - Navigate to API Keys and create a new secret key
+   - Copy the key immediately (you won't see it again)
+
+2. **Add to environment**:
+   ```bash
+   # In .env.local
+   OPENAI_API_KEY=sk-your-actual-api-key-here
+   ```
+
+3. **Important**:
+   - Never commit `.env.local` to version control
+   - Never expose this key in client-side code
+   - Keep it server-side only (no `NEXT_PUBLIC_` prefix)
+
+4. **Verify setup**: Check server console for initialization message
+
+For detailed setup instructions, troubleshooting, and best practices, see [docs/OPENAI_SETUP.md](docs/OPENAI_SETUP.md).
+
 ## Environment Variables
 
 | Variable | Scope | Description |
