@@ -4,7 +4,7 @@ import path from 'path';
 
 // Load environment variables from .env.local
 // Use process.cwd() for reliable path resolution in all contexts
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), quiet: true });
 
 /**
  * CoopReady E2E Test Configuration
@@ -18,7 +18,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   // Timeouts
-  timeout: 60 * 1000, // Test timeout: 60s
+  timeout: 30 * 1000, // Test timeout: 30s
   expect: {
     timeout: 15 * 1000, // Assertion timeout: 15s
   },
@@ -33,7 +33,7 @@ export default defineConfig({
   },
 
   reporter: [
-    ['html', { outputFolder: 'test-results/html' }],
+    ['html', { outputFolder: 'playwright-report' }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
     ['list'],
   ],

@@ -147,7 +147,7 @@ Key settings in `playwright.config.ts`:
 
 | Setting | Value | Purpose |
 |---------|-------|---------|
-| `timeout` | 60s | Max test duration |
+| `timeout` | 30s | Max test duration |
 | `actionTimeout` | 15s | Click, fill, etc. |
 | `navigationTimeout` | 30s | page.goto() |
 | `retries` | 2 (CI only) | Flaky test recovery |
