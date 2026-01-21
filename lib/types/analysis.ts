@@ -3,7 +3,25 @@
  *
  * @see Story 4.2: ATS Score Calculation
  * @see Story 4.3: Missing Keywords Detection
+ * @see Story 4.4: Section-Level Score Breakdown
+ * @see Story 4.5: Experience-Level-Aware Analysis
  */
+
+/**
+ * Experience level options
+ * Story 4.5: Experience-Level-Aware Analysis
+ */
+export type ExperienceLevel = 'student' | 'career_changer' | 'experienced'
+
+/**
+ * Experience context for analysis
+ * Story 4.5: Experience-Level-Aware Analysis
+ */
+export interface ExperienceContext {
+  level: ExperienceLevel
+  narrative: string
+  targetRole?: string | null
+}
 
 /**
  * Score breakdown by analysis category
@@ -61,6 +79,7 @@ export interface AnalysisResult {
   weaknesses: string[] // Areas to improve (max 5 items)
   keywords?: KeywordAnalysis // Keyword extraction results (added in Story 4.3)
   sectionScores?: SectionScores // Section-level scores (added in Story 4.4)
+  experienceLevelContext?: string // Experience context used for analysis (added in Story 4.5)
 }
 
 /**
@@ -85,16 +104,18 @@ export interface ScanRecord {
   keywordsFound: Keyword[] | null // Added in Story 4.3
   keywordsMissing: MissingKeyword[] | null // Added in Story 4.3
   sectionScores: SectionScores | null // Added in Story 4.4
+  experienceLevelContext: string | null // Added in Story 4.5
   createdAt: string
   updatedAt: string
 }
 
 /**
  * User profile data for context-aware analysis
+ * Story 4.5: Uses ExperienceLevel type
  */
 export interface UserProfile {
-  experienceLevel: 'student' | 'career_changer' | 'experienced'
-  targetRole: string
+  experienceLevel: ExperienceLevel
+  targetRole: string | null
 }
 
 /**

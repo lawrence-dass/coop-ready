@@ -138,7 +138,7 @@ export default function SettingsPage() {
               // Edit mode with ProfileForm
               <ProfileForm
                 initialData={{
-                  experienceLevel: profile.experienceLevel as 'student' | 'career_changer',
+                  experienceLevel: profile.experienceLevel as 'student' | 'career_changer' | 'experienced',
                   targetRole: profile.targetRole,
                   customRole: profile.customRole,
                 }}

@@ -16,8 +16,8 @@ import { z } from 'zod'
 export const createTestUserSchema = z.object({
   email: z.string().email('Invalid email format'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  experienceLevel: z.enum(['student', 'career_changer'], {
-    message: 'Experience level must be either student or career_changer',
+  experienceLevel: z.enum(['student', 'career_changer', 'experienced'], {
+    message: 'Experience level must be student, career_changer, or experienced',
   }),
 })
 

@@ -23,7 +23,7 @@ import { onboardingInputSchema, OnboardingInput } from '@/lib/validations/profil
 
 interface ProfileFormProps {
   initialData?: {
-    experienceLevel: 'student' | 'career_changer'
+    experienceLevel: 'student' | 'career_changer' | 'experienced'
     targetRole: string
     customRole?: string | null
   }
@@ -106,7 +106,7 @@ export function ProfileForm({
             <Label className="text-base font-medium">Experience Level</Label>
             <RadioGroup
               value={form.watch('experienceLevel')}
-              onValueChange={(value) => form.setValue('experienceLevel', value as 'student' | 'career_changer')}
+              onValueChange={(value) => form.setValue('experienceLevel', value as 'student' | 'career_changer' | 'experienced')}
             >
               <div className="space-y-4">
                 {EXPERIENCE_LEVELS.map((level) => (
