@@ -100,10 +100,10 @@ The integration includes comprehensive error handling:
 
 ### Rate Limiting (429 Errors)
 
-**Behavior:** Automatic retry with exponential backoff
-- Retry 1: After 2 seconds
-- Retry 2: After 4 seconds
-- Retry 3: After 8 seconds (last attempt)
+**Behavior:** Automatic retry with exponential backoff (formula: 2^attempt × 1000ms)
+- Retry 1: After 1 second
+- Retry 2: After 2 seconds
+- Retry 3: After 4 seconds (last attempt)
 
 **User Message:** "The AI service is busy. Please wait a moment and try again."
 
@@ -149,6 +149,31 @@ Input cost: 1000 × $0.15 / 1,000,000 = $0.00015
 Output cost: 500 × $0.60 / 1,000,000 = $0.00030
 Total cost: $0.00045
 ```
+
+### ATS Analysis Cost Estimates
+
+**Typical Resume Analysis:**
+- Average resume length: 500-800 words
+- Job description: 200-400 words
+- Prompt template: ~200 tokens
+- Total input tokens: ~1,000 tokens
+- Expected output: ~500 tokens
+- **Average cost per analysis**: $0.001-0.003
+
+**Monthly Cost Projections:**
+
+| Usage Tier | Scans/Month | Estimated Cost |
+|------------|-------------|----------------|
+| Free (3 scans) | 3 | $0.003-0.009 |
+| Basic (30 scans) | 30 | $0.03-0.09 |
+| Pro (100 scans) | 100 | $0.10-0.30 |
+| Enterprise (1000 scans) | 1,000 | $1.00-3.00 |
+
+**Cost Optimization Tips:**
+1. Cache analysis results for identical resume+JD pairs (future enhancement)
+2. Monitor token usage logs to identify optimization opportunities
+3. Consider batching analyses if API usage grows significantly
+4. Review logs regularly for unexpected cost spikes
 
 ## Error Codes Returned to Frontend
 

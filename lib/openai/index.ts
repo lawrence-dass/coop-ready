@@ -18,3 +18,7 @@ export {
   calculateBackoffDelay,
 } from './retry'
 export * from './types'
+
+// Prompts (Story 4.2+)
+export { createATSScoringPrompt } from './prompts/scoring'
+export { parseAnalysisResponse, isValidAnalysisResult } from './prompts/parseAnalysis'
