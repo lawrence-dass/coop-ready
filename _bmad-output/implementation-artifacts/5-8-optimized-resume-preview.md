@@ -1,6 +1,6 @@
 # Story 5.8: Optimized Resume Preview
 
-**Status:** in-progress
+**Status:** done
 **Epic:** 5 - Suggestions & Optimization Workflow
 **Branch:** feat/5-8-optimized-resume-preview
 **Dependency:** Story 5-7 (Accept/Reject Individual Suggestions) - for user acceptance decisions
