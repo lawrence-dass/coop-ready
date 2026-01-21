@@ -5,6 +5,7 @@
  * @see Story 4.3: Missing Keywords Detection
  * @see Story 4.4: Section-Level Score Breakdown
  * @see Story 4.5: Experience-Level-Aware Analysis
+ * @see Story 4.6: Resume Format Issues Detection
  */
 
 import { runAnalysis } from '@/actions/analysis'
@@ -26,7 +27,12 @@ import {
   parseSectionScoresResponse,
   isValidSectionScoresResult,
 } from '@/lib/openai/prompts/parseSectionScores'
+import {
+  parseFormatIssuesResponse,
+  mergeFormatIssues,
+} from '@/lib/openai/prompts/parseFormatIssues'
 import { detectSections } from '@/lib/utils/resumeSectionDetector'
+import { analyzeResumeFormat } from '@/lib/utils/formatAnalyzer'
 import { buildExperienceContext } from '@/lib/openai/prompts/experienceContext'
 
 // Mock dependencies
@@ -37,7 +43,9 @@ jest.mock('@/lib/openai/retry')
 jest.mock('@/lib/openai/prompts/parseAnalysis')
 jest.mock('@/lib/openai/prompts/parseKeywords')
 jest.mock('@/lib/openai/prompts/parseSectionScores')
+jest.mock('@/lib/openai/prompts/parseFormatIssues')
 jest.mock('@/lib/utils/resumeSectionDetector')
+jest.mock('@/lib/utils/formatAnalyzer')
 jest.mock('@/lib/openai/prompts/experienceContext')
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
@@ -53,6 +61,9 @@ const mockIsValidKeywordResult = isValidKeywordResult as jest.MockedFunction<typ
 const mockParseSectionScoresResponse = parseSectionScoresResponse as jest.MockedFunction<typeof parseSectionScoresResponse>
 const mockIsValidSectionScoresResult = isValidSectionScoresResult as jest.MockedFunction<typeof isValidSectionScoresResult>
 const mockDetectSections = detectSections as jest.MockedFunction<typeof detectSections>
+const mockAnalyzeResumeFormat = analyzeResumeFormat as jest.MockedFunction<typeof analyzeResumeFormat>
+const mockParseFormatIssuesResponse = parseFormatIssuesResponse as jest.MockedFunction<typeof parseFormatIssuesResponse>
+const mockMergeFormatIssues = mergeFormatIssues as jest.MockedFunction<typeof mergeFormatIssues>
 const mockBuildExperienceContext = buildExperienceContext as jest.MockedFunction<typeof buildExperienceContext>
 
 // Mock console methods to avoid cluttering test output
@@ -196,6 +207,11 @@ describe('runAnalysis Server Action', () => {
     mockDetectSections.mockReturnValue(['experience', 'skills'])
     mockParseSectionScoresResponse.mockReturnValue(mockSectionScoresResult)
     mockIsValidSectionScoresResult.mockReturnValue(true)
+
+    // Story 4.6: Mock format analysis
+    mockAnalyzeResumeFormat.mockReturnValue([])
+    mockParseFormatIssuesResponse.mockReturnValue([])
+    mockMergeFormatIssues.mockReturnValue([])
   }
 
   function createMockSupabase() {
@@ -493,7 +509,7 @@ describe('runAnalysis Server Action', () => {
       // Verify update was called for processing status
       expect(updateCalls[0]).toEqual({ status: 'processing' })
 
-      // Verify update was called for completed status with score, keywords, section scores, and experience context
+      // Verify update was called for completed status with score, keywords, section scores, experience context, and format issues
       expect(updateCalls[1]).toEqual({
         ats_score: 75,
         score_justification: mockAnalysisResult.justification,
@@ -501,6 +517,7 @@ describe('runAnalysis Server Action', () => {
         keywords_missing: mockKeywordAnalysis.keywordsMissing,
         section_scores: mockSectionScoresResult.sectionScores,
         experience_level_context: 'Experience context for student', // Story 4.5
+        format_issues: [], // Story 4.6
         status: 'completed',
       })
     })
@@ -1295,6 +1312,256 @@ describe('runAnalysis Server Action', () => {
 
       expect(result.error).toBeNull()
       expect(mockBuildExperienceContext).toHaveBeenCalled()
+    })
+  })
+
+  describe('Format Issues Detection (Story 4.6)', () => {
+    it('should include format issues in analysis result', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      // Setup default mocks
+      mockGetUserProfile.mockResolvedValue({
+        experienceLevel: 'student',
+        targetRole: 'Software Engineer',
+      })
+      mockBuildExperienceContext.mockReturnValue('Experience context for student')
+      mockGetOpenAIClient.mockReturnValue({} as any)
+      mockWithRetry.mockResolvedValue({} as any)
+      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+      mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
+      mockDetectSections.mockReturnValue(['experience', 'skills'])
+      mockParseSectionScoresResponse.mockReturnValue(mockSectionScoresResult)
+      mockIsValidSectionScoresResult.mockReturnValue(true)
+
+      // Story 4.6: Mock format analysis with merged issues
+      const ruleBasedIssue = {
+        type: 'warning' as const,
+        message: 'Resume is 2 pages',
+        detail: 'Entry-level resumes should be 1 page',
+        source: 'rule-based' as const,
+      }
+      const aiDetectedIssue = {
+        type: 'suggestion' as const,
+        message: 'Objective statement detected',
+        detail: 'Replace with Summary',
+        source: 'ai-detected' as const,
+      }
+      mockAnalyzeResumeFormat.mockReturnValue([ruleBasedIssue])
+      mockParseFormatIssuesResponse.mockReturnValue([aiDetectedIssue])
+      mockMergeFormatIssues.mockReturnValue([ruleBasedIssue, aiDetectedIssue])
+
+      const result = await runAnalysis({ scanId: validScanId })
+
+      expect(result.data).toBeDefined()
+      expect(result.data?.formatIssues).toBeDefined()
+      expect(result.data?.formatIssues?.length).toBe(2)
+      // Should have merged rule-based and AI-detected issues
+      expect(result.data?.formatIssues?.some((i) => i.source === 'rule-based')).toBeTruthy()
+      expect(result.data?.formatIssues?.some((i) => i.source === 'ai-detected')).toBeTruthy()
+    })
+
+    it('should save format issues to database', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const updateCalls: any[] = []
+      const updateMock = jest.fn((params) => {
+        updateCalls.push(params)
+        return {
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: updateMock,
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      setupDefaultMocks()
+
+      // Mock format issues
+      const formatIssue = {
+        type: 'critical' as const,
+        message: 'No section headers',
+        detail: 'Add clear headers',
+        source: 'rule-based' as const,
+      }
+      mockAnalyzeResumeFormat.mockReturnValue([formatIssue])
+      mockParseFormatIssuesResponse.mockReturnValue([])
+      mockMergeFormatIssues.mockReturnValue([formatIssue])
+
+      await runAnalysis({ scanId: validScanId })
+
+      // Second update call (after processing) should include format_issues
+      expect(updateCalls[1]).toHaveProperty('format_issues')
+      expect(Array.isArray(updateCalls[1].format_issues)).toBe(true)
+      expect(updateCalls[1].format_issues).toHaveLength(1)
+    })
+
+    it('should handle empty format issues gracefully', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      setupDefaultMocks()
+
+      // Mock empty format issues
+      mockAnalyzeResumeFormat.mockReturnValue([])
+      mockParseFormatIssuesResponse.mockReturnValue([])
+      mockMergeFormatIssues.mockReturnValue([])
+
+      const result = await runAnalysis({ scanId: validScanId })
+
+      expect(result.data).toBeDefined()
+      expect(result.data?.formatIssues).toEqual([])
+    })
+
+    it('should continue analysis if format detection throws error', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      setupDefaultMocks()
+
+      // Format analyzer throws error - should continue with empty array
+      mockAnalyzeResumeFormat.mockImplementation(() => {
+        throw new Error('Format analysis failed')
+      })
+      mockParseFormatIssuesResponse.mockReturnValue([])
+      mockMergeFormatIssues.mockReturnValue([])
+
+      const result = await runAnalysis({ scanId: validScanId })
+
+      // Analysis should still succeed with empty format issues
+      expect(result.data).toBeDefined()
+      expect(result.data?.overallScore).toBe(75)
+      expect(result.data?.formatIssues).toEqual([])
     })
   })
 })

@@ -7,6 +7,7 @@
  * @see Story 4.3: Missing Keywords Detection
  * @see Story 4.4: Section-Level Score Breakdown
  * @see Story 4.5: Experience-Level-Aware Analysis
+ * @see Story 4.6: Resume Format Issues Detection
  */
 
 import type { AnalysisContext } from '@/lib/types/analysis'
@@ -50,6 +51,7 @@ Your role is to analyze resumes against job descriptions and provide:
 2. Detailed score breakdown across four key categories
 3. Clear, actionable feedback on strengths and weaknesses
 4. Comprehensive keyword extraction showing what's present and what's missing
+5. Format issue detection for ATS compatibility problems
 
 Scoring Framework:
 - **Keywords (40%)**: How well does the resume match job-specific keywords and phrases?
@@ -133,7 +135,15 @@ Return ONLY valid JSON in this exact structure:
       "strengths": ["<strength 1>", "<strength 2>"],
       "weaknesses": ["<weakness 1>", "<weakness 2>"]
     }`).join(',\n    ') : ''}
-  }
+  },
+  "formatIssues": [
+    {
+      "type": "<'critical' | 'warning' | 'suggestion'>",
+      "message": "<short user-friendly message>",
+      "detail": "<longer explanation with fix guidance>",
+      "source": "ai-detected"
+    }
+  ]
 }
 
 **Section-Level Scoring Instructions:**
@@ -230,6 +240,46 @@ Make section explanations SPECIFIC and ACTIONABLE - reference actual content whe
 
 8. **Limit Results**: Include ALL found keywords, but ensure at least top 10-15 missing keywords are present
 
+**Format Issue Detection Instructions (Story 4.6):**
+
+Analyze the resume text for formatting problems that hurt ATS compatibility. Look for:
+
+1. **Content-Based Format Issues**:
+   - Font descriptions mentioned in text (e.g., "Comic Sans", "fancy font", "decorative script")
+   - Color references indicating non-standard formatting (e.g., "blue headers", "red text")
+   - Special characters or symbols that ATS can't parse (e.g., "★", "►", "•" used excessively)
+   - Formatting complexity mentioned (e.g., "two-column layout", "text boxes", "graphics")
+
+2. **International vs North American Style**:
+   - Photo/headshot references (e.g., "photo", "headshot", "picture of me")
+   - Date of birth or age mentioned (DOB, "born 1995", "age 28")
+   - "Curriculum Vitae" or "CV" title instead of "Resume"
+   - Marital status, nationality, or personal details uncommon in North America
+   - References section included (North American resumes typically say "References available upon request" or omit)
+
+3. **Outdated Formatting Patterns**:
+   - Objective statements starting with "Objective:" (outdated, use Summary instead)
+   - "References available upon request" (unnecessary, assumed)
+   - Full mailing addresses (city/state sufficient)
+   - Multiple fonts or styling mentioned
+
+4. **Typography and Readability**:
+   - Uncommon or decorative fonts that ATS can't parse well
+   - Excessive styling (underlines, italics, bold) that may confuse parsers
+   - Very small or very large font sizes mentioned
+
+**Format Issue Severity Guidelines**:
+- **Critical**: Issues that prevent ATS from parsing resume correctly (no section headers, unreadable fonts, complex layouts)
+- **Warning**: Issues that reduce ATS effectiveness but don't block parsing (page length, inconsistent dates, missing contact info)
+- **Suggestion**: Best practice improvements (international format markers, outdated conventions)
+
+**Format Issue Response Rules**:
+- Only include issues you can detect from the resume TEXT (you cannot see visual formatting)
+- Be specific in the message (e.g., "Resume includes photo reference" not "Format issue detected")
+- Provide actionable detail explaining why it's a problem and how to fix it
+- Return empty array [] if NO format issues detected
+- Source should always be "ai-detected" for issues found through AI analysis
+
 **Scoring Examples:**
 
 Example 1 - High Match (75):
@@ -310,7 +360,8 @@ Example 1 - High Match (75):
         "Could add soft skills section"
       ]
     }
-  }
+  },
+  "formatIssues": []
 }
 
 Example 2 - Low Match (35):
@@ -380,7 +431,15 @@ Example 2 - Low Match (35):
         "Could include academic honors or achievements"
       ]
     }
-  }
+  },
+  "formatIssues": [
+    {
+      "type": "suggestion",
+      "message": "Resume includes objective statement",
+      "detail": "Objective statements are outdated. Replace with a professional Summary that highlights your key qualifications and value proposition for this specific role.",
+      "source": "ai-detected"
+    }
+  ]
 }
 
 **Important Instructions:**
@@ -396,7 +455,10 @@ Example 2 - Low Match (35):
 10. Recognize keyword variants and note them in the variant field
 11. Score ONLY the sections that were detected in the resume (listed above)
 12. Section explanations must be 2-3 sentences with SPECIFIC examples from resume
-13. Section strengths and weaknesses should be actionable and targeted to that section`
+13. Section strengths and weaknesses should be actionable and targeted to that section
+14. Detect format issues from resume TEXT - you cannot see visual formatting
+15. Return empty formatIssues array [] if no issues detected
+16. Format issues should be specific, actionable, and severity-appropriate`
 
   return [
     {
