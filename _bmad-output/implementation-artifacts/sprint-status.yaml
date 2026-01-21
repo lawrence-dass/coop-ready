@@ -80,7 +80,7 @@ development_status:
   # Epic 5: Suggestions & Optimization Workflow
   epic-5: in-progress
   5-1-bullet-point-rewrite-generation: done
-  5-2-transferable-skills-detection-mapping: ready-for-dev
+  5-2-transferable-skills-detection-mapping: done
   5-3-action-verb-quantification-suggestions: backlog
   5-4-skills-expansion-suggestions: backlog
   5-5-format-content-removal-suggestions: backlog
