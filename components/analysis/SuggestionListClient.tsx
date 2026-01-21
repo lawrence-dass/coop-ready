@@ -18,11 +18,13 @@ import { Button } from "@/components/ui/button";
 const ITEMS_PER_PAGE = 20;
 
 interface SuggestionListClientProps {
+  scanId: string;
   suggestionsBySection: Record<string, DisplaySuggestion[]>;
   totalSuggestions: number;
 }
 
 export function SuggestionListClient({
+  scanId,
   suggestionsBySection,
   totalSuggestions,
 }: SuggestionListClientProps) {
@@ -155,6 +157,7 @@ export function SuggestionListClient({
             key={section}
             section={section}
             suggestions={paginatedBySection[section] || []}
+            scanId={scanId}
           />
         ))}
       </div>

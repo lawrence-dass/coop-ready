@@ -1452,3 +1452,503 @@ export function transformFormatAndRemovalSuggestions(
     reasoning: `[${sugg.urgency.toUpperCase()}] ${sugg.reasoning}`,
   }))
 }
+
+/**
+ * Input validation schema for updateSuggestionStatus
+ * @see Story 5.7: Accept/Reject Individual Suggestions
+ */
+const updateSuggestionStatusSchema = z.object({
+  suggestionId: z.string().uuid(),
+  scanId: z.string().uuid(),
+  status: z.enum(['pending', 'accepted', 'rejected']),
+})
+
+/**
+ * Input validation schema for acceptAllInSection
+ * @see Story 5.7: Accept/Reject Individual Suggestions
+ */
+const acceptAllInSectionSchema = z.object({
+  scanId: z.string().uuid(),
+  section: z.string(),
+})
+
+/**
+ * Update a single suggestion's status
+ *
+ * Process:
+ * 1. Validate input parameters
+ * 2. Verify user has access to this scan via RLS
+ * 3. Update suggestion status
+ * 4. Return updated suggestion ID and status
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - Scan not found: Return NOT_FOUND
+ * - Database error: Return UPDATE_ERROR
+ *
+ * @param input - Suggestion ID, scan ID, and new status
+ * @returns ActionResponse with updated suggestion ID or error
+ * @see Story 5.7: Accept/Reject Individual Suggestions
+ */
+export async function updateSuggestionStatus(
+  input: z.infer<typeof updateSuggestionStatusSchema>
+): Promise<ActionResponse<{ suggestionId: string; status: string }>> {
+  console.log('[updateSuggestionStatus] ====== ENTRY ======', {
+    suggestionId: input.suggestionId,
+    scanId: input.scanId,
+    status: input.status,
+    timestamp: new Date().toISOString(),
+  })
+
+  const parsed = updateSuggestionStatusSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error('[updateSuggestionStatus] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  try {
+    const { suggestionId, scanId, status } = parsed.data
+    const supabase = await createClient()
+
+    // Verify user has access to this scan
+    const { data: scan, error: scanError } = await supabase
+      .from('scans')
+      .select('user_id')
+      .eq('id', scanId)
+      .single()
+
+    if (scanError || !scan) {
+      console.error('[updateSuggestionStatus] Scan not found:', scanError)
+      return {
+        data: null,
+        error: { message: 'Scan not found', code: 'NOT_FOUND' },
+      }
+    }
+
+    // Update suggestion status
+    const { error: updateError } = await supabase
+      .from('suggestions')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', suggestionId)
+      .eq('scan_id', scanId)
+
+    if (updateError) {
+      console.error('[updateSuggestionStatus] Update error:', updateError)
+      return {
+        data: null,
+        error: {
+          message: 'Failed to update suggestion',
+          code: 'UPDATE_ERROR',
+        },
+      }
+    }
+
+    console.log('[updateSuggestionStatus] ====== SUCCESS ======', {
+      suggestionId,
+      status,
+    })
+
+    return {
+      data: { suggestionId, status },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[updateSuggestionStatus] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' },
+    }
+  }
+}
+
+/**
+ * Accept all suggestions in a section
+ *
+ * Process:
+ * 1. Validate input parameters
+ * 2. Verify user has access to this scan
+ * 3. Update all pending suggestions in section to accepted
+ * 4. Return count of updated suggestions
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - Scan not found: Return NOT_FOUND
+ * - Database error: Return UPDATE_ERROR
+ *
+ * @param input - Scan ID and section name
+ * @returns ActionResponse with updated count or error
+ * @see Story 5.7: Accept/Reject Individual Suggestions
+ */
+export async function acceptAllInSection(
+  input: z.infer<typeof acceptAllInSectionSchema>
+): Promise<
+  ActionResponse<{
+    scanId: string
+    section: string
+    count: number
+  }>
+> {
+  console.log('[acceptAllInSection] ====== ENTRY ======', {
+    scanId: input.scanId,
+    section: input.section,
+    timestamp: new Date().toISOString(),
+  })
+
+  const parsed = acceptAllInSectionSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error('[acceptAllInSection] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  try {
+    const { scanId, section } = parsed.data
+    const supabase = await createClient()
+
+    // Verify user has access to this scan
+    const { data: scan, error: scanError } = await supabase
+      .from('scans')
+      .select('user_id')
+      .eq('id', scanId)
+      .single()
+
+    if (scanError || !scan) {
+      console.error('[acceptAllInSection] Scan not found:', scanError)
+      return {
+        data: null,
+        error: { message: 'Scan not found', code: 'NOT_FOUND' },
+      }
+    }
+
+    // Update all pending suggestions in section to accepted
+    const { data: updated, error: updateError } = await supabase
+      .from('suggestions')
+      .update({ status: 'accepted', updated_at: new Date().toISOString() })
+      .eq('scan_id', scanId)
+      .eq('section', section)
+      .eq('status', 'pending')
+      .select('id')
+
+    if (updateError) {
+      console.error('[acceptAllInSection] Update error:', updateError)
+      return {
+        data: null,
+        error: {
+          message: 'Failed to accept suggestions',
+          code: 'UPDATE_ERROR',
+        },
+      }
+    }
+
+    const count = updated?.length || 0
+
+    console.log('[acceptAllInSection] ====== SUCCESS ======', {
+      section,
+      count,
+    })
+
+    return {
+      data: { scanId, section, count },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[acceptAllInSection] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' },
+    }
+  }
+}
+
+/**
+ * Reject all suggestions in a section
+ *
+ * Process:
+ * 1. Validate input parameters
+ * 2. Verify user has access to this scan
+ * 3. Update all pending suggestions in section to rejected
+ * 4. Return count of updated suggestions
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - Scan not found: Return NOT_FOUND
+ * - Database error: Return UPDATE_ERROR
+ *
+ * @param input - Scan ID and section name
+ * @returns ActionResponse with updated count or error
+ * @see Story 5.7: Accept/Reject Individual Suggestions
+ */
+export async function rejectAllInSection(
+  input: z.infer<typeof acceptAllInSectionSchema>
+): Promise<
+  ActionResponse<{
+    scanId: string
+    section: string
+    count: number
+  }>
+> {
+  console.log('[rejectAllInSection] ====== ENTRY ======', {
+    scanId: input.scanId,
+    section: input.section,
+    timestamp: new Date().toISOString(),
+  })
+
+  const parsed = acceptAllInSectionSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error('[rejectAllInSection] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  try {
+    const { scanId, section } = parsed.data
+    const supabase = await createClient()
+
+    // Verify user has access to this scan
+    const { data: scan, error: scanError } = await supabase
+      .from('scans')
+      .select('user_id')
+      .eq('id', scanId)
+      .single()
+
+    if (scanError || !scan) {
+      console.error('[rejectAllInSection] Scan not found:', scanError)
+      return {
+        data: null,
+        error: { message: 'Scan not found', code: 'NOT_FOUND' },
+      }
+    }
+
+    // Update all pending suggestions in section to rejected
+    const { data: updated, error: updateError } = await supabase
+      .from('suggestions')
+      .update({ status: 'rejected', updated_at: new Date().toISOString() })
+      .eq('scan_id', scanId)
+      .eq('section', section)
+      .eq('status', 'pending')
+      .select('id')
+
+    if (updateError) {
+      console.error('[rejectAllInSection] Update error:', updateError)
+      return {
+        data: null,
+        error: {
+          message: 'Failed to reject suggestions',
+          code: 'UPDATE_ERROR',
+        },
+      }
+    }
+
+    const count = updated?.length || 0
+
+    console.log('[rejectAllInSection] ====== SUCCESS ======', {
+      section,
+      count,
+    })
+
+    return {
+      data: { scanId, section, count },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[rejectAllInSection] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' },
+    }
+  }
+}
+
+/**
+ * Input validation schema for skipAllPending
+ * @see Story 5.7: Accept/Reject Individual Suggestions
+ */
+const skipAllPendingSchema = z.object({
+  scanId: z.string().uuid(),
+})
+
+/**
+ * Skip (reject) all pending suggestions across ALL sections
+ *
+ * Process:
+ * 1. Validate input parameters
+ * 2. Verify user has access to this scan
+ * 3. Update ALL pending suggestions to rejected status
+ * 4. Return count of updated suggestions
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - Scan not found: Return NOT_FOUND
+ * - Database error: Return UPDATE_ERROR
+ *
+ * @param input - Scan ID
+ * @returns ActionResponse with updated count or error
+ * @see Story 5.7: Accept/Reject Individual Suggestions (AC6 - Skip All)
+ */
+export async function skipAllPending(
+  input: z.infer<typeof skipAllPendingSchema>
+): Promise<ActionResponse<{ scanId: string; count: number }>> {
+  console.log('[skipAllPending] ====== ENTRY ======', {
+    scanId: input.scanId,
+    timestamp: new Date().toISOString(),
+  })
+
+  const parsed = skipAllPendingSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error('[skipAllPending] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  try {
+    const { scanId } = parsed.data
+    const supabase = await createClient()
+
+    // Verify user has access to this scan
+    const { data: scan, error: scanError } = await supabase
+      .from('scans')
+      .select('user_id')
+      .eq('id', scanId)
+      .single()
+
+    if (scanError || !scan) {
+      console.error('[skipAllPending] Scan not found:', scanError)
+      return {
+        data: null,
+        error: { message: 'Scan not found', code: 'NOT_FOUND' },
+      }
+    }
+
+    // Update ALL pending suggestions to rejected (no section filter)
+    const { data: updated, error: updateError } = await supabase
+      .from('suggestions')
+      .update({ status: 'rejected', updated_at: new Date().toISOString() })
+      .eq('scan_id', scanId)
+      .eq('status', 'pending')
+      .select('id')
+
+    if (updateError) {
+      console.error('[skipAllPending] Update error:', updateError)
+      return {
+        data: null,
+        error: {
+          message: 'Failed to skip suggestions',
+          code: 'UPDATE_ERROR',
+        },
+      }
+    }
+
+    const count = updated?.length || 0
+
+    console.log('[skipAllPending] ====== SUCCESS ======', {
+      count,
+    })
+
+    return {
+      data: { scanId, count },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[skipAllPending] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' },
+    }
+  }
+}
+
+/**
+ * Input validation schema for getSuggestionSummary
+ * @see Story 5.7: Accept/Reject Individual Suggestions
+ */
+const getSuggestionSummarySchema = z.object({
+  scanId: z.string().uuid(),
+})
+
+/**
+ * Get summary counts of suggestions by status for a scan
+ *
+ * Process:
+ * 1. Validate scan ID
+ * 2. Query suggestions table for given scan ID
+ * 3. Count by status (pending, accepted, rejected)
+ * 4. Return summary with totals
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - Database error: Return QUERY_ERROR
+ *
+ * @param scanId - The scan ID to get summary for
+ * @returns ActionResponse with summary counts or error
+ * @see Story 5.7: Accept/Reject Individual Suggestions
+ */
+export async function getSuggestionSummary(
+  scanId: string
+): Promise<
+  ActionResponse<{
+    total: number
+    accepted: number
+    rejected: number
+    pending: number
+  }>
+> {
+  console.log('[getSuggestionSummary] ====== ENTRY ======', {
+    scanId,
+    timestamp: new Date().toISOString(),
+  })
+
+  const parsed = getSuggestionSummarySchema.safeParse({ scanId })
+  if (!parsed.success) {
+    console.error('[getSuggestionSummary] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  try {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+      .from('suggestions')
+      .select('status')
+      .eq('scan_id', scanId)
+
+    if (error) {
+      console.error('[getSuggestionSummary] Query error:', error)
+      return {
+        data: null,
+        error: { message: 'Failed to fetch summary', code: 'QUERY_ERROR' },
+      }
+    }
+
+    const summary = {
+      total: data?.length || 0,
+      accepted: data?.filter((s) => s.status === 'accepted').length || 0,
+      rejected: data?.filter((s) => s.status === 'rejected').length || 0,
+      pending: data?.filter((s) => s.status === 'pending').length || 0,
+    }
+
+    console.log('[getSuggestionSummary] ====== SUCCESS ======', summary)
+
+    return {
+      data: summary,
+      error: null,
+    }
+  } catch (e) {
+    console.error('[getSuggestionSummary] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' },
+    }
+  }
+}

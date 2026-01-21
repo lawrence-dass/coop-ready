@@ -20,6 +20,7 @@ export async function SuggestionList({ scanId }: SuggestionListProps) {
 
   return (
     <SuggestionListClient
+      scanId={scanId}
       suggestionsBySection={suggestionsBySection}
       totalSuggestions={totalSuggestions}
     />
