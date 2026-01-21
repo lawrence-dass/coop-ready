@@ -7,6 +7,7 @@ import { scanInputSchema } from '@/lib/validations/scan'
  * Server Actions for Scan Management
  *
  * @see Story 3.5: Job Description Input
+ * @see Story 4.7: Analysis Results Page - Extended ScanData interface with analysis fields
  */
 
 export interface ScanData {
@@ -15,6 +16,13 @@ export interface ScanData {
   resumeId: string
   jobDescription: string
   status: 'pending' | 'processing' | 'completed' | 'failed'
+  atsScore: number | null
+  scoreJustification: string | null
+  keywordsFound: Array<{ keyword: string; frequency: number }> | null
+  keywordsMissing: Array<{ keyword: string; frequency: number; priority: 'high' | 'medium' | 'low' }> | null
+  sectionScores: Record<string, { score: number; explanation: string; strengths: string[]; weaknesses: string[] }> | null
+  experienceLevelContext: string | null
+  formatIssues: Array<{ type: 'critical' | 'warning' | 'suggestion'; message: string; detail: string; source: 'rule-based' | 'ai-detected' }> | null
   createdAt: string
   updatedAt: string
 }
@@ -111,6 +119,13 @@ export async function createScan(input: {
       resumeId: scan.resume_id,
       jobDescription: scan.job_description,
       status: scan.status,
+      atsScore: scan.ats_score,
+      scoreJustification: scan.score_justification,
+      keywordsFound: scan.keywords_found,
+      keywordsMissing: scan.keywords_missing,
+      sectionScores: scan.section_scores,
+      experienceLevelContext: scan.experience_level_context,
+      formatIssues: scan.format_issues,
       createdAt: scan.created_at,
       updatedAt: scan.updated_at,
     }
@@ -175,6 +190,13 @@ export async function getScan(scanId: string): Promise<ActionResponse<ScanData>>
       resumeId: scan.resume_id,
       jobDescription: scan.job_description,
       status: scan.status,
+      atsScore: scan.ats_score,
+      scoreJustification: scan.score_justification,
+      keywordsFound: scan.keywords_found,
+      keywordsMissing: scan.keywords_missing,
+      sectionScores: scan.section_scores,
+      experienceLevelContext: scan.experience_level_context,
+      formatIssues: scan.format_issues,
       createdAt: scan.created_at,
       updatedAt: scan.updated_at,
     }

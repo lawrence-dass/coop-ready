@@ -94,9 +94,15 @@ type ActionResponse<T> =
 export async function runAnalysis(
   input: AnalysisInput
 ): Promise<ActionResponse<AnalysisResult>> {
+  console.log('[runAnalysis] ====== ENTRY ======', {
+    scanId: input.scanId,
+    timestamp: new Date().toISOString()
+  })
+
   // Validate input with Zod
   const parsed = analysisInputSchema.safeParse(input)
   if (!parsed.success) {
+    console.log('[runAnalysis] Validation failed', { error: parsed.error.issues[0].message })
     return {
       data: null,
       error: {
@@ -106,14 +112,22 @@ export async function runAnalysis(
     }
   }
 
+  console.log('[runAnalysis] Input validated, creating Supabase client...')
+
   try {
     const supabase = await createClient()
+    console.log('[runAnalysis] Supabase client created, getting user...')
 
     // Get current user
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser()
+    console.log('[runAnalysis] Auth check complete', {
+      hasUser: !!user,
+      hasError: !!authError,
+      userId: user?.id?.slice(0, 8) + '...'
+    })
 
     if (authError || !user) {
       return {
@@ -162,18 +176,35 @@ export async function runAnalysis(
       }
     }
 
+    console.log('[runAnalysis] Ownership verified, updating status to processing...')
+
     // Update scan status to "processing"
-    await supabase
+    const { error: statusUpdateError } = await supabase
       .from('scans')
       .update({ status: 'processing' })
       .eq('id', parsed.data.scanId)
 
+    console.log('[runAnalysis] Status update complete', {
+      success: !statusUpdateError,
+      error: statusUpdateError?.message
+    })
+
+    console.log('[runAnalysis] Loading resume from database...', { resumeId: scan.resume_id })
+
     // Load resume text and parsed sections from resumes table
     const { data: resume, error: resumeError } = await supabase
       .from('resumes')
-      .select('extracted_text, parsed_resume')
+      .select('extracted_text, parsed_sections')
       .eq('id', scan.resume_id)
       .single()
+
+    console.log('[runAnalysis] Resume fetch complete', {
+      hasResume: !!resume,
+      hasError: !!resumeError,
+      hasExtractedText: !!resume?.extracted_text,
+      textLength: resume?.extracted_text?.length || 0,
+      hasParsedSections: !!resume?.parsed_sections
+    })
 
     if (resumeError || !resume) {
       console.error('[runAnalysis] Resume not found', {
@@ -252,9 +283,9 @@ export async function runAnalysis(
     let detectedSections: ReturnType<typeof detectSections> = []
     let ruleBasedFormatIssues: ReturnType<typeof analyzeResumeFormat> = []
 
-    if (resume.parsed_resume) {
+    if (resume.parsed_sections) {
       try {
-        const parsedResume = resume.parsed_resume as unknown as ParsedResume
+        const parsedResume = resume.parsed_sections as unknown as ParsedResume
 
         // Detect sections
         detectedSections = detectSections(parsedResume)
@@ -281,6 +312,14 @@ export async function runAnalysis(
     // Create analysis prompt with detected sections
     const messages = createATSScoringPrompt(context, detectedSections)
 
+    console.log('[runAnalysis] ====== CALLING OPENAI ======', {
+      scanId: parsed.data.scanId,
+      messageCount: messages.length,
+      resumeTextLength: context.resumeText.length,
+      jobDescriptionLength: context.jobDescription.length,
+      timestamp: new Date().toISOString()
+    })
+
     // Call OpenAI API with retry logic
     const openaiClient = getOpenAIClient()
 
@@ -292,6 +331,11 @@ export async function runAnalysis(
         max_tokens: 2500, // Increased for keyword extraction (Story 4.3)
       })
     }, 'ATS analysis')
+
+    console.log('[runAnalysis] ====== OPENAI RESPONSE RECEIVED ======', {
+      scanId: parsed.data.scanId,
+      timestamp: new Date().toISOString()
+    })
 
     // Parse OpenAI response to extract content and token usage
     const parsedResponse = parseOpenAIResponse(completion)
