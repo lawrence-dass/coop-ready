@@ -6,6 +6,7 @@ import { withRetry } from '@/lib/openai/retry'
 import { parseOpenAIResponse } from '@/lib/openai'
 import { createBulletRewritePrompt, type UserProfile } from '@/lib/openai/prompts/suggestions'
 import { createTransferableSkillsPrompt } from '@/lib/openai/prompts/skills'
+import { createActionVerbAndQuantificationPrompt } from '@/lib/openai/prompts/action-verbs'
 import { z } from 'zod'
 
 /**
@@ -13,6 +14,7 @@ import { z } from 'zod'
  *
  * @see Story 5.1: Bullet Point Rewrite Generation
  * @see Story 5.2: Transferable Skills Detection & Mapping
+ * @see Story 5.3: Action Verb & Quantification Suggestions
  */
 
 type ActionResponse<T> =
@@ -77,6 +79,15 @@ const generateSkillMappingsSchema = z.object({
   background: z.string(),
   targetRole: z.string(),
   jdKeywords: z.array(z.string()),
+})
+
+/**
+ * Input validation schema for generateActionVerbAndQuantificationSuggestions
+ */
+const generateActionVerbAndQuantificationSchema = z.object({
+  scanId: z.string().uuid(),
+  bulletPoints: z.array(z.string()).min(1),
+  achievementTypes: z.array(z.string()).optional(), // defaults to 'general'
 })
 
 /**
@@ -438,6 +449,276 @@ export async function generateSkillMappings(
       },
     }
   }
+}
+
+/**
+ * Generate AI-powered action verb and quantification suggestions
+ *
+ * Process:
+ * 1. Validate input parameters
+ * 2. Build context-aware prompt for action verb and quantification analysis
+ * 3. Call OpenAI API with retry logic
+ * 4. Parse and validate JSON response
+ * 5. Return suggestions with action verb improvements and quantification prompts
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - OpenAI API failure: Return GENERATION_ERROR
+ * - JSON parse failure: Return PARSE_ERROR
+ *
+ * @param input - Scan ID, bullet points, and optional achievement type classifications
+ * @returns ActionResponse with action verb and quantification suggestions or error
+ * @see Story 5.3: Action Verb & Quantification Suggestions
+ */
+export async function generateActionVerbAndQuantificationSuggestions(
+  input: z.infer<typeof generateActionVerbAndQuantificationSchema>
+): Promise<
+  ActionResponse<{
+    scanId: string
+    suggestions: Array<{
+      original: string
+      actionVerbSuggestion: {
+        improved: string
+        alternatives: string[]
+        reasoning: string
+      } | null
+      quantificationSuggestion: {
+        prompt: string
+        example: string
+        metricsToConsider: string[]
+      } | null
+    }>
+  }>
+> {
+  console.log('[generateActionVerbAndQuantificationSuggestions] ====== ENTRY ======', {
+    scanId: input.scanId,
+    bulletCount: input.bulletPoints?.length,
+    timestamp: new Date().toISOString(),
+  })
+
+  // Validate input
+  const parsed = generateActionVerbAndQuantificationSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error(
+      '[generateActionVerbAndQuantificationSuggestions] Validation failed:',
+      parsed.error
+    )
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  const { scanId, bulletPoints, achievementTypes = [] } = parsed.data
+
+  try {
+    // Pad achievement types with 'general' if not enough provided
+    const types = [
+      ...achievementTypes,
+      ...Array(bulletPoints.length - achievementTypes.length).fill('general'),
+    ]
+
+    console.log('[generateActionVerbAndQuantificationSuggestions] Building prompt...')
+
+    // Create prompt using action verb and quantification template
+    const prompt = createActionVerbAndQuantificationPrompt(bulletPoints, types)
+
+    console.log('[generateActionVerbAndQuantificationSuggestions] Calling OpenAI API...')
+
+    // Call OpenAI with retry logic
+    const openai = getOpenAIClient()
+    const response = await withRetry(async () => {
+      return await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      })
+    }, 'generateActionVerbAndQuantificationSuggestions')
+
+    console.log('[generateActionVerbAndQuantificationSuggestions] OpenAI response received')
+
+    // Parse OpenAI response (this may throw if malformed)
+    let parsedResponse
+    try {
+      parsedResponse = parseOpenAIResponse(response)
+    } catch (parseError) {
+      console.error(
+        '[generateActionVerbAndQuantificationSuggestions] Failed to parse OpenAI response structure:',
+        parseError
+      )
+      return {
+        data: null,
+        error: { message: 'Malformed OpenAI response', code: 'PARSE_ERROR' },
+      }
+    }
+
+    const content = parsedResponse.content
+
+    // Parse JSON from content
+    let suggestionsData: {
+      suggestions: Array<{
+        original: string
+        action_verb_suggestion: {
+          improved: string
+          alternatives: string[]
+          reasoning: string
+        } | null
+        quantification_suggestion: {
+          prompt: string
+          example: string
+          metrics_to_consider: string[]
+        } | null
+      }>
+    }
+    try {
+      suggestionsData = JSON.parse(content)
+    } catch (jsonParseError) {
+      console.error(
+        '[generateActionVerbAndQuantificationSuggestions] Failed to parse JSON from AI response:',
+        content,
+        jsonParseError
+      )
+      return {
+        data: null,
+        error: { message: 'Failed to parse AI response', code: 'PARSE_ERROR' },
+      }
+    }
+
+    const { suggestions } = suggestionsData
+
+    // Validate suggestions array exists and has correct length
+    if (!Array.isArray(suggestions) || suggestions.length !== bulletPoints.length) {
+      console.error(
+        '[generateActionVerbAndQuantificationSuggestions] Invalid suggestions array:',
+        suggestions?.length,
+        'expected:',
+        bulletPoints.length
+      )
+      return {
+        data: null,
+        error: {
+          message: 'AI returned invalid number of suggestions',
+          code: 'PARSE_ERROR',
+        },
+      }
+    }
+
+    // Transform snake_case API response to camelCase for TypeScript
+    const transformedSuggestions = suggestions.map((s) => ({
+      original: s.original,
+      actionVerbSuggestion: s.action_verb_suggestion
+        ? {
+            improved: s.action_verb_suggestion.improved,
+            alternatives: s.action_verb_suggestion.alternatives,
+            reasoning: s.action_verb_suggestion.reasoning,
+          }
+        : null,
+      quantificationSuggestion: s.quantification_suggestion
+        ? {
+            prompt: s.quantification_suggestion.prompt,
+            example: s.quantification_suggestion.example,
+            metricsToConsider: s.quantification_suggestion.metrics_to_consider,
+          }
+        : null,
+    }))
+
+    console.log('[generateActionVerbAndQuantificationSuggestions] ====== SUCCESS ======', {
+      suggestionCount: transformedSuggestions.length,
+      actionVerbCount: transformedSuggestions.filter((s) => s.actionVerbSuggestion).length,
+      quantificationCount: transformedSuggestions.filter((s) => s.quantificationSuggestion).length,
+    })
+
+    return {
+      data: { scanId, suggestions: transformedSuggestions },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[generateActionVerbAndQuantificationSuggestions] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: {
+        message: 'Failed to generate action verb and quantification suggestions',
+        code: 'GENERATION_ERROR',
+      },
+    }
+  }
+}
+
+/**
+ * Transform action verb and quantification suggestions to database-compatible format
+ *
+ * Converts the API response structure to the format expected by saveSuggestions.
+ * - Action verb suggestions become suggestion_type: 'action_verb'
+ * - Quantification suggestions become suggestion_type: 'quantification'
+ * - Both suggestions for the same bullet become separate database records
+ *
+ * @param suggestions - Array of suggestions from generateActionVerbAndQuantificationSuggestions
+ * @returns Array of suggestions in saveSuggestions format
+ */
+export function transformActionVerbSuggestions(
+  suggestions: Array<{
+    original: string
+    actionVerbSuggestion: {
+      improved: string
+      alternatives: string[]
+      reasoning: string
+    } | null
+    quantificationSuggestion: {
+      prompt: string
+      example: string
+      metricsToConsider: string[]
+    } | null
+  }>
+): Array<{
+  section: string
+  itemIndex: number
+  originalText: string
+  suggestedText: string
+  suggestionType: string
+  reasoning?: string
+}> {
+  const transformed: Array<{
+    section: string
+    itemIndex: number
+    originalText: string
+    suggestedText: string
+    suggestionType: string
+    reasoning?: string
+  }> = []
+
+  suggestions.forEach((sugg, index) => {
+    // Add action verb suggestion
+    if (sugg.actionVerbSuggestion) {
+      transformed.push({
+        section: 'experience',
+        itemIndex: index,
+        originalText: sugg.original,
+        suggestedText: sugg.actionVerbSuggestion.improved,
+        suggestionType: 'action_verb',
+        reasoning: `${sugg.actionVerbSuggestion.reasoning}\nAlternatives: ${sugg.actionVerbSuggestion.alternatives.join(', ')}`,
+      })
+    }
+
+    // Add quantification suggestion
+    if (sugg.quantificationSuggestion) {
+      transformed.push({
+        section: 'experience',
+        itemIndex: index,
+        originalText: sugg.original,
+        suggestedText: sugg.quantificationSuggestion.prompt,
+        suggestionType: 'quantification',
+        reasoning: `${sugg.quantificationSuggestion.prompt}\n\nExample: ${sugg.quantificationSuggestion.example}\n\nMetrics to consider: ${sugg.quantificationSuggestion.metricsToConsider.join(', ')}`,
+      })
+    }
+  })
+
+  return transformed
 }
 
 /**
