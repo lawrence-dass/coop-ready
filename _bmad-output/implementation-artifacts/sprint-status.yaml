@@ -74,7 +74,7 @@ development_status:
   4-4-section-level-score-breakdown: done
   4-5-experience-level-aware-analysis: done
   4-6-resume-format-issues-detection: done
-  4-7-analysis-results-page: backlog
+  4-7-analysis-results-page: ready-for-dev
   epic-4-retrospective: optional
 
   # Epic 5: Suggestions & Optimization Workflow
