@@ -19,7 +19,9 @@ const config = {
   },
   collectCoverageFrom: [
     'lib/parsers/**/*.ts',
+    'lib/openai/**/*.ts',
     '!lib/parsers/**/*.d.ts',
+    '!lib/openai/**/*.d.ts',
   ],
   coverageDirectory: 'coverage',
   verbose: true,

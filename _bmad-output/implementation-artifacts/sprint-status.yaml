@@ -67,8 +67,8 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: ATS Analysis Engine
-  epic-4: backlog
-  4-1-openai-integration-setup: backlog
+  epic-4: in-progress
+  4-1-openai-integration-setup: done
   4-2-ats-score-calculation: backlog
   4-3-missing-keywords-detection: backlog
   4-4-section-level-score-breakdown: backlog
