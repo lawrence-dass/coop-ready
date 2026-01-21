@@ -35,3 +35,6 @@ export {
   parseSectionScoresResponse,
   isValidSectionScoresResult,
 } from './prompts/parseSectionScores'
+
+// Suggestions (Story 5.1)
+export { createBulletRewritePrompt, type UserProfile } from './prompts/suggestions'

@@ -1,52 +1,58 @@
 # Session Handoff
-Last updated: 2026-01-20 (evening)
+Last updated: 2026-01-21 (morning)
 
 ## Current Focus
-Epic 8 test infrastructure completed and merged to main. Ready to start Epic 4 (ATS Analysis Engine).
+Epic 4 story creation completed. All 7 stories now have comprehensive context files ready for implementation.
+**CRITICAL BLOCKER**: Rendering issue discovered in Story 4.7 implementation - analysis never triggered.
 
 ## BMAD Status
-- **Phase**: Implementation (Ready for Epic 4)
-- **Last workflow**: create-story (Epic 8-3 context created)
-- **Active story**: None (Epic 8 complete)
-- **Branch**: main (feat/8-test-infrastructure merged via PR #21)
-- **Sprint status**: See `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- **Phase**: Story Context Creation (Epic 4 complete - 7/7 stories ready-for-dev)
+- **Last workflow**: create-story (Story 4-7 context completed)
+- **Active story**: 4-7 (Analysis Results Page) - ready-for-dev
+- **Branch**: feat/4-7-analysis-results-page
+- **Epic status**: 4-1 through 4-7 all marked ready-for-dev/done in sprint-status.yaml
 
-### Epic Progress Summary
-- **Epic 1**: Done (7/7 stories)
-- **Epic 2**: Done (2/2 stories)
-- **Epic 3**: Done (6/6 stories)
-- **Epic 8**: Done (3/3 stories - all implemented)
-- **Epic 4-7**: Backlog (Epic 4 next: ATS Analysis Engine)
+## Session Work (2026-01-21)
 
-## Session Context (2026-01-20 evening)
+### Completed
+- Created comprehensive story context for all Epic 4 stories:
+  - 4-5: Experience-Level-Aware Analysis (implemented)
+  - 4-6: Resume Format Issues Detection (implemented)
+  - 4-7: Analysis Results Page (implemented)
+- Fixed Node.js version in CI/CD (18→20 for Next.js 14)
+- Killed stale dev process blocking ports 3000/3001
 
-### What Was Done
-- Pulled latest changes from main (Epic 8 test infrastructure merged)
-- Verified all three stories implemented:
-  - 8-1: Playwright framework setup
-  - 8-2: GitHub Actions CI/CD pipeline
-  - 8-3: Test-only API endpoints (users, resumes, scans)
-- Cleanup: Deleted feat/8-test-infrastructure branch
+### Key Issue Discovered
+**Infinite polling bug**: Results page polling makes 226+ requests because `runAnalysis` is never called.
+- **Root cause**: Architecture gap - no integration point between scan creation and analysis execution
+- **User impact**: Analysis stuck in 'processing' forever, no visible error
+- **Details**: See analysis summary below
 
-### Files Modified This Session
-- `.github/workflows/e2e-tests.yml` - GitHub Actions workflow
-- `app/api/test/*` - Test endpoint routes (users, resumes, scans)
-- `tests/` - Playwright configuration updates
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` - Updated Epic 8 status
+### Files Modified
+- `.github/workflows/e2e-tests.yml` - Fixed Node.js version (18→20)
+- `app/(dashboard)/scan/[scanId]/page.tsx` - Added useEffect to trigger runAnalysis (partial fix)
+- Created 3 story context files (4-5, 4-6, 4-7)
 
-### Key Decisions
-- Epic 8 complete with full test infrastructure (CI/CD + test APIs)
-- Ready to proceed with Epic 4 development
+## Critical Blocker: Rendering Issue
 
-## Next Session: Epic 4
+**Problem**: Analysis never starts, polling waits forever.
+- Scan status stuck in 'processing' (never reaches 'completed'/'failed')
+- No `[runAnalysis]` logs in server output
+- No indication of WHERE/WHEN `runAnalysis` should be triggered
 
-**Immediate action**: Create story context for Epic 4-1 (OpenAI Integration Setup)
+**Needs decision**: Is analysis triggered by:
+1. Results page loading (fix applied but untested)?
+2. Background job after scan creation?
+3. External queue/webhook?
+4. Something else?
 
-1. Run: `/bmad:bmm:workflows:create-story` with `_bmad-output/planning-artifacts/epics/epic-4-ats-analysis-engine.md`
-2. Then develop stories in order: 4-1 → 4-2 → 4-3 → ... (check epic definition for full scope)
-3. Reference: `_bmad-output/planning-artifacts/architecture.md` for integration context
+See detailed analysis in conversation history for 226-request breakdown.
 
-**Context files needed**:
-- Epic 4 definition: `_bmad-output/planning-artifacts/epics/epic-4-ats-analysis-engine.md`
-- Architecture: `_bmad-output/planning-artifacts/architecture.md`
-- Project context: `_bmad-output/project-context.md`
+## Next Session Actions
+
+1. **Test the fix**: Restart dev server, re-run analysis flow, check if `[runAnalysis]` logs appear
+2. **Verify workflow**: Confirm analysis completes in 10-20 seconds and polling stops
+3. **If still broken**: Debug why runAnalysis isn't completing (OpenAI timeout? DB error?)
+4. **Once fixed**: Commit final Story 4.7 implementation
+
+**Reference**: See `_bmad-output/implementation-artifacts/sprint-status.yaml` for all story statuses
