@@ -2,6 +2,7 @@
  * Unit Tests for runAnalysis Server Action
  *
  * @see Story 4.2: ATS Score Calculation
+ * @see Story 4.3: Missing Keywords Detection
  */
 
 import { runAnalysis } from '@/actions/analysis'
@@ -13,12 +14,18 @@ import {
   parseAnalysisResponse,
   isValidAnalysisResult,
 } from '@/lib/openai/prompts/parseAnalysis'
+import {
+  parseKeywordsResponse,
+  toKeywordAnalysis,
+  isValidKeywordResult,
+} from '@/lib/openai/prompts/parseKeywords'
 
 // Mock dependencies
 jest.mock('@/lib/supabase/server')
 jest.mock('@/lib/openai')
 jest.mock('@/lib/openai/retry')
 jest.mock('@/lib/openai/prompts/parseAnalysis')
+jest.mock('@/lib/openai/prompts/parseKeywords')
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
 const mockGetOpenAIClient = getOpenAIClient as jest.MockedFunction<typeof getOpenAIClient>
@@ -26,6 +33,9 @@ const mockWithRetry = withRetry as jest.MockedFunction<typeof withRetry>
 const mockParseOpenAIResponse = parseOpenAIResponse as jest.MockedFunction<typeof parseOpenAIResponse>
 const mockParseAnalysisResponse = parseAnalysisResponse as jest.MockedFunction<typeof parseAnalysisResponse>
 const mockIsValidAnalysisResult = isValidAnalysisResult as jest.MockedFunction<typeof isValidAnalysisResult>
+const mockParseKeywordsResponse = parseKeywordsResponse as jest.MockedFunction<typeof parseKeywordsResponse>
+const mockToKeywordAnalysis = toKeywordAnalysis as jest.MockedFunction<typeof toKeywordAnalysis>
+const mockIsValidKeywordResult = isValidKeywordResult as jest.MockedFunction<typeof isValidKeywordResult>
 
 // Mock console methods to avoid cluttering test output
 beforeAll(() => {
@@ -93,6 +103,24 @@ describe('runAnalysis Server Action', () => {
       totalTokens: 1500,
     },
     costEstimate: 0.00045,
+  }
+
+  const mockKeywordExtraction = {
+    keywordsFound: [
+      { keyword: 'React', frequency: 3, variant: null },
+      { keyword: 'TypeScript', frequency: 2, variant: 'TS' },
+      { keyword: 'JavaScript', frequency: 1, variant: null },
+    ],
+    keywordsMissing: [
+      { keyword: 'Node.js', frequency: 2, priority: 'high' as const },
+      { keyword: 'Docker', frequency: 1, priority: 'medium' as const },
+    ],
+    majorKeywordsCoverage: 75,
+  }
+
+  const mockKeywordAnalysis = {
+    ...mockKeywordExtraction,
+    allMajorKeywordsPresent: false,
   }
 
   function createMockSupabase() {
@@ -374,13 +402,19 @@ describe('runAnalysis Server Action', () => {
       mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
       mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
       mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
 
       const result = await runAnalysis({ scanId: validScanId })
 
       expect(result.error).toBeNull()
-      expect(result.data).toEqual(mockAnalysisResult)
       expect(result.data?.overallScore).toBe(75)
       expect(result.data?.scoreBreakdown.keywords).toBe(80)
+      expect(result.data?.keywords).toEqual(mockKeywordAnalysis)
+      expect(result.data?.keywords?.keywordsFound).toHaveLength(3)
+      expect(result.data?.keywords?.keywordsMissing).toHaveLength(2)
+      expect(result.data?.keywords?.majorKeywordsCoverage).toBe(75)
     })
 
     it('should update scan status to processing then completed', async () => {
@@ -432,16 +466,21 @@ describe('runAnalysis Server Action', () => {
       mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
       mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
       mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
 
       await runAnalysis({ scanId: validScanId })
 
       // Verify update was called for processing status
       expect(updateCalls[0]).toEqual({ status: 'processing' })
 
-      // Verify update was called for completed status with score
+      // Verify update was called for completed status with score and keywords
       expect(updateCalls[1]).toEqual({
         ats_score: 75,
         score_justification: mockAnalysisResult.justification,
+        keywords_found: mockKeywordAnalysis.keywordsFound,
+        keywords_missing: mockKeywordAnalysis.keywordsMissing,
         status: 'completed',
       })
     })
@@ -733,6 +772,182 @@ describe('runAnalysis Server Action', () => {
 
       // Verify scan status was set to failed
       expect(updateMock).toHaveBeenCalledWith({ status: 'failed' })
+    })
+  })
+
+  describe('Keyword Extraction (Story 4.3)', () => {
+    it('should include keyword data in analysis result', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      mockGetOpenAIClient.mockReturnValue({} as any)
+      mockWithRetry.mockResolvedValue({} as any)
+      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+      mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
+
+      const result = await runAnalysis({ scanId: validScanId })
+
+      expect(result.data?.keywords).toBeDefined()
+      expect(result.data?.keywords?.keywordsFound).toEqual(mockKeywordExtraction.keywordsFound)
+      expect(result.data?.keywords?.keywordsMissing).toEqual(mockKeywordExtraction.keywordsMissing)
+      expect(result.data?.keywords?.majorKeywordsCoverage).toBe(75)
+    })
+
+    it('should save keyword data to database', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const updateCalls: any[] = []
+      const updateMock = jest.fn((params) => {
+        updateCalls.push(params)
+        return {
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: updateMock,
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      mockGetOpenAIClient.mockReturnValue({} as any)
+      mockWithRetry.mockResolvedValue({} as any)
+      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+      mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
+
+      await runAnalysis({ scanId: validScanId })
+
+      // Second update call should include keyword data
+      expect(updateCalls[1].keywords_found).toEqual(mockKeywordAnalysis.keywordsFound)
+      expect(updateCalls[1].keywords_missing).toEqual(mockKeywordAnalysis.keywordsMissing)
+    })
+
+    it('should continue with empty keyword data if parsing fails', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      mockGetOpenAIClient.mockReturnValue({} as any)
+      mockWithRetry.mockResolvedValue({} as any)
+      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+      mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue({
+        keywordsFound: [],
+        keywordsMissing: [],
+        majorKeywordsCoverage: 0,
+      })
+      mockToKeywordAnalysis.mockReturnValue({
+        keywordsFound: [],
+        keywordsMissing: [],
+        majorKeywordsCoverage: 0,
+        allMajorKeywordsPresent: false,
+      })
+      mockIsValidKeywordResult.mockReturnValue(false) // Invalid keyword result
+
+      const result = await runAnalysis({ scanId: validScanId })
+
+      // Should still complete successfully despite invalid keyword data
+      expect(result.error).toBeNull()
+      expect(result.data?.overallScore).toBe(75)
     })
   })
 })

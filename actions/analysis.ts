@@ -9,6 +9,11 @@ import {
   parseAnalysisResponse,
   isValidAnalysisResult,
 } from '@/lib/openai/prompts/parseAnalysis'
+import {
+  parseKeywordsResponse,
+  toKeywordAnalysis,
+  isValidKeywordResult,
+} from '@/lib/openai/prompts/parseKeywords'
 import { analysisInputSchema } from '@/lib/validations/analysis'
 import type {
   AnalysisInput,
@@ -21,6 +26,7 @@ import type {
  * Server Actions for Resume Analysis
  *
  * @see Story 4.2: ATS Score Calculation
+ * @see Story 4.3: Missing Keywords Detection
  */
 
 type ActionResponse<T> =
@@ -229,7 +235,7 @@ export async function runAnalysis(
         model: 'gpt-4o-mini',
         messages,
         temperature: 0.3, // Lower temperature for more consistent scoring
-        max_tokens: 1500, // Enough for detailed analysis
+        max_tokens: 2500, // Increased for keyword extraction (Story 4.3)
       })
     }, 'ATS analysis')
 
@@ -238,6 +244,10 @@ export async function runAnalysis(
 
     // Parse analysis result from response content
     const analysisResult = parseAnalysisResponse(parsedResponse.content)
+
+    // Parse keyword extraction from response content (Story 4.3)
+    const keywordExtraction = parseKeywordsResponse(parsedResponse.content)
+    const keywordAnalysis = toKeywordAnalysis(keywordExtraction)
 
     // Validate analysis result
     if (!isValidAnalysisResult(analysisResult)) {
@@ -261,12 +271,23 @@ export async function runAnalysis(
       }
     }
 
+    // Validate keyword result (warn if invalid but don't fail analysis)
+    if (!isValidKeywordResult(keywordExtraction)) {
+      console.warn('[runAnalysis] Keyword result failed validation', {
+        scanId: parsed.data.scanId,
+        keywords: keywordExtraction,
+      })
+      // Continue with empty keyword data rather than failing the entire analysis
+    }
+
     // Update scan record with analysis results
     const { error: updateError } = await supabase
       .from('scans')
       .update({
         ats_score: analysisResult.overallScore,
         score_justification: analysisResult.justification,
+        keywords_found: keywordAnalysis.keywordsFound as unknown as Record<string, unknown>,
+        keywords_missing: keywordAnalysis.keywordsMissing as unknown as Record<string, unknown>,
         status: 'completed',
       })
       .eq('id', parsed.data.scanId)
@@ -289,12 +310,21 @@ export async function runAnalysis(
     console.info('[runAnalysis] Analysis completed successfully', {
       scanId: parsed.data.scanId,
       overallScore: analysisResult.overallScore,
+      keywordsFoundCount: keywordAnalysis.keywordsFound.length,
+      keywordsMissingCount: keywordAnalysis.keywordsMissing.length,
+      majorKeywordsCoverage: keywordAnalysis.majorKeywordsCoverage,
       tokensUsed: parsedResponse.usage.totalTokens,
       costEstimate: parsedResponse.costEstimate,
     })
 
+    // Include keyword analysis in returned result
+    const fullAnalysisResult: AnalysisResult = {
+      ...analysisResult,
+      keywords: keywordAnalysis,
+    }
+
     return {
-      data: analysisResult,
+      data: fullAnalysisResult,
       error: null,
     }
   } catch (error) {
