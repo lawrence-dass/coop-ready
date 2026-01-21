@@ -5,12 +5,14 @@ import { getOpenAIClient } from '@/lib/openai'
 import { withRetry } from '@/lib/openai/retry'
 import { parseOpenAIResponse } from '@/lib/openai'
 import { createBulletRewritePrompt, type UserProfile } from '@/lib/openai/prompts/suggestions'
+import { createTransferableSkillsPrompt } from '@/lib/openai/prompts/skills'
 import { z } from 'zod'
 
 /**
  * Server Actions for AI-Generated Suggestions
  *
  * @see Story 5.1: Bullet Point Rewrite Generation
+ * @see Story 5.2: Transferable Skills Detection & Mapping
  */
 
 type ActionResponse<T> =
@@ -53,6 +55,27 @@ const generateBulletRewritesSchema = z.object({
   experienceLevel: experienceLevelEnum,
   targetRole: z.string(),
   isStudent: z.boolean(),
+  jdKeywords: z.array(z.string()),
+})
+
+/**
+ * Input validation schema for generateSkillMappings
+ */
+const generateSkillMappingsSchema = z.object({
+  scanId: z.string().uuid(),
+  experiences: z
+    .array(
+      z.object({
+        text: z.string(),
+        context: z.string(),
+        section: z.enum(['experience', 'education', 'projects']),
+      })
+    )
+    .min(1),
+  experienceLevel: experienceLevelEnum,
+  isStudent: z.boolean(),
+  background: z.string(),
+  targetRole: z.string(),
   jdKeywords: z.array(z.string()),
 })
 
@@ -156,8 +179,17 @@ export async function generateBulletRewrites(
 
     console.log('[generateBulletRewrites] OpenAI response received')
 
-    // Parse OpenAI response
-    const parsedResponse = parseOpenAIResponse(response)
+    // Parse OpenAI response (may throw if malformed)
+    let parsedResponse
+    try {
+      parsedResponse = parseOpenAIResponse(response)
+    } catch (parseError) {
+      console.error('[generateBulletRewrites] Failed to parse OpenAI response structure:', parseError)
+      return {
+        data: null,
+        error: { message: 'Malformed OpenAI response', code: 'PARSE_ERROR' },
+      }
+    }
     const content = parsedResponse.content
 
     // Parse JSON from content
@@ -205,6 +237,203 @@ export async function generateBulletRewrites(
       data: null,
       error: {
         message: 'Failed to generate rewrites',
+        code: 'GENERATION_ERROR',
+      },
+    }
+  }
+}
+
+/**
+ * Generate AI-powered transferable skill mappings
+ *
+ * Process:
+ * 1. Validate input parameters
+ * 2. Build context-aware prompt based on user background (career changer vs student)
+ * 3. Call OpenAI API with retry logic
+ * 4. Parse and validate JSON response with skill mappings
+ * 5. Return mappings with original experience, mapped skills, tech equivalent, and reasoning
+ *
+ * Error handling:
+ * - Invalid input: Return VALIDATION_ERROR
+ * - OpenAI API failure: Return GENERATION_ERROR
+ * - JSON parse failure: Return PARSE_ERROR
+ *
+ * @param input - Scan ID, experiences with context, user profile, and JD keywords
+ * @returns ActionResponse with skill mappings array or error
+ */
+export async function generateSkillMappings(
+  input: z.infer<typeof generateSkillMappingsSchema>
+): Promise<
+  ActionResponse<{
+    scanId: string
+    mappings: Array<{
+      original: string
+      mapped_skills: string[]
+      tech_equivalent: string
+      reasoning: string
+      jd_keywords_matched: string[]
+    }>
+  }>
+> {
+  console.log('[generateSkillMappings] ====== ENTRY ======', {
+    scanId: input.scanId,
+    experienceCount: input.experiences?.length,
+    isStudent: input.isStudent,
+    background: input.background,
+    timestamp: new Date().toISOString(),
+  })
+
+  // Validate input
+  const parsed = generateSkillMappingsSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error('[generateSkillMappings] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  const { scanId, experiences, experienceLevel, isStudent, background, targetRole, jdKeywords } =
+    parsed.data
+
+  try {
+    // Normalize experience level for prompt (student/experienced -> entry for prompt purposes)
+    const normalizedLevel: 'entry' | 'mid' | 'senior' =
+      experienceLevel === 'student' || experienceLevel === 'experienced'
+        ? 'entry'
+        : experienceLevel
+
+    // Build user profile for context
+    const userProfile = {
+      experienceLevel: normalizedLevel,
+      isStudent,
+      background,
+      targetRole,
+    }
+
+    console.log('[generateSkillMappings] Building prompt with context:', {
+      experienceLevel,
+      isStudent,
+      background,
+      targetRole,
+      keywordCount: jdKeywords.length,
+    })
+
+    // Create prompt using transferable skills template
+    const prompt = createTransferableSkillsPrompt(
+      experiences.map((exp) => ({ text: exp.text, context: exp.context })),
+      userProfile,
+      jdKeywords
+    )
+
+    console.log('[generateSkillMappings] Calling OpenAI API...')
+
+    // Call OpenAI with retry logic
+    const openai = getOpenAIClient()
+    const response = await withRetry(async () => {
+      return await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      })
+    }, 'generateSkillMappings')
+
+    console.log('[generateSkillMappings] OpenAI response received')
+
+    // Parse OpenAI response (this may throw if malformed)
+    let parsedResponse
+    try {
+      parsedResponse = parseOpenAIResponse(response)
+    } catch (parseError) {
+      console.error('[generateSkillMappings] Failed to parse OpenAI response structure:', parseError)
+      return {
+        data: null,
+        error: { message: 'Malformed OpenAI response', code: 'PARSE_ERROR' },
+      }
+    }
+
+    const content = parsedResponse.content
+
+    // Parse JSON from content
+    let mappingsData: {
+      mappings: Array<{
+        original: string
+        mapped_skills: string[]
+        tech_equivalent: string
+        reasoning: string
+        jd_keywords_matched: string[]
+      }>
+    }
+    try {
+      mappingsData = JSON.parse(content)
+    } catch (parseError) {
+      console.error('[generateSkillMappings] Failed to parse JSON from AI response:', content)
+      return {
+        data: null,
+        error: { message: 'Failed to parse AI response', code: 'PARSE_ERROR' },
+      }
+    }
+
+    const { mappings } = mappingsData
+
+    // Validate mappings array exists and has correct length
+    if (!Array.isArray(mappings) || mappings.length !== experiences.length) {
+      console.error(
+        '[generateSkillMappings] Invalid mappings array:',
+        mappings?.length,
+        'expected:',
+        experiences.length
+      )
+      return {
+        data: null,
+        error: {
+          message: 'AI returned invalid number of mappings',
+          code: 'PARSE_ERROR',
+        },
+      }
+    }
+
+    // Validate each mapping has required structure
+    for (let i = 0; i < mappings.length; i++) {
+      const mapping = mappings[i]
+      if (
+        typeof mapping.original !== 'string' ||
+        !Array.isArray(mapping.mapped_skills) ||
+        typeof mapping.tech_equivalent !== 'string' ||
+        typeof mapping.reasoning !== 'string' ||
+        !Array.isArray(mapping.jd_keywords_matched)
+      ) {
+        console.error('[generateSkillMappings] Invalid mapping structure at index', i, mapping)
+        return {
+          data: null,
+          error: {
+            message: `AI returned invalid mapping structure at index ${i}`,
+            code: 'PARSE_ERROR',
+          },
+        }
+      }
+    }
+
+    console.log('[generateSkillMappings] ====== SUCCESS ======', {
+      mappingCount: mappings.length,
+    })
+
+    return {
+      data: { scanId, mappings },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[generateSkillMappings] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: {
+        message: 'Failed to generate skill mappings',
         code: 'GENERATION_ERROR',
       },
     }
