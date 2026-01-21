@@ -14,6 +14,11 @@ import {
   toKeywordAnalysis,
   isValidKeywordResult,
 } from '@/lib/openai/prompts/parseKeywords'
+import {
+  parseSectionScoresResponse,
+  isValidSectionScoresResult,
+} from '@/lib/openai/prompts/parseSectionScores'
+import { detectSections } from '@/lib/utils/resumeSectionDetector'
 import { analysisInputSchema } from '@/lib/validations/analysis'
 import type {
   AnalysisInput,
@@ -21,6 +26,7 @@ import type {
   AnalysisContext,
   UserProfile,
 } from '@/lib/types/analysis'
+import type { ParsedResume } from '@/lib/parsers/types'
 
 /**
  * Server Actions for Resume Analysis
@@ -137,10 +143,10 @@ export async function runAnalysis(
       .update({ status: 'processing' })
       .eq('id', parsed.data.scanId)
 
-    // Load resume text from resumes table
+    // Load resume text and parsed sections from resumes table
     const { data: resume, error: resumeError } = await supabase
       .from('resumes')
-      .select('extracted_text')
+      .select('extracted_text, parsed_resume')
       .eq('id', scan.resume_id)
       .single()
 
@@ -224,8 +230,27 @@ export async function runAnalysis(
       },
     }
 
-    // Create analysis prompt
-    const messages = createATSScoringPrompt(context)
+    // Detect resume sections for section-level scoring (Story 4.4)
+    let detectedSections: ReturnType<typeof detectSections> = []
+    if (resume.parsed_resume) {
+      try {
+        const parsedResume = resume.parsed_resume as unknown as ParsedResume
+        detectedSections = detectSections(parsedResume)
+        console.log('[runAnalysis] Detected resume sections', {
+          scanId: parsed.data.scanId,
+          sections: detectedSections,
+        })
+      } catch (error) {
+        console.warn('[runAnalysis] Failed to detect resume sections', {
+          scanId: parsed.data.scanId,
+          error,
+        })
+        // Continue with empty sections array
+      }
+    }
+
+    // Create analysis prompt with detected sections
+    const messages = createATSScoringPrompt(context, detectedSections)
 
     // Call OpenAI API with retry logic
     const openaiClient = getOpenAIClient()
@@ -248,6 +273,9 @@ export async function runAnalysis(
     // Parse keyword extraction from response content (Story 4.3)
     const keywordExtraction = parseKeywordsResponse(parsedResponse.content)
     const keywordAnalysis = toKeywordAnalysis(keywordExtraction)
+
+    // Parse section scores from response content (Story 4.4)
+    const sectionScoresResult = parseSectionScoresResponse(parsedResponse.content)
 
     // Validate analysis result
     if (!isValidAnalysisResult(analysisResult)) {
@@ -280,6 +308,15 @@ export async function runAnalysis(
       // Continue with empty keyword data rather than failing the entire analysis
     }
 
+    // Validate section scores result (warn if invalid but don't fail analysis)
+    if (!isValidSectionScoresResult(sectionScoresResult)) {
+      console.warn('[runAnalysis] Section scores result failed validation', {
+        scanId: parsed.data.scanId,
+        sectionScores: sectionScoresResult,
+      })
+      // Continue with empty section scores rather than failing the entire analysis
+    }
+
     // Update scan record with analysis results
     const { error: updateError } = await supabase
       .from('scans')
@@ -288,6 +325,7 @@ export async function runAnalysis(
         score_justification: analysisResult.justification,
         keywords_found: keywordAnalysis.keywordsFound as unknown as Record<string, unknown>,
         keywords_missing: keywordAnalysis.keywordsMissing as unknown as Record<string, unknown>,
+        section_scores: sectionScoresResult.sectionScores as unknown as Record<string, unknown>,
         status: 'completed',
       })
       .eq('id', parsed.data.scanId)
@@ -313,14 +351,16 @@ export async function runAnalysis(
       keywordsFoundCount: keywordAnalysis.keywordsFound.length,
       keywordsMissingCount: keywordAnalysis.keywordsMissing.length,
       majorKeywordsCoverage: keywordAnalysis.majorKeywordsCoverage,
+      sectionsScored: Object.keys(sectionScoresResult.sectionScores).length,
       tokensUsed: parsedResponse.usage.totalTokens,
       costEstimate: parsedResponse.costEstimate,
     })
 
-    // Include keyword analysis in returned result
+    // Include keyword analysis and section scores in returned result
     const fullAnalysisResult: AnalysisResult = {
       ...analysisResult,
       keywords: keywordAnalysis,
+      sectionScores: sectionScoresResult.sectionScores,
     }
 
     return {

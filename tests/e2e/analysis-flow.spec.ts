@@ -142,6 +142,12 @@ Nice to have:
       expect(Array.isArray(analysisResult.data?.keywords?.keywordsMissing)).toBe(true)
       expect(analysisResult.data?.keywords?.majorKeywordsCoverage).toBeGreaterThanOrEqual(0)
       expect(analysisResult.data?.keywords?.majorKeywordsCoverage).toBeLessThanOrEqual(100)
+
+      // Story 4.4: Verify section scores
+      expect(analysisResult.data?.sectionScores).toBeDefined()
+      // Verify at least one section was scored (experience from test resume)
+      const sectionCount = Object.keys(analysisResult.data?.sectionScores || {}).length
+      expect(sectionCount).toBeGreaterThan(0)
     }
 
     // Verify scan status was updated in database
@@ -167,6 +173,21 @@ Nice to have:
       }
       if (scanStatus.scan.keywordsMissing !== null) {
         expect(Array.isArray(scanStatus.scan.keywordsMissing)).toBe(true)
+      }
+
+      // Story 4.4: Verify section scores were saved to database
+      if (scanStatus.scan.sectionScores !== null) {
+        expect(typeof scanStatus.scan.sectionScores).toBe('object')
+        // Verify structure if present
+        const sectionScores = scanStatus.scan.sectionScores as Record<string, unknown>
+        if (Object.keys(sectionScores).length > 0) {
+          // At least one section should have score, explanation, strengths, weaknesses
+          const firstSection = Object.values(sectionScores)[0] as Record<string, unknown>
+          expect(typeof firstSection.score).toBe('number')
+          expect(typeof firstSection.explanation).toBe('string')
+          expect(Array.isArray(firstSection.strengths)).toBe(true)
+          expect(Array.isArray(firstSection.weaknesses)).toBe(true)
+        }
       }
     }
   })

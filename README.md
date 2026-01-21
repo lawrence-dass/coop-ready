@@ -157,6 +157,52 @@ Missing keywords are categorized by importance:
 - ≥90% coverage displays "Great job! Your resume covers the key requirements"
 - Top 10-15 missing keywords displayed for actionable optimization
 
+### Section-Level Scoring
+
+CoopReady provides detailed scores for individual resume sections to help you understand exactly where to focus your optimization efforts.
+
+**Sections Scored:**
+- **Experience**: Work history, relevance to target role, quantified achievements
+- **Education**: Degree relevance, institution prestige, GPA (if strong), coursework
+- **Skills**: Technical and soft skills alignment with job requirements
+- **Projects**: Complexity, relevance, technical skills demonstrated
+- **Summary/Objective**: Personalization, keyword density, clarity of intent
+
+Each section receives:
+- **Score (0-100)**: Overall quality and relevance to job description
+- **Explanation**: 2-3 sentences describing why it scored that way
+- **Strengths**: What's working well in this section (specific examples)
+- **Weaknesses**: Specific issues to address (actionable feedback)
+
+**Only sections that exist in your resume are scored** - no empty sections means focused, actionable feedback.
+
+**What Makes a Section Score High/Low:**
+
+| Section | High Score Indicators | Low Score Indicators |
+|---------|----------------------|---------------------|
+| **Experience** | Relevant roles, quantified achievements, keyword match, career progression | Vague descriptions, no metrics, irrelevant jobs, gaps |
+| **Education** | Relevant degree, strong GPA (3.5+), notable school, relevant coursework | Unrelated degree, no GPA listed, missing relevant details |
+| **Skills** | Comprehensive coverage of required tech, well-categorized, specific tools | Missing key requirements, too generic, poorly organized |
+| **Projects** | Relevant to target role, technical complexity, clear impact | Vague descriptions, no technical details, irrelevant projects |
+| **Summary** | Personalized to job, high keyword density, clear value proposition | Generic, keyword-light, unclear intent |
+
+**Example Section Score:**
+```
+Experience Section: 75/100
+Explanation: "Experience section shows strong relevance with 3+ years in React and Node.js.
+             Quantified achievements present in 2 bullet points. Recent roles align well
+             with job requirements."
+
+Strengths:
+  - Relevant tech stack experience (React, Node.js, AWS)
+  - Quantified impact in bullet points
+  - Progressive career growth demonstrated
+
+Weaknesses:
+  - Could add more quantified metrics to older roles
+  - Missing Docker/Kubernetes experience mentioned in JD
+```
+
 ### Cost Estimates
 
 Average cost per analysis (GPT-4o-mini):

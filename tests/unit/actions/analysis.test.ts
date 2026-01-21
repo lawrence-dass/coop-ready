@@ -3,6 +3,7 @@
  *
  * @see Story 4.2: ATS Score Calculation
  * @see Story 4.3: Missing Keywords Detection
+ * @see Story 4.4: Section-Level Score Breakdown
  */
 
 import { runAnalysis } from '@/actions/analysis'
@@ -19,6 +20,11 @@ import {
   toKeywordAnalysis,
   isValidKeywordResult,
 } from '@/lib/openai/prompts/parseKeywords'
+import {
+  parseSectionScoresResponse,
+  isValidSectionScoresResult,
+} from '@/lib/openai/prompts/parseSectionScores'
+import { detectSections } from '@/lib/utils/resumeSectionDetector'
 
 // Mock dependencies
 jest.mock('@/lib/supabase/server')
@@ -26,6 +32,8 @@ jest.mock('@/lib/openai')
 jest.mock('@/lib/openai/retry')
 jest.mock('@/lib/openai/prompts/parseAnalysis')
 jest.mock('@/lib/openai/prompts/parseKeywords')
+jest.mock('@/lib/openai/prompts/parseSectionScores')
+jest.mock('@/lib/utils/resumeSectionDetector')
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
 const mockGetOpenAIClient = getOpenAIClient as jest.MockedFunction<typeof getOpenAIClient>
@@ -36,6 +44,9 @@ const mockIsValidAnalysisResult = isValidAnalysisResult as jest.MockedFunction<t
 const mockParseKeywordsResponse = parseKeywordsResponse as jest.MockedFunction<typeof parseKeywordsResponse>
 const mockToKeywordAnalysis = toKeywordAnalysis as jest.MockedFunction<typeof toKeywordAnalysis>
 const mockIsValidKeywordResult = isValidKeywordResult as jest.MockedFunction<typeof isValidKeywordResult>
+const mockParseSectionScoresResponse = parseSectionScoresResponse as jest.MockedFunction<typeof parseSectionScoresResponse>
+const mockIsValidSectionScoresResult = isValidSectionScoresResult as jest.MockedFunction<typeof isValidSectionScoresResult>
+const mockDetectSections = detectSections as jest.MockedFunction<typeof detectSections>
 
 // Mock console methods to avoid cluttering test output
 beforeAll(() => {
@@ -66,8 +77,26 @@ describe('runAnalysis Server Action', () => {
     updated_at: '2026-01-20T00:00:00Z',
   }
 
+  const mockParsedResume = {
+    contact: 'john@example.com',
+    summary: 'Software Developer',
+    experience: [
+      {
+        company: 'TechCorp',
+        title: 'Developer',
+        dates: '2020-2023',
+        bulletPoints: ['Built web apps'],
+      },
+    ],
+    education: [],
+    skills: [{ name: 'React', category: 'technical' as const }],
+    projects: '',
+    other: '',
+  }
+
   const mockResume = {
     extracted_text: 'John Doe\nSoftware Developer\n\nSkills: React, TypeScript, JavaScript\n\nExperience:\n- Built web applications with React\n- Worked with Node.js backend',
+    parsed_resume: mockParsedResume,
   }
 
   const mockProfile = {
@@ -121,6 +150,38 @@ describe('runAnalysis Server Action', () => {
   const mockKeywordAnalysis = {
     ...mockKeywordExtraction,
     allMajorKeywordsPresent: false,
+  }
+
+  const mockSectionScoresResult = {
+    sectionScores: {
+      experience: {
+        score: 75,
+        explanation: 'Good experience section with relevant roles.',
+        strengths: ['Relevant work history'],
+        weaknesses: ['Missing quantified metrics'],
+      },
+      skills: {
+        score: 85,
+        explanation: 'Strong technical skills coverage.',
+        strengths: ['Comprehensive skills list'],
+        weaknesses: [],
+      },
+    },
+  }
+
+  // Helper to setup default mock return values for OpenAI-related functions
+  function setupDefaultMocks() {
+    mockGetOpenAIClient.mockReturnValue({} as any)
+    mockWithRetry.mockResolvedValue({} as any)
+    mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+    mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+    mockIsValidAnalysisResult.mockReturnValue(true)
+    mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+    mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+    mockIsValidKeywordResult.mockReturnValue(true)
+    mockDetectSections.mockReturnValue(['experience', 'skills'])
+    mockParseSectionScoresResponse.mockReturnValue(mockSectionScoresResult)
+    mockIsValidSectionScoresResult.mockReturnValue(true)
   }
 
   function createMockSupabase() {
@@ -397,14 +458,7 @@ describe('runAnalysis Server Action', () => {
       mockSupabase.from = mockFrom as any
       mockCreateClient.mockResolvedValue(mockSupabase as any)
 
-      mockGetOpenAIClient.mockReturnValue({} as any)
-      mockWithRetry.mockResolvedValue({} as any)
-      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
-      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
-      mockIsValidAnalysisResult.mockReturnValue(true)
-      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
-      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
-      mockIsValidKeywordResult.mockReturnValue(true)
+      setupDefaultMocks()
 
       const result = await runAnalysis({ scanId: validScanId })
 
@@ -461,26 +515,20 @@ describe('runAnalysis Server Action', () => {
       mockSupabase.from = mockFrom as any
       mockCreateClient.mockResolvedValue(mockSupabase as any)
 
-      mockGetOpenAIClient.mockReturnValue({} as any)
-      mockWithRetry.mockResolvedValue({} as any)
-      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
-      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
-      mockIsValidAnalysisResult.mockReturnValue(true)
-      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
-      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
-      mockIsValidKeywordResult.mockReturnValue(true)
+      setupDefaultMocks()
 
       await runAnalysis({ scanId: validScanId })
 
       // Verify update was called for processing status
       expect(updateCalls[0]).toEqual({ status: 'processing' })
 
-      // Verify update was called for completed status with score and keywords
+      // Verify update was called for completed status with score, keywords, and section scores
       expect(updateCalls[1]).toEqual({
         ats_score: 75,
         score_justification: mockAnalysisResult.justification,
         keywords_found: mockKeywordAnalysis.keywordsFound,
         keywords_missing: mockKeywordAnalysis.keywordsMissing,
+        section_scores: mockSectionScoresResult.sectionScores,
         status: 'completed',
       })
     })
@@ -812,14 +860,7 @@ describe('runAnalysis Server Action', () => {
       mockSupabase.from = mockFrom as any
       mockCreateClient.mockResolvedValue(mockSupabase as any)
 
-      mockGetOpenAIClient.mockReturnValue({} as any)
-      mockWithRetry.mockResolvedValue({} as any)
-      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
-      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
-      mockIsValidAnalysisResult.mockReturnValue(true)
-      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
-      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
-      mockIsValidKeywordResult.mockReturnValue(true)
+      setupDefaultMocks()
 
       const result = await runAnalysis({ scanId: validScanId })
 
@@ -873,14 +914,7 @@ describe('runAnalysis Server Action', () => {
       mockSupabase.from = mockFrom as any
       mockCreateClient.mockResolvedValue(mockSupabase as any)
 
-      mockGetOpenAIClient.mockReturnValue({} as any)
-      mockWithRetry.mockResolvedValue({} as any)
-      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
-      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
-      mockIsValidAnalysisResult.mockReturnValue(true)
-      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
-      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
-      mockIsValidKeywordResult.mockReturnValue(true)
+      setupDefaultMocks()
 
       await runAnalysis({ scanId: validScanId })
 
@@ -948,6 +982,183 @@ describe('runAnalysis Server Action', () => {
       // Should still complete successfully despite invalid keyword data
       expect(result.error).toBeNull()
       expect(result.data?.overallScore).toBe(75)
+    })
+  })
+
+  describe('Section-Level Scoring (Story 4.4)', () => {
+    it('should include section scores in analysis result', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      mockGetOpenAIClient.mockReturnValue({} as any)
+      mockWithRetry.mockResolvedValue({} as any)
+      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+      mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
+      mockDetectSections.mockReturnValue(['experience', 'skills'])
+      mockParseSectionScoresResponse.mockReturnValue(mockSectionScoresResult)
+      mockIsValidSectionScoresResult.mockReturnValue(true)
+
+      const result = await runAnalysis({ scanId: validScanId })
+
+      expect(result.data?.sectionScores).toBeDefined()
+      expect(result.data?.sectionScores?.experience).toBeDefined()
+      expect(result.data?.sectionScores?.experience?.score).toBe(75)
+      expect(result.data?.sectionScores?.skills).toBeDefined()
+      expect(result.data?.sectionScores?.skills?.score).toBe(85)
+    })
+
+    it('should save section scores to database', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const updateCalls: any[] = []
+      const updateMock = jest.fn((params) => {
+        updateCalls.push(params)
+        return {
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: updateMock,
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      mockGetOpenAIClient.mockReturnValue({} as any)
+      mockWithRetry.mockResolvedValue({} as any)
+      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+      mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
+      mockDetectSections.mockReturnValue(['experience', 'skills'])
+      mockParseSectionScoresResponse.mockReturnValue(mockSectionScoresResult)
+      mockIsValidSectionScoresResult.mockReturnValue(true)
+
+      await runAnalysis({ scanId: validScanId })
+
+      // Second update call should include section scores
+      expect(updateCalls[1].section_scores).toEqual(mockSectionScoresResult.sectionScores)
+    })
+
+    it('should continue with empty section scores if parsing fails', async () => {
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+
+      const mockFrom = jest.fn().mockImplementation((table: string) => {
+        if (table === 'scans') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
+          }
+        }
+        if (table === 'resumes') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
+          }
+        }
+        if (table === 'user_profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockSupabase.from = mockFrom as any
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      mockGetOpenAIClient.mockReturnValue({} as any)
+      mockWithRetry.mockResolvedValue({} as any)
+      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+      mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
+      mockDetectSections.mockReturnValue(['experience'])
+      mockParseSectionScoresResponse.mockReturnValue({ sectionScores: {} }) // Empty
+      mockIsValidSectionScoresResult.mockReturnValue(false) // Invalid
+
+      const result = await runAnalysis({ scanId: validScanId })
+
+      // Should still complete successfully despite invalid section scores
+      expect(result.error).toBeNull()
+      expect(result.data?.overallScore).toBe(75)
+      expect(result.data?.sectionScores).toEqual({})
     })
   })
 })

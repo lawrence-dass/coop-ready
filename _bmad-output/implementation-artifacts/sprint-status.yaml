@@ -71,7 +71,7 @@ development_status:
   4-1-openai-integration-setup: done
   4-2-ats-score-calculation: done
   4-3-missing-keywords-detection: done
-  4-4-section-level-score-breakdown: backlog
+  4-4-section-level-score-breakdown: done
   4-5-experience-level-aware-analysis: backlog
   4-6-resume-format-issues-detection: backlog
   4-7-analysis-results-page: backlog

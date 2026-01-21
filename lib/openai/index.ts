@@ -29,3 +29,9 @@ export {
   toKeywordAnalysis,
   isValidKeywordResult,
 } from './prompts/parseKeywords'
+
+// Section Scoring (Story 4.4)
+export {
+  parseSectionScoresResponse,
+  isValidSectionScoresResult,
+} from './prompts/parseSectionScores'
