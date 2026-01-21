@@ -40,3 +40,30 @@ export const createTestScanSchema = z.object({
 })
 
 export type CreateTestScanInput = z.infer<typeof createTestScanSchema>
+
+// Suggestion test endpoint schemas
+export const createTestSuggestionSchema = z.object({
+  scanId: z.string().uuid('Invalid scan ID format'),
+  section: z.enum(['experience', 'education', 'projects', 'skills', 'format']),
+  itemIndex: z.number().int().nonnegative('Item index must be non-negative'),
+  suggestionType: z.enum([
+    'bullet_rewrite',
+    'skill_mapping',
+    'action_verb',
+    'quantification',
+    'skill_expansion',
+    'format',
+    'removal',
+  ]),
+  originalText: z.string().min(1, 'Original text is required'),
+  suggestedText: z.string().min(1, 'Suggested text is required'),
+  reasoning: z.string().optional(),
+})
+
+export type CreateTestSuggestionInput = z.infer<typeof createTestSuggestionSchema>
+
+export const queryTestSuggestionsSchema = z.object({
+  scanId: z.string().uuid('Invalid scan ID format'),
+})
+
+export type QueryTestSuggestionsInput = z.infer<typeof queryTestSuggestionsSchema>

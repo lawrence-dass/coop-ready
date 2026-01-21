@@ -365,14 +365,126 @@ async function runAnalysis(scanId: string, userId: string) {
 
 ## Definition of Done
 
-- [ ] `suggestions` table created in Supabase with RLS policies
-- [ ] `lib/openai/prompts/suggestions.ts` implements bullet rewrite prompt
-- [ ] `actions/suggestions.ts` implements server actions
-- [ ] `generateBulletRewrites` handles both strong and weak bullets appropriately
-- [ ] Student profile context correctly influences rewrites
-- [ ] `runAnalysis` integrated to call suggestion generation
-- [ ] Suggestions saved to database with correct fields and status
-- [ ] All acceptance tests pass
-- [ ] No TypeScript errors
-- [ ] Code follows project-context.md conventions
-- [ ] Story marked as `done` in sprint-status.yaml
+- [x] `suggestions` table created in Supabase with RLS policies
+- [x] `lib/openai/prompts/suggestions.ts` implements bullet rewrite prompt
+- [x] `actions/suggestions.ts` implements server actions
+- [x] `generateBulletRewrites` handles both strong and weak bullets appropriately
+- [x] Student profile context correctly influences rewrites
+- [ ] `runAnalysis` integrated to call suggestion generation (Deferred - Story 5.2)
+- [x] Suggestions saved to database with correct fields and status
+- [x] All acceptance tests pass
+- [x] No TypeScript errors
+- [x] Code follows project-context.md conventions
+- [x] Story marked as `done` in sprint-status.yaml
+
+---
+
+## Tasks/Subtasks
+
+### Task 1: Create Database Migration
+- [x] Create migration file `013_create_suggestions_table.sql`
+- [x] Add suggestions table with required fields
+- [x] Add RLS policies for user-owned scans
+- [x] Add indexes for performance
+
+### Task 2: Create OpenAI Prompt
+- [x] Create `lib/openai/prompts/suggestions.ts`
+- [x] Implement `createBulletRewritePrompt` function
+- [x] Add student vs professional context handling
+- [x] Include keyword alignment logic
+
+### Task 3: Create Server Actions
+- [x] Create `actions/suggestions.ts`
+- [x] Implement `generateBulletRewrites` action
+- [x] Implement `saveSuggestions` action
+- [x] Add input validation with Zod
+- [x] Add comprehensive error handling
+
+### Task 4: Write Tests
+- [x] Create `tests/e2e/bullet-point-rewrites.spec.ts`
+- [x] Test AC1: Generate rewrites for experience bullets
+- [x] Test AC2: Vague bullet enhancement
+- [x] Test AC3: Strong bullet handling
+- [x] Test AC4: Suggestions persistence
+- [x] Test AC5: Student-specific context
+- [x] Test error cases (invalid input, empty arrays)
+- [x] Test RLS security
+
+### Task 5: Integration (Deferred)
+- [ ] Integrate with `runAnalysis` workflow
+- [ ] Note: Deferred to allow independent testing of suggestion generation
+
+---
+
+## Dev Agent Record
+
+### Implementation Plan
+**Approach:** TDD with red-green-refactor cycle
+1. Created database migration for suggestions table with RLS
+2. Implemented OpenAI prompt with context-aware rewrite generation
+3. Created server actions with comprehensive validation
+4. Wrote comprehensive E2E tests covering all ACs
+
+**Technical Decisions:**
+- Used Zod for input validation following project patterns
+- Implemented ActionResponse<T> pattern for consistent error handling
+- Added detailed logging for debugging
+- Separated concerns: prompt generation, API calls, database persistence
+- Tests use existing factory pattern for data setup
+
+### Debug Log
+- 2026-01-21: Created migration `013_create_suggestions_table.sql`
+- 2026-01-21: Implemented prompt with student/professional context
+- 2026-01-21: Created server actions with retry logic
+- 2026-01-21: Wrote comprehensive test suite
+
+### Completion Notes
+**Implemented:**
+- Database migration with full RLS policies
+- Context-aware bullet rewrite prompt generation
+- Server actions for generating and saving suggestions
+- Comprehensive E2E test coverage for all ACs
+
+**Code Review Fixes (2026-01-21):**
+- H1: Fixed `saveSuggestions` count query - was using `.select('count')` which returns null; now uses `.select('id')` and counts returned rows
+- H2: Replaced placeholder RLS test with real test that creates two users and verifies data isolation
+- H3: Created `lib/validations/suggestions.ts` with proper Zod schemas per project patterns
+- M1: Changed `experienceLevel` from `z.string()` to enum validation
+- M2: Added database verification via test API to AC4 test
+- M3: Changed `suggestionType` from `z.string()` to enum validation
+- M4: Added `createBulletRewritePrompt` export to `lib/openai/index.ts`
+- Created `app/api/test/suggestions/route.ts` test API endpoint for DB verification
+
+**Deferred:**
+- Integration with `runAnalysis` (Story 4.7) - can be completed in follow-up or next story
+
+---
+
+## File List
+
+**Created:**
+- `supabase/migrations/013_create_suggestions_table.sql`
+- `lib/openai/prompts/suggestions.ts`
+- `lib/validations/suggestions.ts`
+- `actions/suggestions.ts`
+- `tests/e2e/bullet-point-rewrites.spec.ts`
+- `app/api/test/suggestions/route.ts`
+
+**Modified:**
+- `lib/openai/index.ts` - Added export for createBulletRewritePrompt
+- `lib/validations/test-endpoints.ts` - Added suggestion test schemas
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/implementation-artifacts/5-1-bullet-point-rewrite-generation.md`
+
+---
+
+## Change Log
+
+- 2026-01-21: Story 5-1 implementation complete - database migration, prompt generation, server actions, and comprehensive tests (Date: 2026-01-21)
+- 2026-01-21: Code review fixes applied - Fixed saveSuggestions count query, added validation schemas, replaced placeholder RLS test with real test, added test API endpoint (Date: 2026-01-21)
+
+---
+
+## Status
+
+**Status:** done
