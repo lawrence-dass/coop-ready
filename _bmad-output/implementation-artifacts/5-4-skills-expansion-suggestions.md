@@ -1,6 +1,6 @@
 # Story 5.4: Skills Expansion Suggestions
 
-**Status:** ready-for-dev
+**Status:** done
 **Epic:** 5 - Suggestions & Optimization Workflow
 **Branch:** feat/5-4-skills-expansion-suggestions
 **Dependency:** Story 5-1 (Bullet Point Rewrite Generation) - for suggestions table
@@ -716,30 +716,110 @@ async function runAnalysis(scanId: string, userId: string) {
 
 ## Tasks/Subtasks
 
-- [ ] Create `lib/validations/skills.ts` with skill expansion mappings
-- [ ] Create `lib/openai/prompts/skills-expansion.ts` for skill expansion prompt
-- [ ] Extend `actions/suggestions.ts` with `generateSkillExpansionSuggestions` function
-- [ ] Create `transformSkillExpansionSuggestions` helper function
-- [ ] Write unit tests for skill validation (estimate 15 tests)
-- [ ] Write unit tests for skill expansion suggestions (estimate 20 tests)
-- [ ] Validate all tests pass
-- [ ] Mark story as review
+- [x] Create `lib/validations/skills.ts` with skill expansion mappings
+- [x] Create `lib/openai/prompts/skills-expansion.ts` for skill expansion prompt
+- [x] Extend `actions/suggestions.ts` with `generateSkillExpansionSuggestions` function
+- [x] Create `transformSkillExpansionSuggestions` helper function
+- [x] Write unit tests for skill validation (22 tests created)
+- [x] Write unit tests for skill expansion suggestions (22 prompt tests + 16 action tests)
+- [x] Validate all tests pass (60 tests total - no regressions)
+- [x] Mark story as review
+- [x] Code review fixes applied (see Change Log)
 
 ---
 
 ## Dev Agent Record
 
 ### Agent Model Used
-Haiku 4.5
+Sonnet 4.5
 
 ### Debug Log References
-(To be filled during implementation)
+- All tests passing (60 tests for new functionality)
+- No regressions introduced (319 tests pass in related modules)
 
 ### Completion Notes List
-(To be filled during implementation)
+✅ **Task 1**: Created `lib/validations/skills.ts` with 30+ skill expansion mappings
+  - Includes programming languages, frameworks, databases, cloud platforms, and DevOps tools
+  - Provides helper functions: findSkillExpansion, getExpandableSkills, isExpandableSkill, filterExpandableSkills
+  - 22 unit tests covering all functionality
+
+✅ **Task 2**: Created `lib/openai/prompts/skills-expansion.ts`
+  - Context-aware prompt that prioritizes JD keyword matching
+  - Handles both known and unknown skills
+  - 22 unit tests covering prompt generation scenarios
+
+✅ **Task 3**: Extended `actions/suggestions.ts` with `generateSkillExpansionSuggestions`
+  - Hybrid approach: local mappings for known skills (fast, no API cost) + AI fallback for unknown
+  - Filters keywords matched from job description
+  - Returns only expandable skills with valid expansions
+  - Follows ActionResponse<T> pattern consistently
+
+✅ **Task 4**: Created `transformSkillExpansionSuggestions` helper function
+  - Transforms API response to database-compatible format
+  - Sets suggestion_type: 'skill_expansion'
+  - Includes keywords matched in reasoning field
+
+✅ **Tasks 5-6**: Comprehensive test coverage (60 tests total)
+  - Unit tests for skill validation helpers (22 tests)
+  - Unit tests for OpenAI prompt generation (22 tests)
+  - Unit tests for server action and transformer (16 tests)
+  - All tests pass with no regressions
 
 ### File List
-(To be filled during implementation)
+- lib/validations/skills.ts (NEW)
+- lib/openai/prompts/skills-expansion.ts (NEW)
+- actions/suggestions.ts (MODIFIED - added generateSkillExpansionSuggestions and transformSkillExpansionSuggestions)
+- tests/unit/lib/validations/skills.test.ts (NEW)
+- tests/unit/lib/openai/prompts/skills-expansion.test.ts (NEW)
+- tests/unit/actions/suggestions-skill-expansion.test.ts (NEW)
+
+---
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-01-21
+**Reviewer:** Claude Opus 4.5 (Adversarial Code Review)
+**Outcome:** ✅ APPROVED (after fixes)
+
+### Issues Found and Fixed
+
+| Severity | Issue | Resolution |
+|----------|-------|------------|
+| HIGH | Unused `scanId` param in transformer | Removed parameter from function signature |
+| HIGH | Story test count documentation misleading | Fixed documentation to show 22+22+16=60 |
+| MEDIUM | Keyword matching logic one-directional | Made bidirectional (either direction matches) |
+| MEDIUM | `any` type in AI suggestion lookup | Added `AiSkillSuggestion` interface |
+
+### Issues Noted (Not Fixed - Pre-existing)
+
+| Severity | Issue | Reason |
+|----------|-------|--------|
+| MEDIUM | Console.log in production code | Pre-existing across all suggestion functions |
+| HIGH | Missing DB integration test for skill_expansion | Out of scope - requires test infrastructure |
+
+### Verification
+
+- All 60 unit tests pass
+- TypeScript compilation clean for story files
+- All ACs verified implemented
+
+---
+
+## Change Log
+
+**2026-01-21** - Code Review Fixes Applied
+- Fixed: Removed unused `scanId` parameter from `transformSkillExpansionSuggestions`
+- Fixed: Keyword matching logic now bidirectional (JD contains skill OR skill contains JD)
+- Fixed: Added proper TypeScript interface `AiSkillSuggestion` to replace `any` type
+- Fixed: Updated test calls to match new function signature (4 tests updated)
+- All 60 tests pass after fixes
+
+**2026-01-21** - Story 5.4 Implementation Complete
+- Created skill expansion mappings for 30+ common technologies
+- Implemented hybrid local/AI approach for skill expansion suggestions
+- Added JD keyword matching to prioritize relevant expansions
+- Comprehensive test coverage: 60 tests (all passing)
+- Files: 3 new files (skills.ts, skills-expansion.ts, 3 test files), 1 modified (actions/suggestions.ts)
 
 ---
 
