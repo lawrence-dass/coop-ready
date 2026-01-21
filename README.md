@@ -34,7 +34,9 @@ CoopReady helps job seekers optimize their resumes for Applicant Tracking System
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+ (see `.nvmrc` for exact version)
+  - Using [nvm](https://github.com/nvm-sh/nvm): `nvm use`
+  - Using [fnm](https://github.com/Schniz/fnm): `fnm use`
 - npm or yarn
 - Supabase account
 - OpenAI API key
@@ -94,6 +96,44 @@ CoopReady uses OpenAI's GPT-4o-mini model for resume analysis. To get started:
 4. **Verify setup**: Check server console for initialization message
 
 For detailed setup instructions, troubleshooting, and best practices, see [docs/OPENAI_SETUP.md](docs/OPENAI_SETUP.md).
+
+## Analysis Engine
+
+CoopReady uses OpenAI's GPT-4o-mini to analyze resumes and calculate ATS compatibility scores.
+
+### Scoring Formula
+
+The ATS score (0-100) is calculated using a weighted breakdown:
+
+| Category | Weight | Description |
+|----------|--------|-------------|
+| **Keywords** | 40% | Keyword density and job description match |
+| **Skills** | 30% | Technical/soft skills alignment with requirements |
+| **Experience** | 20% | Relevant background and quantified achievements |
+| **Format** | 10% | ATS-parseable structure and section clarity |
+
+**Score Interpretation:**
+- **70-100**: Excellent fit - Strong match with job requirements
+- **50-70**: Good fit - Qualified with minor optimization opportunities
+- **30-50**: Fair fit - Some relevant experience but improvements needed
+- **0-30**: Poor fit - Major gaps in qualifications or ATS compatibility
+
+### Context-Aware Scoring
+
+Analysis adapts to user experience level:
+- **Students**: Values academic projects, coursework, certifications equally with internships
+- **Career Changers**: Emphasizes transferable skills and demonstrates growth narrative
+- **Experienced**: Focuses on quantified achievements and leadership impact
+
+### Cost Estimates
+
+Average cost per analysis (GPT-4o-mini):
+- **Token usage**: 1,000-1,500 tokens per analysis
+- **Cost**: $0.001-0.003 per scan
+- **Free tier** (3 scans/month): ~$0.01/user
+- **Paid tier** (30 scans/month): ~$0.05/user
+
+For detailed pricing and optimization tips, see [docs/OPENAI_SETUP.md](docs/OPENAI_SETUP.md).
 
 ## Environment Variables
 
