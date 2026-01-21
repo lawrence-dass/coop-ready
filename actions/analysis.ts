@@ -1,10 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getUserProfile } from '@/lib/supabase/queries'
 import { getOpenAIClient } from '@/lib/openai'
 import { withRetry } from '@/lib/openai/retry'
 import { parseOpenAIResponse } from '@/lib/openai'
 import { createATSScoringPrompt } from '@/lib/openai/prompts/scoring'
+import { buildExperienceContext } from '@/lib/openai/prompts/experienceContext'
 import {
   parseAnalysisResponse,
   isValidAnalysisResult,
@@ -25,14 +27,31 @@ import type {
   AnalysisResult,
   AnalysisContext,
   UserProfile,
+  ExperienceLevel,
 } from '@/lib/types/analysis'
 import type { ParsedResume } from '@/lib/parsers/types'
+
+// Valid experience levels for type-safe validation
+const VALID_EXPERIENCE_LEVELS: ExperienceLevel[] = ['student', 'career_changer', 'experienced']
+
+/**
+ * Validate and normalize experience level to ensure type safety
+ */
+function normalizeExperienceLevel(level: string): ExperienceLevel {
+  if (VALID_EXPERIENCE_LEVELS.includes(level as ExperienceLevel)) {
+    return level as ExperienceLevel
+  }
+  console.warn(`[normalizeExperienceLevel] Invalid level "${level}", defaulting to student`)
+  return 'student'
+}
 
 /**
  * Server Actions for Resume Analysis
  *
  * @see Story 4.2: ATS Score Calculation
  * @see Story 4.3: Missing Keywords Detection
+ * @see Story 4.4: Section-Level Score Breakdown
+ * @see Story 4.5: Experience-Level-Aware Analysis
  */
 
 type ActionResponse<T> =
@@ -192,41 +211,34 @@ export async function runAnalysis(
       }
     }
 
-    // Load user profile for context-aware scoring
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('experience_level, target_role')
-      .eq('user_id', user.id)
-      .single()
+    // Load user profile for experience-level-aware analysis (Story 4.5)
+    const profile = await getUserProfile(user.id)
 
-    if (profileError || !profile) {
-      console.error('[runAnalysis] User profile not found', {
-        userId: user.id,
-        error: profileError,
-      })
+    console.log('[runAnalysis] User profile loaded', {
+      userId: user.id,
+      experienceLevel: profile.experienceLevel,
+      targetRole: profile.targetRole,
+    })
 
-      // Mark scan as failed
-      await supabase
-        .from('scans')
-        .update({ status: 'failed' })
-        .eq('id', parsed.data.scanId)
+    // Build experience context narrative (Story 4.5)
+    const experienceContext = buildExperienceContext(
+      profile.experienceLevel,
+      profile.targetRole
+    )
 
-      return {
-        data: null,
-        error: {
-          message: 'User profile not found. Please complete onboarding.',
-          code: 'PROFILE_NOT_FOUND',
-        },
-      }
-    }
+    console.log('[runAnalysis] Experience context built', {
+      experienceLevel: profile.experienceLevel,
+      contextLength: experienceContext.length,
+    })
 
-    // Build analysis context
+    // Build analysis context with validated experience level
+    const validatedLevel = normalizeExperienceLevel(profile.experienceLevel)
     const context: AnalysisContext = {
       resumeText: resume.extracted_text,
       jobDescription: scan.job_description,
       userProfile: {
-        experienceLevel: profile.experience_level as UserProfile['experienceLevel'],
-        targetRole: profile.target_role,
+        experienceLevel: validatedLevel,
+        targetRole: profile.targetRole,
       },
     }
 
@@ -317,7 +329,7 @@ export async function runAnalysis(
       // Continue with empty section scores rather than failing the entire analysis
     }
 
-    // Update scan record with analysis results
+    // Update scan record with analysis results (includes experience_level_context from Story 4.5)
     const { error: updateError } = await supabase
       .from('scans')
       .update({
@@ -326,6 +338,7 @@ export async function runAnalysis(
         keywords_found: keywordAnalysis.keywordsFound as unknown as Record<string, unknown>,
         keywords_missing: keywordAnalysis.keywordsMissing as unknown as Record<string, unknown>,
         section_scores: sectionScoresResult.sectionScores as unknown as Record<string, unknown>,
+        experience_level_context: experienceContext, // Store context used for analysis (Story 4.5 AC 10)
         status: 'completed',
       })
       .eq('id', parsed.data.scanId)
@@ -348,6 +361,7 @@ export async function runAnalysis(
     console.info('[runAnalysis] Analysis completed successfully', {
       scanId: parsed.data.scanId,
       overallScore: analysisResult.overallScore,
+      experienceLevel: profile.experienceLevel,
       keywordsFoundCount: keywordAnalysis.keywordsFound.length,
       keywordsMissingCount: keywordAnalysis.keywordsMissing.length,
       majorKeywordsCoverage: keywordAnalysis.majorKeywordsCoverage,
@@ -356,11 +370,12 @@ export async function runAnalysis(
       costEstimate: parsedResponse.costEstimate,
     })
 
-    // Include keyword analysis and section scores in returned result
+    // Include keyword analysis, section scores, and experience context in returned result (Story 4.5)
     const fullAnalysisResult: AnalysisResult = {
       ...analysisResult,
       keywords: keywordAnalysis,
       sectionScores: sectionScoresResult.sectionScores,
+      experienceLevelContext: experienceContext, // Include context in result (Story 4.5 AC 10)
     }
 
     return {

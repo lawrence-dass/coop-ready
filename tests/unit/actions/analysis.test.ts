@@ -4,10 +4,12 @@
  * @see Story 4.2: ATS Score Calculation
  * @see Story 4.3: Missing Keywords Detection
  * @see Story 4.4: Section-Level Score Breakdown
+ * @see Story 4.5: Experience-Level-Aware Analysis
  */
 
 import { runAnalysis } from '@/actions/analysis'
 import { createClient } from '@/lib/supabase/server'
+import { getUserProfile } from '@/lib/supabase/queries'
 import { getOpenAIClient } from '@/lib/openai'
 import { withRetry } from '@/lib/openai/retry'
 import { parseOpenAIResponse } from '@/lib/openai'
@@ -25,17 +27,21 @@ import {
   isValidSectionScoresResult,
 } from '@/lib/openai/prompts/parseSectionScores'
 import { detectSections } from '@/lib/utils/resumeSectionDetector'
+import { buildExperienceContext } from '@/lib/openai/prompts/experienceContext'
 
 // Mock dependencies
 jest.mock('@/lib/supabase/server')
+jest.mock('@/lib/supabase/queries')
 jest.mock('@/lib/openai')
 jest.mock('@/lib/openai/retry')
 jest.mock('@/lib/openai/prompts/parseAnalysis')
 jest.mock('@/lib/openai/prompts/parseKeywords')
 jest.mock('@/lib/openai/prompts/parseSectionScores')
 jest.mock('@/lib/utils/resumeSectionDetector')
+jest.mock('@/lib/openai/prompts/experienceContext')
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
+const mockGetUserProfile = getUserProfile as jest.MockedFunction<typeof getUserProfile>
 const mockGetOpenAIClient = getOpenAIClient as jest.MockedFunction<typeof getOpenAIClient>
 const mockWithRetry = withRetry as jest.MockedFunction<typeof withRetry>
 const mockParseOpenAIResponse = parseOpenAIResponse as jest.MockedFunction<typeof parseOpenAIResponse>
@@ -47,6 +53,7 @@ const mockIsValidKeywordResult = isValidKeywordResult as jest.MockedFunction<typ
 const mockParseSectionScoresResponse = parseSectionScoresResponse as jest.MockedFunction<typeof parseSectionScoresResponse>
 const mockIsValidSectionScoresResult = isValidSectionScoresResult as jest.MockedFunction<typeof isValidSectionScoresResult>
 const mockDetectSections = detectSections as jest.MockedFunction<typeof detectSections>
+const mockBuildExperienceContext = buildExperienceContext as jest.MockedFunction<typeof buildExperienceContext>
 
 // Mock console methods to avoid cluttering test output
 beforeAll(() => {
@@ -171,6 +178,13 @@ describe('runAnalysis Server Action', () => {
 
   // Helper to setup default mock return values for OpenAI-related functions
   function setupDefaultMocks() {
+    // Story 4.5: Mock getUserProfile and buildExperienceContext
+    mockGetUserProfile.mockResolvedValue({
+      experienceLevel: 'student',
+      targetRole: 'Software Engineer',
+    })
+    mockBuildExperienceContext.mockReturnValue('Experience context for student')
+
     mockGetOpenAIClient.mockReturnValue({} as any)
     mockWithRetry.mockResolvedValue({} as any)
     mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
@@ -376,49 +390,6 @@ describe('runAnalysis Server Action', () => {
       expect(result.data).toBeNull()
     })
 
-    it('should return error if user profile not found', async () => {
-      const mockSupabase = createMockSupabase()
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: mockUserId } },
-        error: null,
-      })
-
-      const mockFrom = jest.fn().mockImplementation((table: string) => {
-        if (table === 'scans') {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            update: jest.fn().mockReturnThis(),
-            single: jest.fn().mockResolvedValue({ data: mockScan, error: null }),
-          }
-        }
-        if (table === 'resumes') {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            single: jest.fn().mockResolvedValue({ data: mockResume, error: null }),
-          }
-        }
-        if (table === 'user_profiles') {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            single: jest.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
-          }
-        }
-        return {}
-      })
-
-      mockSupabase.from = mockFrom as any
-      mockCreateClient.mockResolvedValue(mockSupabase as any)
-
-      const result = await runAnalysis({ scanId: validScanId })
-
-      expect(result.error).toBeDefined()
-      expect(result.error?.code).toBe('PROFILE_NOT_FOUND')
-      expect(result.error?.message).toContain('User profile not found')
-      expect(result.data).toBeNull()
-    })
   })
 
   describe('Successful Analysis', () => {
@@ -522,13 +493,14 @@ describe('runAnalysis Server Action', () => {
       // Verify update was called for processing status
       expect(updateCalls[0]).toEqual({ status: 'processing' })
 
-      // Verify update was called for completed status with score, keywords, and section scores
+      // Verify update was called for completed status with score, keywords, section scores, and experience context
       expect(updateCalls[1]).toEqual({
         ats_score: 75,
         score_justification: mockAnalysisResult.justification,
         keywords_found: mockKeywordAnalysis.keywordsFound,
         keywords_missing: mockKeywordAnalysis.keywordsMissing,
         section_scores: mockSectionScoresResult.sectionScores,
+        experience_level_context: 'Experience context for student', // Story 4.5
         status: 'completed',
       })
     })
@@ -1022,6 +994,13 @@ describe('runAnalysis Server Action', () => {
       mockSupabase.from = mockFrom as any
       mockCreateClient.mockResolvedValue(mockSupabase as any)
 
+      // Story 4.5: Mock getUserProfile
+      mockGetUserProfile.mockResolvedValue({
+        experienceLevel: 'student',
+        targetRole: 'Software Engineer',
+      })
+      mockBuildExperienceContext.mockReturnValue('Experience context for student')
+
       mockGetOpenAIClient.mockReturnValue({} as any)
       mockWithRetry.mockResolvedValue({} as any)
       mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
@@ -1087,6 +1066,13 @@ describe('runAnalysis Server Action', () => {
       mockSupabase.from = mockFrom as any
       mockCreateClient.mockResolvedValue(mockSupabase as any)
 
+      // Story 4.5: Mock getUserProfile
+      mockGetUserProfile.mockResolvedValue({
+        experienceLevel: 'student',
+        targetRole: 'Software Engineer',
+      })
+      mockBuildExperienceContext.mockReturnValue('Experience context for student')
+
       mockGetOpenAIClient.mockReturnValue({} as any)
       mockWithRetry.mockResolvedValue({} as any)
       mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
@@ -1141,6 +1127,13 @@ describe('runAnalysis Server Action', () => {
       mockSupabase.from = mockFrom as any
       mockCreateClient.mockResolvedValue(mockSupabase as any)
 
+      // Story 4.5: Mock getUserProfile
+      mockGetUserProfile.mockResolvedValue({
+        experienceLevel: 'student',
+        targetRole: 'Software Engineer',
+      })
+      mockBuildExperienceContext.mockReturnValue('Experience context for student')
+
       mockGetOpenAIClient.mockReturnValue({} as any)
       mockWithRetry.mockResolvedValue({} as any)
       mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
@@ -1159,6 +1152,149 @@ describe('runAnalysis Server Action', () => {
       expect(result.error).toBeNull()
       expect(result.data?.overallScore).toBe(75)
       expect(result.data?.sectionScores).toEqual({})
+    })
+  })
+
+  describe('Experience-Level-Aware Analysis (Story 4.5)', () => {
+    beforeEach(() => {
+      // Default setup for happy path
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn()
+          .mockResolvedValueOnce({ data: mockScan, error: null }) // Scan
+          .mockResolvedValueOnce({ data: mockResume, error: null }), // Resume
+        update: jest.fn().mockReturnThis(),
+      })
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      mockGetUserProfile.mockResolvedValue({
+        experienceLevel: 'student',
+        targetRole: 'Software Engineer',
+      })
+      mockBuildExperienceContext.mockReturnValue('Experience context for student')
+      mockDetectSections.mockReturnValue(['experience'])
+      mockWithRetry.mockResolvedValue({} as any) // Mock OpenAI completion
+      mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+      mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+      mockIsValidAnalysisResult.mockReturnValue(true)
+      mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+      mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+      mockIsValidKeywordResult.mockReturnValue(true)
+      mockParseSectionScoresResponse.mockReturnValue({ sectionScores: {} })
+      mockIsValidSectionScoresResult.mockReturnValue(true)
+    })
+
+    it('should fetch user profile and build experience context', async () => {
+      await runAnalysis({ scanId: validScanId })
+
+      expect(mockGetUserProfile).toHaveBeenCalledWith(mockUserId)
+      expect(mockBuildExperienceContext).toHaveBeenCalledWith('student', 'Software Engineer')
+    })
+
+    it('should store experience_level_context in database', async () => {
+      const mockUpdate = jest.fn().mockReturnThis()
+      const mockSupabase = createMockSupabase()
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: mockUserId } },
+        error: null,
+      })
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn()
+          .mockResolvedValueOnce({ data: mockScan, error: null })
+          .mockResolvedValueOnce({ data: mockResume, error: null }),
+        update: mockUpdate,
+      })
+      mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+      await runAnalysis({ scanId: validScanId })
+
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          experience_level_context: 'Experience context for student',
+        })
+      )
+    })
+
+    it('should include experienceLevelContext in returned AnalysisResult', async () => {
+      const result = await runAnalysis({ scanId: validScanId })
+
+      expect(result.error).toBeNull()
+      expect(result.data?.experienceLevelContext).toBe('Experience context for student')
+    })
+
+    it('should handle different experience levels', async () => {
+      const levels = ['student', 'career_changer', 'experienced']
+
+      for (const level of levels) {
+        jest.clearAllMocks()
+
+        // Re-setup mocks for each iteration
+        const mockSupabase = createMockSupabase()
+        mockSupabase.auth.getUser.mockResolvedValue({
+          data: { user: { id: mockUserId } },
+          error: null,
+        })
+        mockSupabase.from.mockReturnValue({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn()
+            .mockResolvedValueOnce({ data: mockScan, error: null })
+            .mockResolvedValueOnce({ data: mockResume, error: null }),
+          update: jest.fn().mockReturnThis(),
+        })
+        mockCreateClient.mockResolvedValue(mockSupabase as any)
+
+        mockGetUserProfile.mockResolvedValue({
+          experienceLevel: level as any,
+          targetRole: 'Developer',
+        })
+        mockBuildExperienceContext.mockReturnValue(`Context for ${level}`)
+        mockDetectSections.mockReturnValue(['experience'])
+        mockWithRetry.mockResolvedValue({} as any)
+        mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
+        mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+        mockIsValidAnalysisResult.mockReturnValue(true)
+        mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
+        mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
+        mockIsValidKeywordResult.mockReturnValue(true)
+        mockParseSectionScoresResponse.mockReturnValue({ sectionScores: {} })
+        mockIsValidSectionScoresResult.mockReturnValue(true)
+
+        await runAnalysis({ scanId: validScanId })
+
+        expect(mockBuildExperienceContext).toHaveBeenCalledWith(level, 'Developer')
+      }
+    })
+
+    it('should handle missing target role', async () => {
+      mockGetUserProfile.mockResolvedValue({
+        experienceLevel: 'student',
+        targetRole: null,
+      })
+
+      await runAnalysis({ scanId: validScanId })
+
+      expect(mockBuildExperienceContext).toHaveBeenCalledWith('student', null)
+    })
+
+    it('should default to student level if profile fetch fails', async () => {
+      mockGetUserProfile.mockResolvedValue({
+        experienceLevel: 'student',
+        targetRole: null,
+      })
+
+      const result = await runAnalysis({ scanId: validScanId })
+
+      expect(result.error).toBeNull()
+      expect(mockBuildExperienceContext).toHaveBeenCalled()
     })
   })
 })

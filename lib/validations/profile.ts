@@ -12,7 +12,8 @@ import { z } from 'zod'
 
 // Experience level validation - must match DB CHECK constraint
 // Custom error message for AC5: "Please select an experience level"
-export const experienceLevelSchema = z.enum(['student', 'career_changer'], {
+// Story 4.5: Added 'experienced' level for experience-aware analysis
+export const experienceLevelSchema = z.enum(['student', 'career_changer', 'experienced'], {
   message: 'Please select an experience level',
 })
 

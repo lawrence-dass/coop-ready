@@ -18,6 +18,11 @@ export const EXPERIENCE_LEVELS = [
     label: 'Career Changer',
     description: 'Transitioning from another field. Bringing transferable skills to a new industry.',
   },
+  {
+    id: 'experienced',
+    label: 'Experienced Professional',
+    description: '2+ years of tech work experience. Seeking to advance or specialize in your career.',
+  },
 ] as const
 
 export const TARGET_ROLES = [

@@ -13,7 +13,7 @@ import { faker } from '@faker-js/faker';
 export type UserProfile = {
   id: string;
   userId: string;
-  experienceLevel: 'student' | 'career_changer';
+  experienceLevel: 'student' | 'career_changer' | 'experienced';
   targetRole: string;
   customRole: string | null;
   onboardingCompleted: boolean;
@@ -39,7 +39,7 @@ export class ProfileFactory {
    * Create a profile object with defaults (does NOT persist)
    */
   build(params: CreateProfileParams): Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'> {
-    const experienceLevel = params.experienceLevel || faker.helpers.arrayElement(['student', 'career_changer']);
+    const experienceLevel = params.experienceLevel || faker.helpers.arrayElement(['student', 'career_changer', 'experienced']);
     const targetRole = params.targetRole || faker.helpers.arrayElement([
       'Software Engineer',
       'Data Analyst',
@@ -117,6 +117,16 @@ export class ProfileFactory {
     return this.create({
       ...params,
       experienceLevel: 'career_changer',
+    });
+  }
+
+  /**
+   * Create an experienced professional profile
+   */
+  async createExperienced(params: CreateProfileParams): Promise<UserProfile> {
+    return this.create({
+      ...params,
+      experienceLevel: 'experienced',
     });
   }
 

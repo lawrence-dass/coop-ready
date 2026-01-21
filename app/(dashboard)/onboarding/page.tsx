@@ -24,7 +24,7 @@ import { EXPERIENCE_LEVELS } from '@/config/experience-levels'
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2>(1)
-  const [selectedExperienceLevel, setSelectedExperienceLevel] = useState<'student' | 'career_changer' | undefined>()
+  const [selectedExperienceLevel, setSelectedExperienceLevel] = useState<'student' | 'career_changer' | 'experienced' | undefined>()
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -84,7 +84,7 @@ export default function OnboardingPage() {
               <div className="space-y-6">
                 <RadioGroup
                   value={selectedExperienceLevel}
-                  onValueChange={(value) => setSelectedExperienceLevel(value as 'student' | 'career_changer')}
+                  onValueChange={(value) => setSelectedExperienceLevel(value as 'student' | 'career_changer' | 'experienced')}
                 >
                   <div className="space-y-4">
                     {EXPERIENCE_LEVELS.map((level) => (

@@ -118,12 +118,47 @@ The ATS score (0-100) is calculated using a weighted breakdown:
 - **30-50**: Fair fit - Some relevant experience but improvements needed
 - **0-30**: Poor fit - Major gaps in qualifications or ATS compatibility
 
-### Context-Aware Scoring
+### Experience-Level-Aware Analysis
 
-Analysis adapts to user experience level:
-- **Students**: Values academic projects, coursework, certifications equally with internships
-- **Career Changers**: Emphasizes transferable skills and demonstrates growth narrative
-- **Experienced**: Focuses on quantified achievements and leadership impact
+CoopReady personalizes resume analysis based on your experience level, ensuring you get relevant feedback for your situation.
+
+**Setting Your Experience Level:**
+
+During onboarding (or in Profile Settings), select one of three experience levels:
+- **Student / Recent Graduate**: Currently in school or graduated within 2 years
+- **Career Changer**: Transitioning to tech from a non-tech background
+- **Experienced Professional**: 2+ years of tech work experience
+
+**How Experience Level Affects Analysis:**
+
+| Level | What We Optimize For | Feedback Focus |
+|-------|---------------------|----------------|
+| **Student** | Academic projects, internships, coursework, relevant certifications | Translating academic work to professional language; showing how school projects demonstrate real-world capability; not penalizing limited years of professional experience |
+| **Career Changer** | Transferable skills, bootcamp training, personal projects, tech commitment | Mapping existing experience to tech terminology; identifying and emphasizing transferable skills; highlighting learning ability and growth |
+| **Experienced** | Quantified impact, architectural decisions, leadership, scale | Showcasing professional impact; metrics and scope of influence; technical depth and senior-level capabilities |
+
+**Examples of Experience-Aware Feedback:**
+
+*For Students:*
+- "Your academic projects in data structures demonstrate solid software engineering fundamentals"
+- "Include your GPA if 3.5+ to strengthen your candidacy for entry-level roles"
+- "Your internship experience shows practical application of classroom learning"
+
+*For Career Changers:*
+- "Your project management background translates well to agile development practices"
+- "Emphasize how your bootcamp capstone project demonstrates full-stack capabilities"
+- "Your previous sales experience shows strong communication skills valued in tech teams"
+
+*For Experienced Professionals:*
+- "Quantify the impact of your architecture decisions (e.g., 'Redesigned API reducing latency by 60%')"
+- "Highlight team leadership and mentorship to demonstrate senior-level readiness"
+- "Show scale: 'Managed system handling 10M+ requests/day'"
+
+**Why This Matters:**
+
+Traditional resume analysis penalizes students for lacking years of experience and overlooks career changers' valuable transferable skills. CoopReady's experience-aware approach ensures feedback is relevant and actionable for YOUR situation, not a one-size-fits-all checklist.
+
+**Note:** You can update your experience level anytime in Profile Settings as you gain more experience or change career stages.
 
 ### Keyword Detection
 

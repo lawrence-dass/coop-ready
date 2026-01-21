@@ -14,7 +14,7 @@ export type User = {
   id: string;
   email: string;
   name: string;
-  experienceLevel: 'student' | 'career_changer';
+  experienceLevel: 'student' | 'career_changer' | 'experienced';
   targetRole: string;
   createdAt: string;
 };
@@ -36,7 +36,7 @@ export class UserFactory {
     return {
       email: faker.internet.email().toLowerCase(),
       name: faker.person.fullName(),
-      experienceLevel: faker.helpers.arrayElement(['student', 'career_changer']),
+      experienceLevel: faker.helpers.arrayElement(['student', 'career_changer', 'experienced']),
       targetRole: faker.helpers.arrayElement([
         'Software Engineer',
         'Data Analyst',
@@ -97,6 +97,13 @@ export class UserFactory {
    */
   async createCareerChanger(overrides: CreateUserParams = {}): Promise<User> {
     return this.create({ experienceLevel: 'career_changer', ...overrides });
+  }
+
+  /**
+   * Create an experienced professional user
+   */
+  async createExperienced(overrides: CreateUserParams = {}): Promise<User> {
+    return this.create({ experienceLevel: 'experienced', ...overrides });
   }
 
   /**
