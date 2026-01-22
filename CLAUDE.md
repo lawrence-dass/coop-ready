@@ -9,9 +9,9 @@ AI-powered resume optimization for students and career changers.
 ## Current State
 
 - **Phase**: Implementation
-- **Epic 1**: Done (7/7 stories)
-- **Epic 8**: In-progress (test infrastructure)
-- **Next**: Epic 2 (Onboarding & Profile)
+- **Done**: Epic 1, 2, 3, 4, 8
+- **In-progress**: Epic 5 (Suggestions) - Story 5-9 ready-for-dev
+- **Backlog**: Epic 6, 7
 
 ## Quick Commands
 
