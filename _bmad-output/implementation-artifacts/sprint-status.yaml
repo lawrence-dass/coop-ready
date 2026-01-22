@@ -93,7 +93,7 @@ development_status:
   # Epic 6: Resume Export & Download
   epic-6: in-progress
   6-1-resume-content-merging: done
-  6-2-pdf-resume-generation: ready-for-dev
+  6-2-pdf-resume-generation: done
   6-3-docx-resume-generation: backlog
   6-4-download-ui-format-selection: backlog
   epic-6-retrospective: optional
