@@ -25,6 +25,10 @@ Completed and redundant artifacts moved here to reduce active context loading.
 ```
 archive/
 ├── epic-1-completed/     # Epic 1 test artifacts
+├── epic-2-completed/     # Epic 2 test artifacts
+├── epic-3-completed/     # Epic 3 test artifacts
+├── epic-4-completed/     # Epic 4 test artifacts
+├── epic-8-completed/     # Epic 8 test artifacts
 ├── discovery-phase/      # Product brief, initial docs
 └── planning-redundant/   # Superseded planning docs
 ```
@@ -50,12 +54,29 @@ mv _bmad-output/archive/epic-1-completed/file.md _bmad-output/
 - `atdd-checklist-1-7.md` - Story 1.7 test checklist
 - `automation-summary.md` - Epic 1 test automation summary
 
+### epic-2-completed/ (76KB)
+- `atdd-checklist-2-1-onboarding-flow-experience-level-target-role.md`
+- `atdd-checklist-2-2-profile-settings-page.md`
+- `traceability-epic-2.md` - Epic 2 traceability matrix
+
+### epic-3-completed/ (144KB)
+- `atdd-checklist-3-1.md` - Story 3.1 test checklist
+- `atdd-checklist-3-4.md` - Story 3.4 test checklist
+- `traceability-epic-3.md` - Epic 3 traceability matrix
+- `manual-testing-epics-1-2-3.md` - Manual testing for Epics 1-3
+
+### epic-4-completed/ (32KB)
+- `epic-4-traceability-matrix.md` - Epic 4 traceability matrix
+
+### epic-8-completed/ (32KB)
+- `traceability-epic-8.md` - Epic 8 traceability matrix
+
 ### discovery-phase/ (20KB)
 - `product-brief-CoopReady-2026-01-18.md` - Initial product discovery
 
-### planning-redundant/ (12KB)
+### planning-redundant/ (20KB)
 - `overview.md` - Stub (duplicated index.md)
 - `epic-list.md` - Duplicated index.md
 - `requirements-inventory.md` - Superseded by epic files
 
-**Total Archived: ~149KB**
+**Total Archived: ~488KB**
