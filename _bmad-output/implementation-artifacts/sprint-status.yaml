@@ -78,7 +78,7 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Suggestions & Optimization Workflow
-  epic-5: done
+  epic-5: in-progress
   5-1-bullet-point-rewrite-generation: done
   5-2-transferable-skills-detection-mapping: done
   5-3-action-verb-quantification-suggestions: done
@@ -87,6 +87,7 @@ development_status:
   5-6-suggestions-display-by-section: done
   5-7-accept-reject-individual-suggestions: done
   5-8-optimized-resume-preview: done
+  5-9-suggestions-page-ui: ready-for-dev
   epic-5-retrospective: optional
 
   # Epic 6: Resume Export & Download
