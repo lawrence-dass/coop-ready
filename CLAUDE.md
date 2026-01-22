@@ -8,10 +8,10 @@ AI-powered resume optimization for students and career changers.
 
 ## Current State
 
-- **Phase**: Implementation
-- **Done**: Epic 1, 2, 3, 4, 8
-- **In-progress**: Epic 5 (Suggestions) - Story 5-9 ready-for-dev
-- **Backlog**: Epic 6, 7
+- **Phase**: Implementation (6 of 9 epics complete)
+- **Done**: Epic 1, 2, 3, 4, 5, 6, 8 (42 stories)
+- **Ready for dev**: Epic 7 (Subscription & Billing) or Epic 9 (Logic Refinement)
+- **Backlog**: Epic 7, 9
 
 ## Quick Commands
 
@@ -19,16 +19,26 @@ AI-powered resume optimization for students and career changers.
 # Story creation (use haiku - 70% cost savings)
 /bmad:bmm:workflows:create-story --model haiku
 
-# Development
-/bmad:bmm:workflows:dev-story
+# Development (use sonnet - best balance for complex tasks)
+/bmad:bmm:workflows:dev-story --model sonnet
 
-# Code review (use opus - fewer iterations)
+# Code review (use opus - comprehensive analysis)
 /bmad:bmm:workflows:code-review --model opus
 
 # Session management
 /session-start    # Beginning of session
 /session-end      # Before ending
 ```
+
+## Completed Features (Epic 1-6)
+
+✅ User authentication, onboarding, profile management
+✅ Resume upload, parsing, ATS analysis with scoring
+✅ Smart suggestions (bullets, skills, removal flags)
+✅ Suggestion review and acceptance workflow
+✅ Resume export: PDF (ATS-friendly) and DOCX (editable)
+
+**Current**: Complete user journey from upload → optimize → export → download (150+ tests)
 
 ## Key Files
 
@@ -45,15 +55,9 @@ Next.js 14 + TypeScript + Tailwind + shadcn/ui + Supabase + OpenAI + Stripe + Ve
 
 See `project-context.md` for patterns and conventions.
 
-## BMAD Structure
+## Next: Epic 7 or Epic 9
 
-```
-_bmad/bmm/           # Workflows and agents
-_bmad-output/
-├── planning-artifacts/
-│   ├── architecture.md      # Index (sharded in architecture/)
-│   ├── prd.md
-│   └── epics/               # Sharded epic files
-├── implementation-artifacts/ # Stories, sprint-status
-└── archive/                  # Completed artifacts
-```
+- **Epic 7** (6 stories): Stripe, billing, rate limiting, subscriptions
+- **Epic 9** (4 stories): ATS recalibration, better suggestions, natural writing
+
+**Session Context**: `.claude/handoff/CURRENT.md` - Latest handoff notes and epic status
