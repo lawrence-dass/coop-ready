@@ -119,6 +119,6 @@ development_status:
   epic-9: in-progress
   9-1-ats-scoring-recalibration: done
   9-2-inference-based-suggestion-calibration: done
-  9-3-natural-writing-enforcement: ready-for-dev
-  9-4-context-aware-metric-prompts: backlog
+  9-3-natural-writing-enforcement: done
+  9-4-context-aware-metric-prompts: ready-for-dev
   epic-9-retrospective: optional
