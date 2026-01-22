@@ -5,11 +5,13 @@
  * Handles resume content merging and export operations
  * Story 6.1: Resume Content Merging
  * Story 6.2: PDF Resume Generation
+ * Story 6.3: DOCX Resume Generation
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { mergeResumeContent, type MergeResult, type DatabaseSuggestion } from '@/lib/generators/merge'
-import { generatePDF, generateFileName, PDFGenerationError } from '@/lib/generators/pdf'
+import { generatePDF, generateFileName as generatePDFFileName, PDFGenerationError } from '@/lib/generators/pdf'
+import { generateDOCX, generateFileName as generateDOCXFileName, DOCXGenerationError } from '@/lib/generators/docx'
 import type { ParsedResume } from '@/lib/parsers/types'
 import { z } from 'zod'
 
@@ -242,7 +244,7 @@ export async function generateResumePDF(input: {
     const pdfBuffer = await generatePDF(mergedContent)
 
     // Generate filename from contact info
-    const fileName = generateFileName(mergedContent.contact)
+    const fileName = generatePDFFileName(mergedContent.contact)
 
     return {
       data: {
@@ -271,6 +273,108 @@ export async function generateResumePDF(input: {
       data: null,
       error: {
         message: 'Failed to generate PDF',
+        code: 'INTERNAL_ERROR',
+      },
+    }
+  }
+}
+
+/**
+ * Input validation for generateResumeDOCX
+ */
+const generateResumeDOCXSchema = z.object({
+  scanId: z.string().uuid('Invalid scan ID'),
+  format: z.literal('docx'),
+})
+
+/**
+ * Generate and download resume as DOCX
+ *
+ * @param input - Contains scanId and format
+ * @returns DOCX file data with filename and MIME type, or error
+ */
+export async function generateResumeDOCX(input: {
+  scanId: string
+  format: 'docx'
+}): Promise<ActionResponse<{
+  fileBlob: Buffer
+  fileName: string
+  mimeType: string
+}>> {
+  // Validate input
+  const parsed = generateResumeDOCXSchema.safeParse(input)
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: {
+        message: 'Invalid input',
+        code: 'VALIDATION_ERROR',
+      },
+    }
+  }
+
+  const { scanId } = parsed.data
+
+  try {
+    const supabase = await createClient()
+
+    // Get current user for authorization (single auth check)
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return {
+        data: null,
+        error: {
+          message: 'Unauthorized',
+          code: 'UNAUTHORIZED',
+        },
+      }
+    }
+
+    // Fetch and merge resume data using internal helper (no duplicate auth check)
+    const mergeResult = await _fetchAndMergeResumeData(supabase, user.id, scanId)
+    if (mergeResult.error) {
+      return mergeResult as ActionResponse<{
+        fileBlob: Buffer
+        fileName: string
+        mimeType: string
+      }>
+    }
+
+    const { mergedContent } = mergeResult.data
+
+    // Generate DOCX from merged content
+    const docxBuffer = await generateDOCX(mergedContent)
+
+    // Generate filename from contact info
+    const fileName = generateDOCXFileName(mergedContent.contact)
+
+    return {
+      data: {
+        fileBlob: docxBuffer,
+        fileName,
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      },
+      error: null,
+    }
+  } catch (error) {
+    // Handle DOCX generation errors with specific codes
+    if (error instanceof DOCXGenerationError) {
+      console.error('[generateResumeDOCX] DOCX generation error:', error)
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+        },
+      }
+    }
+
+    // Handle unexpected errors
+    console.error('[generateResumeDOCX] Unexpected error:', error)
+    return {
+      data: null,
+      error: {
+        message: 'Failed to generate DOCX',
         code: 'INTERNAL_ERROR',
       },
     }
