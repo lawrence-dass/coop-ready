@@ -33,44 +33,15 @@ export default function ScanResultsPage() {
 
   // Trigger analysis when scan is first loaded in pending status
   useEffect(() => {
-    console.log('[ScanResultsPage] useEffect triggered', {
-      hasScan: !!scan,
-      scanId,
-      scanStatus: scan?.status,
-      alreadyTriggered: analysisTriggeredRef.current,
-    })
-
     if (!scan || !scanId || analysisTriggeredRef.current) {
-      console.log('[ScanResultsPage] Early return - conditions not met', {
-        noScan: !scan,
-        noScanId: !scanId,
-        alreadyTriggered: analysisTriggeredRef.current,
-      })
       return
     }
 
     // If scan is pending or processing, trigger analysis
     if (scan.status === 'pending' || scan.status === 'processing') {
-      console.log('[ScanResultsPage] ====== TRIGGERING ANALYSIS ======', {
-        scanId,
-        status: scan.status,
-        timestamp: new Date().toISOString(),
-      })
       analysisTriggeredRef.current = true
-      runAnalysis({ scanId })
-        .then((result) => {
-          console.log('[ScanResultsPage] runAnalysis returned', {
-            success: !!result.data,
-            error: result.error?.message,
-          })
-        })
-        .catch((err) => {
-          console.error('[ScanResultsPage] Failed to trigger analysis:', err)
-          // Analysis will continue retrying via polling
-        })
-    } else {
-      console.log('[ScanResultsPage] Scan not in pending/processing state', {
-        status: scan.status,
+      runAnalysis({ scanId }).catch(() => {
+        // Analysis will continue retrying via polling
       })
     }
   }, [scan, scanId])
@@ -221,6 +192,19 @@ export default function ScanResultsPage() {
           {new Date(scan.updatedAt).toLocaleString()}
         </p>
       </div>
+
+      {/* View Suggestions Button - AC1 */}
+      {scan.status === 'completed' && (
+        <div className="mt-6 flex justify-center">
+          <Link
+            href={`/analysis/${scan.id}/suggestions`}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+          >
+            View Suggestions
+            <ChevronRight className="h-5 w-5" />
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

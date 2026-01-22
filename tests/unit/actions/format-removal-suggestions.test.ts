@@ -16,10 +16,8 @@ jest.mock('@/lib/openai/retry', () => ({
   withRetry: jest.fn(),
 }))
 
-import {
-  generateFormatAndRemovalSuggestions,
-  transformFormatAndRemovalSuggestions,
-} from '@/actions/suggestions'
+import { generateFormatAndRemovalSuggestions } from '@/actions/suggestions'
+import { transformFormatAndRemovalSuggestions } from '@/lib/utils/suggestion-transforms'
 
 // Helper to mock successful OpenAI response
 function mockSuccessfulOpenAIResponse(aiAnalysis: {

@@ -16,10 +16,8 @@ jest.mock("@/lib/openai/retry", () => ({
   withRetry: jest.fn(),
 }));
 
-import {
-  generateSkillExpansionSuggestions,
-  transformSkillExpansionSuggestions,
-} from "@/actions/suggestions";
+import { generateSkillExpansionSuggestions } from "@/actions/suggestions";
+import { transformSkillExpansionSuggestions } from "@/lib/utils/suggestion-transforms";
 
 // Helper to mock successful OpenAI response
 function mockSuccessfulOpenAIResponse(

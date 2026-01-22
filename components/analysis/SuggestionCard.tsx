@@ -61,10 +61,10 @@ export function SuggestionCard({
   };
 
   return (
-    <div className={`rounded-lg border p-4 transition-colors ${getStatusStyles()}`}>
+    <div className={`rounded-lg border p-4 transition-colors ${getStatusStyles()}`} data-testid="suggestion-card">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
-        <Badge className={meta.badge}>{meta.label}</Badge>
+        <Badge className={meta.badge} data-testid="suggestion-type-badge">{meta.label}</Badge>
         <span className="text-xs text-gray-600">#{index + 1}</span>
       </div>
 
@@ -72,14 +72,14 @@ export function SuggestionCard({
       <div className="space-y-2 mb-3">
         <div>
           <p className="text-xs font-semibold text-gray-700 mb-1">Before:</p>
-          <p className={`text-sm line-clamp-3 ${getOriginalTextStyles()}`}>
+          <p className={`text-sm line-clamp-3 ${getOriginalTextStyles()}`} data-testid="suggestion-original">
             {suggestion.originalText}
           </p>
         </div>
         {suggestion.suggestedText && (
           <div className={status === "rejected" ? "opacity-50" : ""}>
             <p className="text-xs font-semibold text-gray-700 mb-1">After:</p>
-            <p className="text-sm font-medium text-gray-900 line-clamp-3">
+            <p className="text-sm font-medium text-gray-900 line-clamp-3" data-testid="suggestion-suggested">
               {suggestion.suggestedText}
             </p>
           </div>
@@ -88,7 +88,7 @@ export function SuggestionCard({
 
       {/* Reasoning */}
       {suggestion.reasoning && (
-        <div className="mb-3 flex gap-2 text-sm text-gray-700">
+        <div className="mb-3 flex gap-2 text-sm text-gray-700" data-testid="suggestion-reasoning">
           <Lightbulb className="h-4 w-4 flex-shrink-0 mt-0.5" />
           <p className="line-clamp-2">{suggestion.reasoning}</p>
         </div>
