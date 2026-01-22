@@ -2,7 +2,7 @@
 
 **Epic:** Epic 9 - Logic Refinement & Scoring Enhancement
 **Story Key:** 9-2-inference-based-suggestion-calibration
-**Status:** in-progress
+**Status:** done
 **Created:** 2026-01-22
 **Priority:** High
 **Dependencies:** Story 9.1 (ATS Scoring Recalibration) - COMPLETED ✓
@@ -12,17 +12,11 @@
 ### ✅ Completed
 - [x] Task 1: Create Suggestion Calibrator Utility (35 tests passing)
 - [x] Task 2: Update Suggestion Type Definitions (14 tests passing)
-- [x] 1.1-1.10: All subtasks for calibrator utility
-- [x] 2.1-2.9: All subtasks for type definitions
-- [x] Commit: `feat: Implement Tasks 1 & 4 - Calibration Foundation`
-
-### 🔄 In Progress
-- [ ] Task 3: Update Suggestion Generation Action (AC: 1,2,3,4)
-- [ ] Task 4: Update Suggestion Prompts (AC: 1,2,3)
-
-### ⏳ Pending
-- [ ] Task 5: Update Analysis Results Page UI (AC: 4)
-- [ ] Task 6: Integration Testing (AC: 1,2,3,4)
+- [x] Task 3: Update Suggestion Generation Action (AC: 1,2,3,4)
+- [x] Task 4: Update Suggestion Prompts (AC: 1,2,3)
+- [x] Task 5: Update Analysis Results Page UI (AC: 4)
+- [x] Task 6: Integration Testing (AC: 1,2,3,4)
+- [x] Code Review fixes applied (2026-01-22)
 
 ---
 
@@ -288,8 +282,8 @@ Core functions for inference calibration:
 - [x] Integration tests cover all calibration scenarios ✅
 - [x] All acceptance criteria pass ✅
 - [x] No TypeScript errors or console warnings ✅
-- [ ] Code review approved (via `/bmad:bmm:workflows:code-review`)
-- [ ] Story status updated to "done" in sprint-status.yaml
+- [x] Code review approved (via `/bmad:bmm:workflows:code-review`) ✅
+- [x] Story status updated to "done" in sprint-status.yaml ✅
 - [x] Changes committed to `9-2-inference-based-suggestion-calibration` branch ✅
 
 ---
@@ -362,3 +356,39 @@ Core functions for inference calibration:
 - For "Validation" mode with minimal suggestions, should we show a success message instead?
 - Should suggestion metadata (mode, signals) be stored in database for analytics?
 - Do we want A/B testing instrumentation to measure if inference improves acceptance rates?
+
+---
+
+## Dev Agent Record
+
+### File List
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `lib/utils/suggestionCalibrator.ts` | Created/Modified | Core calibration logic - mode determination, focus areas, urgency boosts |
+| `lib/types/suggestions.ts` | Modified | Added CalibrationSuggestion, InferenceSignals, type guards |
+| `lib/openai/prompts/calibration-context.ts` | Created | Shared calibration context types and instruction builders |
+| `lib/openai/prompts/action-verbs.ts` | Modified | Added optional calibration parameter |
+| `lib/openai/prompts/skills-expansion.ts` | Modified | Added optional calibration parameter |
+| `lib/openai/prompts/format-removal.ts` | Modified | Added optional calibration parameter |
+| `lib/openai/prompts/skills.ts` | Modified | Added optional calibration parameter |
+| `lib/openai/prompts/suggestions.ts` | Modified | Added optional calibration parameter |
+| `actions/suggestions.ts` | Modified | Added extractCalibrationSignals, calibration passing to generators, completed orchestrator |
+| `components/analysis/CalibrationSummary.tsx` | Created | UI component for displaying calibration mode and focus areas |
+| `app/(dashboard)/analysis/[scanId]/suggestions/page.tsx` | Modified | Integrated CalibrationSummary component |
+| `tests/integration/calibration.test.ts` | Created | Comprehensive integration tests for calibration flow |
+| `tests/unit/lib/types/suggestions.test.ts` | Created | Type validation tests |
+| `tests/unit/lib/utils/suggestionCalibrator.test.ts` | Created | Unit tests for calibrator functions |
+| `tests/unit/lib/utils/quantificationAnalyzer.test.ts` | Modified | Additional tests for density calculation |
+
+### Change Log
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2026-01-22 | Task 1: Created suggestionCalibrator.ts with mode/focus/boost logic | Dev Agent |
+| 2026-01-22 | Task 2: Updated suggestion types with calibration metadata | Dev Agent |
+| 2026-01-22 | Task 3: Updated suggestion generation with calibration extraction | Dev Agent |
+| 2026-01-22 | Task 4: Updated all prompts to accept CalibrationContext | Dev Agent |
+| 2026-01-22 | Task 5: Created CalibrationSummary UI component | Dev Agent |
+| 2026-01-22 | Task 6: Created comprehensive integration tests | Dev Agent |
+| 2026-01-22 | Code Review: Fixed 'use client' directive, completed orchestrator function, added calibration passing | Code Review |

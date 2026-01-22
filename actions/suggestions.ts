@@ -26,9 +26,11 @@ import {
 } from '@/lib/utils/suggestion-transforms'
 
 // Story 9.2: Inference-Based Suggestion Calibration
-import { calibrateSuggestions, type CalibrationSignals, type ExperienceLevel } from '@/lib/utils/suggestionCalibrator'
+import { calibrateSuggestions, getFocusAreasByExperience, type CalibrationSignals, type ExperienceLevel } from '@/lib/utils/suggestionCalibrator'
 import { calculateQuantificationDensity } from '@/lib/utils/quantificationAnalyzer'
-import type { InferenceSignals, SuggestionMode } from '@/lib/types/suggestions'
+import type { InferenceSignals } from '@/lib/types/suggestions'
+import type { SuggestionMode } from '@/lib/utils/suggestionCalibrator'
+import type { CalibrationContext } from '@/lib/openai/prompts/calibration-context'
 
 /**
  * Server Actions for AI-Generated Suggestions
@@ -158,12 +160,12 @@ const saveSuggestionsSchema = z.object({
  * Story 9.2: Task 3 - Extract calibration context
  *
  * @param scanId - Scan ID to get analysis data from
- * @param resumeText - Resume text for quantification analysis
+ * @param resumeText - Optional resume text for quantification analysis (defaults to 50% if not provided)
  * @returns Calibration signals or null if data unavailable
  */
 async function extractCalibrationSignals(
   scanId: string,
-  resumeText: string
+  resumeText?: string
 ): Promise<{
   signals: CalibrationSignals | null
   inferenceSignals: InferenceSignals | null
@@ -213,11 +215,15 @@ async function extractCalibrationSignals(
       experienceLevel = 'experienced'
     }
 
-    // Calculate quantification density
-    const quantificationDensity = calculateQuantificationDensity(resumeText)
+    // Calculate quantification density (default to 50% if no resume text provided)
+    const quantificationDensity = resumeText
+      ? calculateQuantificationDensity(resumeText)
+      : 50
 
-    // Count total bullets for context
-    const totalBullets = resumeText.split(/\n|•|●|○/).filter(line => line.trim().length > 15).length
+    // Count total bullets for context (default to 10 if no resume text)
+    const totalBullets = resumeText
+      ? resumeText.split(/\n|•|●|○/).filter(line => line.trim().length > 15).length
+      : 10
 
     const calibrationSignals: CalibrationSignals = {
       atsScore,
@@ -666,10 +672,30 @@ export async function generateActionVerbAndQuantificationSuggestions(
       ...Array(bulletPoints.length - achievementTypes.length).fill('general'),
     ]
 
+    // Story 9.2: Extract calibration signals for mode-aware suggestions
+    const { signals, suggestionMode } = await extractCalibrationSignals(scanId)
+    let calibrationContext: CalibrationContext | undefined
+    if (signals && suggestionMode) {
+      calibrationContext = {
+        mode: suggestionMode,
+        experienceLevel: signals.experienceLevel,
+        focusAreas: getFocusAreasByExperience(signals.experienceLevel),
+        urgencyBoosts: {
+          keyword: signals.missingKeywordsCount >= 5 ? 2 : signals.missingKeywordsCount >= 2 ? 1 : 0,
+          quantification: signals.quantificationDensity < 30 ? 2 : signals.quantificationDensity < 50 ? 1 : 0,
+          experience: suggestionMode === 'Transformation' ? 1 : suggestionMode === 'Improvement' ? 0 : -1
+        }
+      }
+      console.log('[generateActionVerbAndQuantificationSuggestions] Using calibration:', {
+        mode: suggestionMode,
+        experienceLevel: signals.experienceLevel
+      })
+    }
+
     console.log('[generateActionVerbAndQuantificationSuggestions] Building prompt...')
 
-    // Create prompt using action verb and quantification template
-    const prompt = createActionVerbAndQuantificationPrompt(bulletPoints, types)
+    // Create prompt using action verb and quantification template (with optional calibration)
+    const prompt = createActionVerbAndQuantificationPrompt(bulletPoints, types, calibrationContext)
 
     console.log('[generateActionVerbAndQuantificationSuggestions] Calling OpenAI API...')
 
@@ -934,6 +960,26 @@ export async function generateSkillExpansionSuggestions(
   try {
     const { scanId, skills, jdKeywords, jdContent } = parsed.data
 
+    // Story 9.2: Extract calibration signals for mode-aware suggestions
+    const { signals, suggestionMode } = await extractCalibrationSignals(scanId)
+    let calibrationContext: CalibrationContext | undefined
+    if (signals && suggestionMode) {
+      calibrationContext = {
+        mode: suggestionMode,
+        experienceLevel: signals.experienceLevel,
+        focusAreas: getFocusAreasByExperience(signals.experienceLevel),
+        urgencyBoosts: {
+          keyword: signals.missingKeywordsCount >= 5 ? 2 : signals.missingKeywordsCount >= 2 ? 1 : 0,
+          quantification: signals.quantificationDensity < 30 ? 2 : signals.quantificationDensity < 50 ? 1 : 0,
+          experience: suggestionMode === 'Transformation' ? 1 : suggestionMode === 'Improvement' ? 0 : -1
+        }
+      }
+      console.log('[generateSkillExpansionSuggestions] Using calibration:', {
+        mode: suggestionMode,
+        experienceLevel: signals.experienceLevel
+      })
+    }
+
     // First, try local skill expansion mappings for known skills
     const localExpansions = new Map<
       string,
@@ -997,7 +1043,8 @@ export async function generateSkillExpansionSuggestions(
       // Use AI for unknown skills
       console.log('[generateSkillExpansionSuggestions] Calling OpenAI for unknown skills...')
 
-      const prompt = SKILL_EXPANSION_PROMPT(unknownSkills, jdContent, jdKeywords)
+      // Pass calibration context to prompt for mode-aware suggestions
+      const prompt = SKILL_EXPANSION_PROMPT(unknownSkills, jdContent, jdKeywords, calibrationContext)
 
       const openai = getOpenAIClient()
       const response = await withRetry(async () => {
@@ -1494,7 +1541,7 @@ export async function generateAllSuggestionsWithCalibration(input: {
       calibrationResult = calibrateSuggestions(signals)
     }
 
-    // Generate all suggestions (using existing generators for backward compatibility)
+    // Generate all suggestions using individual generators
     const allSuggestions: Array<{
       type: string
       section: string
@@ -1508,16 +1555,100 @@ export async function generateAllSuggestionsWithCalibration(input: {
 
     console.log('[generateAllSuggestionsWithCalibration] Generating suggestions...')
 
-    // Note: For now, we generate suggestions without passing calibration to prompts
-    // Task 4 will update prompts to accept calibration context
-    // For now, we just add metadata to the results
-
-    // Add calibration metadata to all suggestions (Task 3.7-3.10)
-    const enrichSuggestion = (suggestion: any) => ({
+    // Helper to enrich suggestions with calibration metadata (Task 3.7-3.10)
+    const enrichSuggestion = <T extends object>(suggestion: T) => ({
       ...suggestion,
       suggestionMode: suggestionMode,
       inferenceSignals: inferenceSignals,
     })
+
+    // 1. Generate action verb and quantification suggestions (if bulletPoints provided)
+    if (input.bulletPoints.length > 0) {
+      console.log('[generateAllSuggestionsWithCalibration] Generating action verb suggestions...')
+      const actionVerbResult = await generateActionVerbAndQuantificationSuggestions({
+        scanId: input.scanId,
+        bulletPoints: input.bulletPoints,
+      })
+
+      if (actionVerbResult.data) {
+        for (const s of actionVerbResult.data.suggestions) {
+          if (s.actionVerbSuggestion) {
+            allSuggestions.push(enrichSuggestion({
+              type: 'action_verb',
+              section: 'experience',
+              originalText: s.original,
+              suggestedText: s.actionVerbSuggestion.improved,
+              reasoning: s.actionVerbSuggestion.reasoning,
+              urgency: calibrationResult?.mode === 'Transformation' ? 'high' : 'medium',
+            }))
+          }
+          if (s.quantificationSuggestion) {
+            allSuggestions.push(enrichSuggestion({
+              type: 'quantification',
+              section: 'experience',
+              originalText: s.original,
+              suggestedText: s.quantificationSuggestion.example,
+              reasoning: s.quantificationSuggestion.prompt,
+              urgency: calibrationResult?.priorityBoosts?.quantification === 2 ? 'critical' :
+                       calibrationResult?.priorityBoosts?.quantification === 1 ? 'high' : 'medium',
+            }))
+          }
+        }
+      }
+    }
+
+    // 2. Generate skill expansion suggestions (if skills provided)
+    if (input.skills.length > 0) {
+      console.log('[generateAllSuggestionsWithCalibration] Generating skill expansion suggestions...')
+      const skillResult = await generateSkillExpansionSuggestions({
+        scanId: input.scanId,
+        skills: input.skills,
+        jdKeywords: input.jdKeywords,
+        jdContent: input.jdContent,
+      })
+
+      if (skillResult.data) {
+        for (const s of skillResult.data.suggestions) {
+          if (s.expansion) {
+            allSuggestions.push(enrichSuggestion({
+              type: 'skill_expansion',
+              section: 'skills',
+              originalText: s.original,
+              suggestedText: s.expansion,
+              reasoning: s.reasoning,
+              urgency: s.keywordsMatched.length > 0 ? 'high' : 'medium',
+            }))
+          }
+        }
+      }
+    }
+
+    // 3. Generate format and removal suggestions (if detectedFields provided)
+    if (input.detectedFields.length > 0) {
+      console.log('[generateAllSuggestionsWithCalibration] Generating format suggestions...')
+      const formatResult = await generateFormatAndRemovalSuggestions({
+        scanId: input.scanId,
+        resumeContent: input.resumeText,
+        detectedFields: input.detectedFields,
+        experienceYears: input.experienceYears,
+        targetRole: input.targetRole,
+        isInternationalStudent: input.isInternationalStudent,
+        resumePages: input.resumePages,
+      })
+
+      if (formatResult.data) {
+        for (const s of formatResult.data.suggestions) {
+          allSuggestions.push(enrichSuggestion({
+            type: s.type,
+            section: 'format',
+            originalText: s.original,
+            suggestedText: s.suggested,
+            reasoning: s.reasoning,
+            urgency: s.urgency,
+          }))
+        }
+      }
+    }
 
     console.log('[generateAllSuggestionsWithCalibration] ====== SUCCESS ======', {
       suggestionCount: allSuggestions.length,
@@ -1527,7 +1658,7 @@ export async function generateAllSuggestionsWithCalibration(input: {
     return {
       data: {
         scanId: input.scanId,
-        suggestions: allSuggestions.map(enrichSuggestion),
+        suggestions: allSuggestions,
         calibration: calibrationResult ? {
           mode: calibrationResult.mode,
           targetCount: calibrationResult.suggestionsTargetCount,

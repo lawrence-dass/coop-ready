@@ -206,7 +206,7 @@ export async function getSuggestionStats(
   total: number;
   bySection: Record<string, number>;
   byType: Record<string, number>;
-  bySectionAndType: Record<string, number>>;
+  bySectionAndType: Record<string, Record<string, number>>;
 }> {
   const supabase = await createClient();
 

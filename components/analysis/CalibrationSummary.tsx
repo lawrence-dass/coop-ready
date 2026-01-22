@@ -89,8 +89,7 @@ export function CalibrationSummary({
       title="Suggestion Strategy"
       icon={<Sparkles className="h-5 w-5" />}
       defaultExpanded={true}
-      className="border-l-4"
-      style={{ borderLeftColor: colors.border.replace('border-', '#') }}
+      className={`border-l-4 ${colors.border}`}
     >
       <div className="space-y-6">
         {/* Mode Badge and Description */}
