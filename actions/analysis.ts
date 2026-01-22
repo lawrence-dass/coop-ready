@@ -39,6 +39,7 @@ import type {
   ExperienceLevel,
 } from '@/lib/types/analysis'
 import type { ParsedResume } from '@/lib/parsers/types'
+import { generateAllSuggestionsWithCalibration, saveSuggestions } from '@/actions/suggestions'
 
 // Valid experience levels for type-safe validation
 const VALID_EXPERIENCE_LEVELS: ExperienceLevel[] = ['student', 'career_changer', 'experienced']
@@ -52,6 +53,122 @@ function normalizeExperienceLevel(level: string): ExperienceLevel {
   }
   console.warn(`[normalizeExperienceLevel] Invalid level "${level}", defaulting to student`)
   return 'student'
+}
+
+/**
+ * Helper function to extract skills array from parsed_sections
+ * Story 10.1: Task 2.2 - Extract skills for suggestion context
+ * Exported for testing and reuse in retrySuggestionGeneration
+ */
+export async function extractSkillsFromParsedSections(parsedSections: unknown): Promise<string[]> {
+  try {
+    const parsed = parsedSections as ParsedResume
+    if (parsed?.skills && Array.isArray(parsed.skills)) {
+      // Skills are Skill[] with 'name' property per ParsedResume type
+      // Extract names first, then filter out empty/null/undefined values
+      return parsed.skills
+        .map((skill: any) => skill.name || skill.text || (typeof skill === 'string' ? skill : ''))
+        .filter((name: string) => name && name.trim() !== '')
+    }
+  } catch (error) {
+    console.warn('[extractSkillsFromParsedSections] Failed to extract skills', { error })
+  }
+  return []
+}
+
+/**
+ * Helper function to extract detected fields from parsed_sections for format suggestions
+ * Story 10.1: Task 2.3 - Extract detected fields
+ * Exported for testing and reuse in retrySuggestionGeneration
+ */
+export async function extractDetectedFields(parsedSections: unknown): Promise<string[]> {
+  const fields: string[] = []
+  try {
+    const parsed = parsedSections as any
+
+    // Check for various fields that might need formatting suggestions
+    if (parsed?.contact?.address) fields.push('address')
+    if (parsed?.contact?.photo) fields.push('photo')
+    if (parsed?.personalInfo?.dateOfBirth) fields.push('date_of_birth')
+    if (parsed?.personalInfo?.age) fields.push('age')
+    if (parsed?.personalInfo?.maritalStatus) fields.push('marital_status')
+    if (parsed?.personalInfo?.nationality) fields.push('nationality')
+    if (parsed?.summary?.objective) fields.push('objective')
+    if (parsed?.references) fields.push('references')
+
+  } catch (error) {
+    console.warn('[extractDetectedFields] Failed to extract detected fields', { error })
+  }
+  return fields
+}
+
+/**
+ * Helper function to map experience level to approximate years
+ * Story 10.1: Task 2.4 - Calculate experience years
+ * Exported for testing and reuse in retrySuggestionGeneration
+ */
+export async function mapExperienceLevelToYears(experienceLevel: string): Promise<number> {
+  switch (experienceLevel) {
+    case 'student':
+      return 0
+    case 'entry':
+      return 1
+    case 'career_changer':
+      return 3
+    case 'mid':
+      return 5
+    case 'senior':
+    case 'experienced':
+      return 8
+    default:
+      return 0
+  }
+}
+
+/**
+ * Helper function to build complete suggestion context from analysis data
+ * Story 10.1: Task 2 - Extract suggestion context
+ * Exported for testing and reuse in retrySuggestionGeneration
+ */
+export async function extractSuggestionContext(data: {
+  scanId: string
+  resumeText: string
+  bullets: string[]
+  parsedSections: unknown
+  profile: any // Using any to avoid type conflicts between different UserProfile definitions
+  scan: { job_description: string }
+  keywordAnalysis: any // Using any to avoid type conflicts with Keyword[] vs string[]
+}) {
+  const { scanId, resumeText, bullets, parsedSections, profile, scan, keywordAnalysis } = data
+
+  const skills = await extractSkillsFromParsedSections(parsedSections)
+  const detectedFields = await extractDetectedFields(parsedSections)
+  const experienceYears = await mapExperienceLevelToYears(profile.experienceLevel || 'student')
+
+  // Map experience level format
+  const mappedExperienceLevel = profile.experienceLevel === 'career_changer' ? 'mid' :
+                                 profile.experienceLevel === 'experienced' ? 'senior' :
+                                 profile.experienceLevel as 'entry' | 'mid' | 'senior' | 'student'
+
+  // Extract keyword strings from keyword analysis (handle both Keyword[] and string[] formats)
+  const keywordsFound = keywordAnalysis.keywordsFound.map((k: any) => typeof k === 'string' ? k : k.keyword || k.name || String(k))
+  const keywordsMissing = keywordAnalysis.keywordsMissing.map((k: any) => typeof k === 'string' ? k : k.keyword || k.name || String(k))
+
+  return {
+    scanId,
+    resumeText,
+    bulletPoints: bullets,
+    skills,
+    experienceLevel: mappedExperienceLevel,
+    targetRole: profile.targetRole || 'Software Engineer', // Default if null
+    isStudent: profile.experienceLevel === 'student',
+    jdKeywords: [...keywordsFound, ...keywordsMissing],
+    jdContent: scan.job_description,
+    detectedFields,
+    experienceYears,
+    isInternationalStudent: false, // Could be enhanced from profile if available
+    resumePages: 1, // Could be calculated from resume length
+  }
 }
 
 /**
@@ -480,6 +597,73 @@ export async function runAnalysis(
       tokensUsed: parsedResponse.usage.totalTokens,
       costEstimate: parsedResponse.costEstimate,
     })
+
+    // Story 10.1: Generate suggestions automatically after analysis completes
+    try {
+      console.log('[runAnalysis] Generating suggestions automatically (Story 10.1)...')
+
+      // Extract suggestion context from analysis data
+      const suggestionContext = await extractSuggestionContext({
+        scanId: parsed.data.scanId,
+        resumeText: resume.extracted_text,
+        bullets,
+        parsedSections: resume.parsed_sections,
+        profile,
+        scan,
+        keywordAnalysis,
+      })
+
+      // Generate all suggestions with calibration
+      const suggestionsResult = await generateAllSuggestionsWithCalibration(suggestionContext)
+
+      if (suggestionsResult.error) {
+        console.error('[runAnalysis] Failed to generate suggestions', {
+          scanId: parsed.data.scanId,
+          error: suggestionsResult.error,
+        })
+        // Don't fail the entire analysis - suggestions are a nice-to-have
+      } else if (suggestionsResult.data) {
+        console.log('[runAnalysis] Suggestions generated', {
+          scanId: parsed.data.scanId,
+          count: suggestionsResult.data.suggestions.length,
+          mode: suggestionsResult.data.calibration?.mode,
+        })
+
+        // Save suggestions to database
+        const transformedSuggestions = suggestionsResult.data.suggestions.map((s, index) => ({
+          section: s.section as 'experience' | 'education' | 'projects' | 'skills' | 'format',
+          itemIndex: index,
+          originalText: s.originalText,
+          suggestedText: s.suggestedText || '',
+          suggestionType: s.type as 'bullet_rewrite' | 'skill_mapping' | 'action_verb' | 'quantification' | 'skill_expansion' | 'format' | 'removal',
+          reasoning: s.reasoning,
+        }))
+
+        const saveResult = await saveSuggestions({
+          scanId: parsed.data.scanId,
+          suggestions: transformedSuggestions,
+        })
+
+        if (saveResult.error) {
+          console.error('[runAnalysis] Failed to save suggestions', {
+            scanId: parsed.data.scanId,
+            error: saveResult.error,
+          })
+          // Don't fail the entire analysis
+        } else {
+          console.log('[runAnalysis] Suggestions saved successfully', {
+            scanId: parsed.data.scanId,
+            savedCount: saveResult.data?.savedCount || 0,
+          })
+        }
+      }
+    } catch (suggestionError) {
+      console.error('[runAnalysis] Unexpected error during suggestion generation', {
+        scanId: parsed.data.scanId,
+        error: suggestionError instanceof Error ? suggestionError.message : String(suggestionError),
+      })
+      // Don't fail the entire analysis - log and continue
+    }
 
     // Include keyword analysis, section scores, format issues, and experience context in returned result
     const fullAnalysisResult: AnalysisResult = {

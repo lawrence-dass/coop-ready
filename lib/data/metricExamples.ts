@@ -192,11 +192,11 @@ export function getContextPrompt(context: BulletContext): string {
   const template = getMetricTemplate(context)
 
   if (!template) {
-    return 'Consider adding: specific numbers or metrics relevant to this achievement'
+    return 'Pick ONE metric: specific number relevant to this achievement'
   }
 
-  const promptList = template.prompts.join(', ')
-  const exampleList = template.examples.slice(0, 3).map(ex => `"${ex}"`).join(', ')
+  // Show example options but emphasize picking ONE
+  const exampleList = template.examples.slice(0, 3).map(ex => `"${ex}"`).join(' OR ')
 
-  return `Consider adding: ${promptList}. Examples: ${exampleList}. ${template.reasoning}.`
+  return `Pick ONE metric (not multiple): ${exampleList}. ${template.reasoning}.`
 }

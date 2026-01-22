@@ -36,10 +36,10 @@ export default async function SuggestionsPage({ params }: PageProps) {
 
   if (!user) redirect('/auth/login')
 
-  // Fetch scan data to verify ownership and get scan info
+  // Fetch scan data to verify ownership and get scan info (Story 10.1: Include ATS score)
   const { data: scan, error: scanError } = await supabase
     .from('scans')
-    .select('id, user_id, status, created_at')
+    .select('id, user_id, status, created_at, ats_score')
     .eq('id', scanId)
     .eq('user_id', user.id)
     .single()
@@ -146,6 +146,7 @@ export default async function SuggestionsPage({ params }: PageProps) {
           scanId={scanId}
           suggestionsBySection={suggestionsBySection}
           totalSuggestions={totalSuggestions}
+          atsScore={scan.ats_score ?? null}
         />
       )}
 

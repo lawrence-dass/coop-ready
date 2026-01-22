@@ -5,7 +5,7 @@
  * Handles filtering and pagination state
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { SuggestionSection } from "./SuggestionSection";
 import { SuggestionTypeFilter } from "./SuggestionTypeFilter";
 import {
@@ -14,6 +14,9 @@ import {
 } from "@/lib/utils/suggestion-types";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { retrySuggestionGeneration } from "@/actions/suggestions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -21,15 +24,19 @@ interface SuggestionListClientProps {
   scanId: string;
   suggestionsBySection: Record<string, DisplaySuggestion[]>;
   totalSuggestions: number;
+  atsScore: number | null;
 }
 
 export function SuggestionListClient({
   scanId,
   suggestionsBySection,
   totalSuggestions,
+  atsScore,
 }: SuggestionListClientProps) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isRetrying, startRetry] = useTransition();
+  const router = useRouter();
 
   // Filter suggestions by selected types
   const filteredBySection = useMemo(() => {
@@ -97,16 +104,66 @@ export function SuggestionListClient({
     setCurrentPage(1); // Reset to first page when filter changes
   };
 
+  // Story 10.1: Handle retry generation
+  const handleRetry = () => {
+    startRetry(async () => {
+      const result = await retrySuggestionGeneration({ scanId });
+      if (result.error) {
+        toast.error(result.error.message || "Failed to regenerate suggestions");
+      } else {
+        toast.success(`Generated ${result.data?.suggestionsCount || 0} suggestions`);
+        router.refresh();
+      }
+    });
+  };
+
+  // Story 10.1: AC6 - Fix misleading empty state message
   if (totalSuggestions === 0) {
-    return (
-      <div className="rounded-lg border-2 border-dashed border-green-300 bg-green-50 p-8 text-center">
-        <CheckCircle2 className="mx-auto h-12 w-12 text-green-600 mb-2" />
-        <h3 className="font-semibold text-green-900">No suggestions found!</h3>
-        <p className="text-sm text-green-700 mt-1">
-          Your resume is already optimized and follows best practices.
-        </p>
-      </div>
-    );
+    // Only show "optimized" message for scores 90%+ (Validation mode threshold)
+    const isHighScore = atsScore !== null && atsScore >= 90;
+
+    if (isHighScore) {
+      // High score with no suggestions = truly optimized
+      return (
+        <div className="rounded-lg border-2 border-dashed border-green-300 bg-green-50 p-8 text-center">
+          <CheckCircle2 className="mx-auto h-12 w-12 text-green-600 mb-2" />
+          <h3 className="font-semibold text-green-900">Excellent Resume!</h3>
+          <p className="text-sm text-green-700 mt-1">
+            Your resume is already optimized and follows best practices.
+          </p>
+        </div>
+      );
+    } else {
+      // Low/medium score with no suggestions = generation issue
+      return (
+        <div className="rounded-lg border-2 border-dashed border-yellow-300 bg-yellow-50 p-8 text-center">
+          <div className="mx-auto h-12 w-12 text-yellow-600 mb-2 flex items-center justify-center">
+            <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="font-semibold text-yellow-900">Suggestions In Progress</h3>
+          <p className="text-sm text-yellow-700 mt-1">
+            We're still generating personalized suggestions for your resume.
+          </p>
+          <div className="flex gap-2 justify-center mt-4">
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              disabled={isRetrying}
+            >
+              Refresh Page
+            </Button>
+            <Button
+              onClick={handleRetry}
+              disabled={isRetrying}
+            >
+              {isRetrying ? "Generating..." : "Retry Generation"}
+            </Button>
+          </div>
+        </div>
+      );
+    }
   }
 
   return (

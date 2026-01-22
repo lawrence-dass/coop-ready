@@ -96,10 +96,11 @@ For each bullet point, respond with:
 2. QUANTIFICATION SUGGESTION (if applicable):
    - Only suggest if the bullet lacks specific numbers or metrics
    - If it already has metrics, skip this suggestion
-   - Use the context-specific Metric Guidance provided for each bullet
-   - The context (financial, tech, leadership, competitive, scale) determines which metrics are most relevant
-   - Include specific examples from the Metric Guidance in your suggestions
-   - Explain why the metric matters for impact in this specific context
+   - CRITICAL: Do NOT invent or fabricate numbers - the user must provide their real data
+   - Use [X] placeholder for numbers the user needs to fill in
+   - Add only ONE metric placeholder per bullet
+   - The "example" shows WHERE to add a metric, using [X] as placeholder
+   - IMPORTANT: Keep the original verb - do NOT change it in the example
 
 Respond as valid JSON:
 {
@@ -107,17 +108,33 @@ Respond as valid JSON:
     {
       "original": "the original bullet point",
       "action_verb_suggestion": null or {
-        "improved": "improved version with strong verb",
+        "improved": "the bullet with ONLY the verb changed, nothing else",
         "alternatives": ["verb1", "verb2"],
         "reasoning": "why this verb is stronger"
       },
       "quantification_suggestion": null or {
-        "prompt": "specific prompt for user",
-        "example": "example of how to add metrics",
+        "prompt": "question asking user for their specific number",
+        "example": "the bullet with [X] placeholder where user should add their metric",
         "metrics_to_consider": ["metric1", "metric2"]
       }
     }
   ]
+}
+
+EXAMPLE OUTPUT:
+For bullet "Worked in a multi-disciplinary team that leveraged scrum methodologies":
+{
+  "original": "Worked in a multi-disciplinary team that leveraged scrum methodologies",
+  "action_verb_suggestion": {
+    "improved": "Collaborated in a multi-disciplinary team that leveraged scrum methodologies",
+    "alternatives": ["Led", "Coordinated"],
+    "reasoning": "Collaborated conveys active participation"
+  },
+  "quantification_suggestion": {
+    "prompt": "How many people were on your team?",
+    "example": "Worked in a multi-disciplinary team of [X] that leveraged scrum methodologies",
+    "metrics_to_consider": ["team size"]
+  }
 }
 
 IMPORTANT INSTRUCTIONS:
@@ -125,8 +142,9 @@ IMPORTANT INSTRUCTIONS:
 2. The "suggestions" array must have exactly ${bulletPoints.length} items, one for each input bullet
 3. Order must match input order
 4. If a bullet is already strong (strong verb + has metrics), set both suggestions to null
-5. action_verb_suggestion should only be provided if bullet starts with a weak verb
-6. quantification_suggestion should only be provided if bullet lacks metrics
-7. Both suggestions can be provided for the same bullet if needed
-8. Ensure all JSON strings are properly escaped`;
+5. action_verb_suggestion.improved should ONLY change the verb, keep everything else identical
+6. quantification_suggestion.example should use [X] placeholder - NEVER invent numbers like "1,000 users" or "50%"
+7. quantification_suggestion.prompt should be a question asking the user for THEIR specific number
+8. SKIP skill listings (e.g., "Languages: Python, JavaScript") - set BOTH suggestions to null
+9. Ensure all JSON strings are properly escaped`;
 }

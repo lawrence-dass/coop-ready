@@ -32,6 +32,13 @@ import type { InferenceSignals } from '@/lib/types/suggestions'
 import type { SuggestionMode } from '@/lib/utils/suggestionCalibrator'
 import type { CalibrationContext } from '@/lib/openai/prompts/calibration-context'
 
+// Story 10.1: Import helpers for suggestion context extraction
+import {
+  extractSkillsFromParsedSections,
+  extractDetectedFields,
+  mapExperienceLevelToYears,
+} from '@/actions/analysis'
+
 /**
  * Server Actions for AI-Generated Suggestions
  *
@@ -339,7 +346,7 @@ export async function generateBulletRewrites(
           },
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 4000, // Increased to handle large resumes
       })
     }, 'generateBulletRewrites')
 
@@ -356,7 +363,12 @@ export async function generateBulletRewrites(
         error: { message: 'Malformed OpenAI response', code: 'PARSE_ERROR' },
       }
     }
-    const content = parsedResponse.content
+    let content = parsedResponse.content
+
+    // Strip markdown code fences if present
+    if (content.startsWith('```')) {
+      content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
 
     // Parse JSON from content
     let rewritesData: { rewrites: RewriteResult[] }
@@ -506,7 +518,7 @@ export async function generateSkillMappings(
           },
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 4000, // Increased to handle large resumes
       })
     }, 'generateSkillMappings')
 
@@ -524,7 +536,12 @@ export async function generateSkillMappings(
       }
     }
 
-    const content = parsedResponse.content
+    let content = parsedResponse.content
+
+    // Strip markdown code fences if present
+    if (content.startsWith('```')) {
+      content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
 
     // Parse JSON from content
     let mappingsData: {
@@ -713,7 +730,7 @@ export async function generateActionVerbAndQuantificationSuggestions(
           },
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 4000, // Increased from 2000 to handle large resumes with many bullets
       })
     }, 'generateActionVerbAndQuantificationSuggestions')
 
@@ -734,7 +751,12 @@ export async function generateActionVerbAndQuantificationSuggestions(
       }
     }
 
-    const content = parsedResponse.content
+    let content = parsedResponse.content
+
+    // Strip markdown code fences if present (AI sometimes wraps JSON in ```json...```)
+    if (content.startsWith('```')) {
+      content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
 
     // Parse JSON from content
     let suggestionsData: {
@@ -1059,7 +1081,7 @@ export async function generateSkillExpansionSuggestions(
             },
           ],
           temperature: 0.7,
-          max_tokens: 2000,
+          max_tokens: 4000, // Increased to handle large resumes
         })
       }, 'generateSkillExpansionSuggestions')
 
@@ -1080,7 +1102,12 @@ export async function generateSkillExpansionSuggestions(
         }
       }
 
-      const content = parsedResponse.content
+      let content = parsedResponse.content
+
+      // Strip markdown code fences if present
+      if (content.startsWith('```')) {
+        content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+      }
 
       // Type for AI-generated skill expansion suggestions
       interface AiSkillSuggestion {
@@ -1309,7 +1336,7 @@ export async function generateFormatAndRemovalSuggestions(
           },
         ],
         temperature: 0.5, // Lower temp for more consistent removal suggestions
-        max_tokens: 2000,
+        max_tokens: 4000, // Increased to handle large resumes
       })
     }, 'generateFormatAndRemovalSuggestions')
 
@@ -1331,7 +1358,12 @@ export async function generateFormatAndRemovalSuggestions(
       }
     }
 
-    const content = parsedResponse.content
+    let content = parsedResponse.content
+
+    // Strip markdown code fences if present
+    if (content.startsWith('```')) {
+      content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
 
     // Parse JSON from content
     interface AiAnalysis {
@@ -1574,6 +1606,11 @@ export async function generateAllSuggestionsWithCalibration(input: {
 
       if (actionVerbResult.data) {
         for (const s of actionVerbResult.data.suggestions) {
+          // Story 10.1: Keep action verb and quantification as SEPARATE suggestions
+          // - Action verb: shows verb change only
+          // - Quantification: shows [X] placeholder for user to fill in their real number
+          // These are distinct improvements and should not be combined
+
           if (s.actionVerbSuggestion) {
             allSuggestions.push(enrichSuggestion({
               type: 'action_verb',
@@ -2178,6 +2215,237 @@ export async function getSuggestionSummary(
     return {
       data: null,
       error: { message: 'Something went wrong', code: 'INTERNAL_ERROR' },
+    }
+  }
+}
+
+/**
+ * Retry suggestion generation for a scan
+ * Story 10.1: Task 4 - Add retry mechanism
+ *
+ * This function regenerates suggestions by calling the same flow
+ * that happens during analysis. It requires loading the scan context
+ * and calling generateAllSuggestionsWithCalibration.
+ */
+const retrySuggestionGenerationSchema = z.object({
+  scanId: z.string().uuid(),
+})
+
+export async function retrySuggestionGeneration(
+  input: z.infer<typeof retrySuggestionGenerationSchema>
+): Promise<ActionResponse<{ suggestionsCount: number }>> {
+  console.log('[retrySuggestionGeneration] ====== ENTRY ======', {
+    scanId: input.scanId,
+    timestamp: new Date().toISOString(),
+  })
+
+  // Validate input
+  const parsed = retrySuggestionGenerationSchema.safeParse(input)
+  if (!parsed.success) {
+    console.error('[retrySuggestionGeneration] Validation failed:', parsed.error)
+    return {
+      data: null,
+      error: { message: 'Invalid input', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  try {
+    const supabase = await createClient()
+
+    // Get current user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return {
+        data: null,
+        error: {
+          message: 'Authentication required',
+          code: 'UNAUTHORIZED',
+        },
+      }
+    }
+
+    // Load scan with resume and user info
+    const { data: scan, error: scanError } = await supabase
+      .from('scans')
+      .select(`
+        id,
+        user_id,
+        job_description,
+        resume_id,
+        resumes (
+          extracted_text,
+          parsed_sections
+        )
+      `)
+      .eq('id', parsed.data.scanId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (scanError || !scan) {
+      console.error('[retrySuggestionGeneration] Scan not found', scanError)
+      return {
+        data: null,
+        error: {
+          message: 'Scan not found',
+          code: 'NOT_FOUND',
+        },
+      }
+    }
+
+    // Get user profile (using correct table name: user_profiles)
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('experience_level, target_role')
+      .eq('user_id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('[retrySuggestionGeneration] Profile not found', profileError)
+      return {
+        data: null,
+        error: {
+          message: 'User profile not found',
+          code: 'PROFILE_NOT_FOUND',
+        },
+      }
+    }
+
+    // Get scan analysis data for keywords
+    const { data: scanData, error: scanDataError } = await supabase
+      .from('scans')
+      .select('keywords_found, keywords_missing')
+      .eq('id', parsed.data.scanId)
+      .single()
+
+    if (scanDataError || !scanData) {
+      console.error('[retrySuggestionGeneration] Scan data not found', scanDataError)
+      return {
+        data: null,
+        error: {
+          message: 'Analysis data not found',
+          code: 'DATA_NOT_FOUND',
+        },
+      }
+    }
+
+    // Story 10.1: Use imported helper functions from analysis.ts (no more duplication)
+    // Extract bullets from resume text (local helper - not exported from analysis)
+    function extractBulletsFromText(text: string): string[] {
+      const lines = text.split('\n')
+      const bullets: string[] = []
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (trimmed.match(/^[•\-\*●]/) || trimmed.match(/^\d+\./)) {
+          bullets.push(trimmed.replace(/^[•\-\*●]\s*/, '').replace(/^\d+\.\s*/, ''))
+        }
+      }
+      return bullets
+    }
+
+    // Build context using imported helpers (async since they're exported from 'use server' file)
+    const resume = Array.isArray(scan.resumes) ? scan.resumes[0] : scan.resumes
+    const bullets = extractBulletsFromText(resume?.extracted_text || '')
+    const skills = await extractSkillsFromParsedSections(resume?.parsed_sections)
+    const detectedFields = await extractDetectedFields(resume?.parsed_sections)
+    const experienceYears = await mapExperienceLevelToYears(profile.experience_level)
+
+    const mappedExperienceLevel = profile.experience_level === 'career_changer' ? 'mid' :
+                                   profile.experience_level === 'experienced' ? 'senior' :
+                                   profile.experience_level as 'entry' | 'mid' | 'senior' | 'student'
+
+    const keywordsFound = (scanData.keywords_found as any[]) || []
+    const keywordsMissing = (scanData.keywords_missing as any[]) || []
+
+    const suggestionContext = {
+      scanId: parsed.data.scanId,
+      resumeText: resume?.extracted_text || '',
+      bulletPoints: bullets,
+      skills,
+      experienceLevel: mappedExperienceLevel,
+      targetRole: profile.target_role || 'Software Engineer',
+      isStudent: profile.experience_level === 'student',
+      jdKeywords: [...keywordsFound, ...keywordsMissing],
+      jdContent: scan.job_description,
+      detectedFields,
+      experienceYears,
+      isInternationalStudent: false,
+      resumePages: 1,
+    }
+
+    // Generate suggestions
+    const suggestionsResult = await generateAllSuggestionsWithCalibration(suggestionContext)
+
+    if (suggestionsResult.error) {
+      console.error('[retrySuggestionGeneration] Generation failed', suggestionsResult.error)
+      return {
+        data: null,
+        error: suggestionsResult.error,
+      }
+    }
+
+    // Delete existing suggestions for this scan
+    const { error: deleteError } = await supabase
+      .from('suggestions')
+      .delete()
+      .eq('scan_id', parsed.data.scanId)
+
+    if (deleteError) {
+      console.warn('[retrySuggestionGeneration] Failed to delete old suggestions', deleteError)
+      // Continue anyway
+    }
+
+    // Save new suggestions
+    if (suggestionsResult.data) {
+      const transformedSuggestions = suggestionsResult.data.suggestions.map((s, index) => ({
+        section: s.section as 'experience' | 'education' | 'projects' | 'skills' | 'format',
+        itemIndex: index,
+        originalText: s.originalText,
+        suggestedText: s.suggestedText || '',
+        suggestionType: s.type as 'bullet_rewrite' | 'skill_mapping' | 'action_verb' | 'quantification' | 'skill_expansion' | 'format' | 'removal',
+        reasoning: s.reasoning,
+      }))
+
+      const saveResult = await saveSuggestions({
+        scanId: parsed.data.scanId,
+        suggestions: transformedSuggestions,
+      })
+
+      if (saveResult.error) {
+        console.error('[retrySuggestionGeneration] Failed to save suggestions', saveResult.error)
+        return {
+          data: null,
+          error: saveResult.error,
+        }
+      }
+
+      console.log('[retrySuggestionGeneration] ====== SUCCESS ======', {
+        suggestionsCount: saveResult.data?.savedCount || 0,
+      })
+
+      return {
+        data: {
+          suggestionsCount: saveResult.data?.savedCount || 0,
+        },
+        error: null,
+      }
+    }
+
+    return {
+      data: { suggestionsCount: 0 },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[retrySuggestionGeneration] ====== ERROR ======', e)
+    return {
+      data: null,
+      error: {
+        message: 'Failed to regenerate suggestions',
+        code: 'GENERATION_ERROR',
+      },
     }
   }
 }

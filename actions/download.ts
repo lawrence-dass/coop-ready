@@ -214,19 +214,8 @@ export async function validateDownloadAccess(input: {
       }
     }
 
-    // Fetch user profile for name
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError) {
-      console.error('[validateDownloadAccess] Profile fetch error:', profileError)
-      // Not critical - continue with email as fallback
-    }
-
-    const userName = profile?.full_name || user.email?.split('@')[0] || 'User'
+    // Use email username as display name (user_profiles table doesn't have full_name)
+    const userName = user.email?.split('@')[0] || 'User'
 
     // Check if any suggestions were accepted
     const { data: suggestions, error: suggestionsError } = await supabase
