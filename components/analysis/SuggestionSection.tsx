@@ -65,12 +65,12 @@ export function SuggestionSection({
 
   if (suggestions.length === 0) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-        <div className="flex items-center gap-2">
+      <div className="rounded-lg border border-green-200 bg-green-50 p-4" data-testid="section-group">
+        <div className="flex items-center gap-2" data-testid="empty-state">
           <CheckCircle2 className="h-5 w-5 text-green-600" />
           <h3 className="font-medium text-green-900">{displayName}</h3>
           <span className="text-sm text-green-700">
-            No suggestions for this section
+            No suggestions - this section is strong!
           </span>
         </div>
       </div>
@@ -78,7 +78,7 @@ export function SuggestionSection({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden" data-testid="section-group">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -89,7 +89,7 @@ export function SuggestionSection({
             <IconComponent className="h-5 w-5 text-gray-400" />
           )}
           <h3 className="font-semibold text-gray-900">{displayName}</h3>
-          <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+          <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800" data-testid="suggestion-count">
             {suggestions.length}
           </span>
         </div>

@@ -38,20 +38,32 @@ export function SuggestionsSummary({
   const [loading, setLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
 
-  // Load summary on mount and set up auto-refresh
+  // Load summary on mount and set up auto-refresh only when needed
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+
     const loadSummary = async () => {
       const { data, error } = await getSuggestionSummary(scanId)
       if (!error && data) {
         setSummary(data)
+        // Stop polling if no suggestions or all reviewed
+        if (data.total === 0 || data.pending === 0) {
+          if (interval) {
+            clearInterval(interval)
+            interval = null
+          }
+        }
       }
       setLoading(false)
     }
 
     loadSummary()
-    // Refresh every 2 seconds
-    const interval = setInterval(loadSummary, 2000)
-    return () => clearInterval(interval)
+    // Only start polling if we might have pending suggestions
+    interval = setInterval(loadSummary, 2000)
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
   }, [scanId])
 
   const handleSkipAll = () => {
@@ -76,9 +88,9 @@ export function SuggestionsSummary({
     )
   }
 
-  const completionPercentage = Math.round(
-    ((summary.accepted + summary.rejected) / summary.total) * 100
-  )
+  const completionPercentage = summary.total > 0
+    ? Math.round(((summary.accepted + summary.rejected) / summary.total) * 100)
+    : 100
   const isComplete = summary.pending === 0
 
   return (
