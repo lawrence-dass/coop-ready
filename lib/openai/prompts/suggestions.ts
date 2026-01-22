@@ -5,10 +5,24 @@
  *
  * @see Story 5.1: Bullet Point Rewrite Generation
  * @see Story 9.2: Inference-Based Suggestion Calibration
+ * @see Story 9.3: Natural Writing Enforcement
  */
 
 import type { CalibrationContext } from './calibration-context';
 import { buildCalibrationInstructions } from './calibration-context';
+
+/**
+ * Banned AI-tell phrases that must be avoided
+ * @see Story 9.3: Natural Writing Enforcement
+ */
+const BANNED_PHRASES = [
+  'spearheaded',
+  'leveraged',
+  'synergized',
+  'utilize',
+  'utilized',
+  'utilizing',
+] as const;
 
 /**
  * User profile for context-aware rewrite generation
@@ -53,6 +67,12 @@ export function createBulletRewritePrompt(
 
   return `You are an expert resume writer specializing in ATS optimization and impact maximization.
 ${calibrationInstructions}
+
+CRITICAL NATURAL WRITING RULES (Story 9.3):
+- NEVER use these AI-tell phrases: ${BANNED_PHRASES.join(', ')}
+- Aim for 20-35 words per bullet point (optimal range)
+- Use natural, human-sounding language that hiring managers will recognize as authentic
+- Avoid overused resume buzzwords that signal AI-generated content
 
 Given the following experience bullet points, generate improved rewrites that:
 1. Add specific metrics, percentages, or quantifiable outcomes (when appropriate)

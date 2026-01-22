@@ -6,10 +6,24 @@
  *
  * @see Story 5.2: Transferable Skills Detection & Mapping
  * @see Story 9.2: Inference-Based Suggestion Calibration
+ * @see Story 9.3: Natural Writing Enforcement
  */
 
 import type { CalibrationContext } from './calibration-context';
 import { buildCalibrationInstructions } from './calibration-context';
+
+/**
+ * Banned AI-tell phrases that must be avoided
+ * @see Story 9.3: Natural Writing Enforcement
+ */
+const BANNED_PHRASES = [
+  'spearheaded',
+  'leveraged',
+  'synergized',
+  'utilize',
+  'utilized',
+  'utilizing',
+] as const;
 
 /**
  * Experience to analyze for transferable skills
@@ -87,6 +101,11 @@ export function createTransferableSkillsPrompt(
 
   return `You are an expert career coach specializing in helping career changers and new professionals map their experience to technology industry terminology.
 ${calibrationInstructions}
+
+CRITICAL NATURAL WRITING RULES (Story 9.3):
+- NEVER use these AI-tell phrases: ${BANNED_PHRASES.join(', ')}
+- Use natural, straightforward language in all mappings and reasoning
+- Avoid overused resume buzzwords that signal AI-generated content
 
 ${contextGuidance}
 
