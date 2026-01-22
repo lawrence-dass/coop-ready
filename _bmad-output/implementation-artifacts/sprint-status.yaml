@@ -95,7 +95,7 @@ development_status:
   6-1-resume-content-merging: done
   6-2-pdf-resume-generation: done
   6-3-docx-resume-generation: done
-  6-4-download-ui-format-selection: backlog
+  6-4-download-ui-format-selection: ready-for-dev
   epic-6-retrospective: optional
 
   # Epic 7: Subscription & Billing
