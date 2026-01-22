@@ -1,6 +1,6 @@
 # Story 6.1: Resume Content Merging
 
-**Status:** ready-for-dev
+**Status:** review
 **Epic:** 6 - Resume Export & Download
 **Dependencies:** Epic 5 complete (suggestions exist and can be accepted/rejected)
 **Blocking:** Stories 6-2 (PDF generation), 6-3 (DOCX generation), 6-4 (Download UI)
@@ -225,61 +225,54 @@ export async function generateMergedResume(
 
 ## Data Model Reference
 
-### Resume Data Structure (from `resume_data` column)
+### Resume Data Structure (from `parsed_sections` column in `resumes` table)
 
 ```typescript
+// Actual types from lib/parsers/types.ts
 interface ParsedResume {
-  contact: {
-    name: string
-    email: string
-    phone?: string
-    location?: string
-    website?: string
-  }
-  summary?: string
-  experience: {
-    company: string
-    title: string
-    startDate: string
-    endDate?: string
-    bullets: {
-      id: string
-      text: string
-    }[]
-  }[]
-  education: {
-    school: string
-    degree: string
-    field: string
-    graduationDate: string
-  }[]
-  skills: {
-    id: string
-    category?: string
-    items: string[]
-  }[]
-  projects?: {
-    name: string
-    description: string
-    link?: string
-  }[]
+  contact: string          // Raw contact info as string
+  summary: string          // Summary/objective text
+  experience: JobEntry[]   // Work experience entries
+  education: EducationEntry[]
+  skills: Skill[]
+  projects: string         // Projects as string
+  other: string            // Other sections as string
+}
+
+interface JobEntry {
+  company: string
+  title: string
+  dates: string
+  bulletPoints: string[]   // Array of bullet point strings
+}
+
+interface EducationEntry {
+  institution: string
+  degree: string
+  dates: string
+  gpa?: string
+}
+
+interface Skill {
+  name: string
+  category: 'technical' | 'soft'
 }
 ```
 
-### Suggestions Table Structure
+### Suggestions Table Structure (from `suggestions` table)
 
 ```typescript
-interface ScanSuggestion {
+// Actual structure used in implementation (DatabaseSuggestion in lib/generators/merge.ts)
+interface DatabaseSuggestion {
   id: string
   scan_id: string
-  suggestion_id: string // References suggestions table
-  suggestion_data: {
-    type: 'bullet_rewrite' | 'skill_expansion' | 'action_verb_suggestion' | 'removal'
-    targetId: string // e.g., "bullet_123", "skill_45"
-    beforeText: string
-    afterText: string
-  }
-  status: 'pending' | 'accepted' | 'rejected'
+  section: string              // 'experience' | 'education' | 'skills' | 'projects' | 'format'
+  item_index: number | null    // Index within section (null for skills/projects)
+  suggestion_type: string      // 'bullet_rewrite' | 'skill_expansion' | 'action_verb' | 'removal' | etc.
+  original_text: string        // Text before change
+  suggested_text: string       // Text after change
+  reasoning: string | null     // AI reasoning for suggestion
+  status: string               // 'pending' | 'accepted' | 'rejected'
   created_at: string
 }
 ```
@@ -404,19 +397,104 @@ describe('generateMergedResume', () => {
 
 ## Completion Checklist
 
-- [ ] `lib/generators/merge.ts` created with main orchestration
-- [ ] `lib/generators/merge-operations.ts` created with all operation handlers
-- [ ] `actions/export.ts` updated with `generateMergedResume()` action
-- [ ] All suggestion types correctly handled (bullet, skill, removal, action verb)
-- [ ] Edge cases handled (missing targets, conflicts, empty suggestions)
-- [ ] Immutability verified (original data unchanged)
-- [ ] Unit tests pass (merge operations)
-- [ ] Integration tests pass (full merge workflow)
+- [x] `lib/generators/merge.ts` created with main orchestration
+- [x] `lib/generators/merge-operations.ts` created with all operation handlers
+- [x] `actions/export.ts` updated with `generateMergedResume()` action
+- [x] All suggestion types correctly handled (bullet, skill, removal, action verb)
+- [x] Edge cases handled (missing targets, conflicts, empty suggestions)
+- [x] Immutability verified (original data unchanged)
+- [x] Unit tests pass (merge operations)
+- [x] Integration tests pass (full merge workflow)
 - [ ] Manual QA complete (various suggestion combinations tested)
-- [ ] No TypeScript errors
-- [ ] Story file linked to Stories 6-2, 6-3 for reference
+- [x] No TypeScript errors
+- [x] Story file linked to Stories 6-2, 6-3 for reference
+
+---
+
+## Dev Agent Record
+
+### Implementation Plan
+
+**Approach:**
+1. Created `lib/generators/merge.ts` as main orchestration layer
+2. Created `lib/generators/merge-operations.ts` with individual transformation functions
+3. Created `actions/export.ts` with server action for downstream consumption
+4. Implemented immutable data transformations using JSON deep cloning
+5. Added comprehensive error handling with warning logging for skipped suggestions
+
+**Key Technical Decisions:**
+- Used deterministic ordering (sort by `created_at`) to ensure consistent results
+- Deep cloned resume data at function entry to guarantee immutability
+- Routed suggestion types to appropriate handlers (skill_mapping, quantification, format → bullet rewrite)
+- Threw errors for missing targets to enable graceful skipping with warnings
+- Validated all inputs with Zod in server action
+
+### Debug Log
+
+**Issue 1: Test directory structure**
+- Initial tests placed in `__tests__/` but Jest config expects `tests/unit` and `tests/integration`
+- Resolution: Moved tests to correct directories
+
+**Issue 2: Database schema reference**
+- Story mentioned `scan_suggestions` table but actual table is `suggestions`
+- Resolution: Used correct table name in implementation
+
+### Completion Notes
+
+✅ **All acceptance criteria met:**
+- AC1: Merge logic processes accepted suggestions and maintains structure
+- AC2: Bullet point rewrites applied correctly with position preservation
+- AC3: Skill expansions applied while maintaining list order
+- AC4: Removals applied with clean formatting (empty entries removed)
+- AC5: Rejected suggestions excluded from merge
+- AC6: No changes when no accepted suggestions
+- AC7: Merged content structured for export (standard section order preserved)
+- AC8: Edge cases handled (missing targets logged as warnings, chronological ordering)
+
+✅ **Tests:** 35 tests pass (21 unit + 14 integration)
+- Unit tests cover all merge operations, immutability, edge cases
+- Integration tests cover full workflow, error handling, suggestion ordering, auth checks
+
+✅ **Code Review:** Issues found and fixed
+- Added proper authorization (user ownership check)
+- Removed dead code, fixed inconsistent error handling
+- Added comprehensive tests for edge cases
+
+✅ **Implementation complete and ready for Stories 6-2, 6-3 to consume**
+
+---
+
+## File List
+
+| File | Type |
+|------|------|
+| lib/generators/merge.ts | NEW |
+| lib/generators/merge-operations.ts | NEW |
+| actions/export.ts | NEW |
+| tests/unit/merge-operations.test.ts | NEW |
+| tests/integration/export.test.ts | NEW |
+
+---
+
+## Change Log
+
+- **2026-01-21:** Story 6.1 implementation complete - Resume content merging with accepted suggestions
+  - Created merge orchestration and operation handlers
+  - Implemented `generateMergedResume()` server action
+  - Added 31 passing tests (unit + integration)
+  - All acceptance criteria validated
+  - Ready for PDF/DOCX generation consumption
+
+- **2026-01-21:** Code Review - Issues found and fixed
+  - Fixed TypeScript errors in integration tests (implicit any types)
+  - Added authorization check in `generateMergedResume()` - now validates user owns the scan
+  - Removed dead code (`validateSectionAccess` function never called)
+  - Fixed inconsistent error handling in `applyRemoval` - now throws when target not found
+  - Updated Data Model Reference to match actual `ParsedResume` and `DatabaseSuggestion` types
+  - Added 4 new integration tests: happy path, suggestions fetch error, unauthorized, wrong user
+  - Total tests now: 35 (21 unit + 14 integration)
 
 ---
 
 **Created:** 2026-01-21
-**Ready for Development:** Yes
+**Status:** review
