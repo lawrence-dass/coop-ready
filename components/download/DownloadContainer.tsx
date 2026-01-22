@@ -24,7 +24,6 @@ import { AlertCircle, RefreshCw } from 'lucide-react'
 
 export interface DownloadContainerProps {
   scanId: string
-  userName: string
   hasAcceptedSuggestions: boolean
 }
 

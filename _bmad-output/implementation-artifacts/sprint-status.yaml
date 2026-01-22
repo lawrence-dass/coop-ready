@@ -125,9 +125,9 @@ development_status:
 
   # Epic 10: Quality Fixes & Claude Migration
   epic-10: in-progress
-  10-1-fix-suggestion-generation-flow: review
-  10-2-fix-download-resume-error: ready-for-dev
-  10-3-improve-button-visibility: ready-for-dev
+  10-1-fix-suggestion-generation-flow: done
+  10-2-fix-download-resume-error: done
+  10-3-improve-button-visibility: done
   10-4-fix-page-flow-issues: ready-for-dev
   10-5-migrate-openai-to-claude: ready-for-dev
   epic-10-retrospective: optional

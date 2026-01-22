@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2, ChevronRight, Home } from 'lucide-react'
+import { Loader2, ChevronRight, Home, Lightbulb, Download } from 'lucide-react'
 import Link from 'next/link'
 import { runAnalysis } from '@/actions/analysis'
 import { useScanPolling } from '@/lib/hooks/useScanPolling'
@@ -13,6 +13,7 @@ import { KeywordList } from '@/components/analysis/KeywordList'
 import { FormatIssues } from '@/components/analysis/FormatIssues'
 import { AnalysisError } from '@/components/analysis/AnalysisError'
 import { DownloadWrapper } from '@/components/download'
+import { Button } from '@/components/ui/button'
 
 /**
  * Scan Results Page
@@ -165,6 +166,24 @@ export default function ScanResultsPage() {
         justification={scan.scoreJustification}
       />
 
+      {/* Primary Action Buttons - Story 10.3: AC1, AC2, AC3, AC5 */}
+      {scan.status === 'completed' && (
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button size="lg" className="w-full sm:w-auto min-h-[44px]" asChild>
+            <Link href={`/analysis/${scan.id}/suggestions`}>
+              <Lightbulb className="mr-2 h-5 w-5" />
+              View Suggestions
+            </Link>
+          </Button>
+          <Button size="lg" variant="outline" className="w-full sm:w-auto min-h-[44px]" asChild>
+            <Link href={`/analysis/${scan.id}/download`}>
+              <Download className="mr-2 h-5 w-5" />
+              Download Resume
+            </Link>
+          </Button>
+        </div>
+      )}
+
       {/* Score Breakdown Card - Story 9.1 */}
       <ScoreBreakdownCard scoreBreakdown={scan.scoreBreakdown} />
 
@@ -197,34 +216,6 @@ export default function ScanResultsPage() {
           {new Date(scan.updatedAt).toLocaleString()}
         </p>
       </div>
-
-      {/* View Suggestions Button - AC1 */}
-      {scan.status === 'completed' && (
-        <div className="mt-6 flex justify-center">
-          <Link
-            href={`/analysis/${scan.id}/suggestions`}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
-          >
-            View Suggestions
-            <ChevronRight className="h-5 w-5" />
-          </Link>
-        </div>
-      )}
-
-      {/* Download Resume Section - Story 6.4: AC1 */}
-      {scan.status === 'completed' && (
-        <div className="mt-8 pt-8 border-t">
-          <div className="text-center space-y-4">
-            <div>
-              <h2 className="text-2xl font-bold">Ready to Download?</h2>
-              <p className="text-muted-foreground mt-1">
-                Download your optimized resume in PDF or DOCX format
-              </p>
-            </div>
-            <DownloadWrapper scanId={scan.id} />
-          </div>
-        </div>
-      )}
     </div>
   )
 }

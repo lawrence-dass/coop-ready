@@ -37,6 +37,8 @@ export const createTestScanSchema = z.object({
   userId: z.string().uuid('Invalid user ID format'),
   resumeId: z.string().uuid('Invalid resume ID format'),
   jobDescription: z.string().min(10, 'Job description must be at least 10 characters'),
+  status: z.enum(['pending', 'processing', 'completed', 'failed']).optional(),
+  atsScore: z.number().min(0).max(100).optional(),
 })
 
 export type CreateTestScanInput = z.infer<typeof createTestScanSchema>
@@ -58,6 +60,7 @@ export const createTestSuggestionSchema = z.object({
   originalText: z.string().min(1, 'Original text is required'),
   suggestedText: z.string().min(1, 'Suggested text is required'),
   reasoning: z.string().optional(),
+  status: z.enum(['pending', 'accepted', 'rejected']).optional(),
 })
 
 export type CreateTestSuggestionInput = z.infer<typeof createTestSuggestionSchema>
