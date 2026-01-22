@@ -3,10 +3,24 @@
  * Analyzes resume for prohibited content, format issues, and content relevance
  *
  * Story 9.2: Inference-Based Suggestion Calibration
+ * Story 9.3: Natural Writing Enforcement
  */
 
 import type { CalibrationContext } from './calibration-context';
 import { buildCalibrationInstructions } from './calibration-context';
+
+/**
+ * Banned AI-tell phrases that must be avoided
+ * @see Story 9.3: Natural Writing Enforcement
+ */
+const BANNED_PHRASES = [
+  'spearheaded',
+  'leveraged',
+  'synergized',
+  'utilize',
+  'utilized',
+  'utilizing',
+] as const;
 
 export const FORMAT_AND_REMOVAL_PROMPT = (
   resumeContent: string,
@@ -27,6 +41,10 @@ export const FORMAT_AND_REMOVAL_PROMPT = (
 
   return `You are an expert in North American resume standards and ATS optimization. Your task is to identify format and content that should be removed or improved.
 ${calibrationInstructions}
+
+CRITICAL NATURAL WRITING RULES (Story 9.3):
+- NEVER use these AI-tell phrases in reasoning: ${BANNED_PHRASES.join(', ')}
+- Use natural, straightforward language in all feedback
 
 RESUME ANALYSIS CONTEXT:
 - Experience Level: ${experienceYears} years

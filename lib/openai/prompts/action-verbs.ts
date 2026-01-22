@@ -5,6 +5,7 @@
  *
  * @see Story 5.3: Action Verb & Quantification Suggestions
  * @see Story 9.2: Inference-Based Suggestion Calibration
+ * @see Story 9.3: Natural Writing Enforcement
  * @see Story 9.4: Context-Aware Metric Prompts
  */
 
@@ -14,6 +15,19 @@ import { buildCalibrationInstructions } from './calibration-context';
 import { classifyContext } from '@/lib/utils/contextDetector';
 import { getContextPrompt, getMetricTemplate } from '@/lib/data/metricExamples';
 import { prioritizeContextByRole, getScaleAdjustmentForRole } from '@/lib/utils/roleToContextMapping';
+
+/**
+ * Banned AI-tell phrases that must be avoided
+ * @see Story 9.3: Natural Writing Enforcement
+ */
+const BANNED_PHRASES = [
+  'spearheaded',
+  'leveraged',
+  'synergized',
+  'utilize',
+  'utilized',
+  'utilizing',
+] as const;
 
 /**
  * Create action verb and quantification analysis prompt
@@ -76,6 +90,12 @@ ${calibrationInstructions}
 Your task is to analyze the following bullet points and provide TWO types of suggestions:
 1. ACTION VERB improvements - replace weak verbs with strong alternatives
 2. QUANTIFICATION suggestions - identify missing metrics and provide prompts
+
+CRITICAL NATURAL WRITING RULES (Story 9.3):
+- NEVER use these AI-tell phrases: ${BANNED_PHRASES.join(', ')}
+- Aim for 20-35 words per bullet point (optimal range)
+- Use natural, human-sounding language
+- Avoid overused resume buzzwords
 
 Strong Verb Categories:
 ${verbCategories}

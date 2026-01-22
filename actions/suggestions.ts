@@ -39,6 +39,9 @@ import {
   mapExperienceLevelToYears,
 } from '@/actions/analysis'
 
+// Story 9.3: Natural Writing Enforcement
+import { runNaturalWritingChecks } from '@/lib/utils/naturalWritingChecker'
+
 /**
  * Server Actions for AI-Generated Suggestions
  *
@@ -1506,18 +1509,107 @@ export async function generateFormatAndRemovalSuggestions(
 }
 
 /**
+ * Generate natural writing suggestions from pre-AI checks
+ *
+ * Story 9.3: Task 3 - Integrate Natural Writing Checks
+ *
+ * Runs natural writing checks BEFORE AI generation to catch obvious issues:
+ * - Banned AI-tell phrases (spearheaded, leveraged, synergized, utilize)
+ * - Word count validation (optimal: 20-35 words)
+ * - Verb diversity (flags verbs used 3+ times)
+ *
+ * @param bullets - Array of bullet points to check
+ * @returns Array of suggestions in standard format
+ */
+export async function generateNaturalWritingSuggestions(bullets: string[]): Promise<Array<{
+  type: string
+  section: string
+  originalText: string
+  suggestedText: string | null
+  reasoning: string
+  urgency: string
+}>> {
+  const suggestions: Array<{
+    type: string
+    section: string
+    originalText: string
+    suggestedText: string | null
+    reasoning: string
+    urgency: string
+  }> = []
+
+  if (!bullets || bullets.length === 0) {
+    return suggestions
+  }
+
+  // Run all natural writing checks
+  const checkResults = runNaturalWritingChecks(bullets)
+
+  // Process each bullet's check results
+  for (const result of checkResults) {
+    // 1. Banned phrase suggestions
+    if (result.bannedPhrases.hasBannedPhrases) {
+      for (const banned of result.bannedPhrases.bannedPhrases) {
+        suggestions.push({
+          type: 'action_verb',
+          section: 'experience',
+          originalText: result.bullet,
+          suggestedText: banned.alternatives[0], // First alternative as primary suggestion
+          reasoning: `Replace AI-flagged verb "${banned.phrase}" for natural tone. Alternatives: ${banned.alternatives.join(', ')}`,
+          urgency: 'high',
+        })
+      }
+    }
+
+    // 2. Word count suggestions
+    if (!result.wordCount.isValid && result.wordCount.message) {
+      suggestions.push({
+        type: 'format',
+        section: 'experience',
+        originalText: result.bullet,
+        suggestedText: null,
+        reasoning: result.wordCount.message,
+        urgency: 'low',
+      })
+    }
+
+    // 3. Verb diversity suggestions (only add once for repeated verbs)
+    if (result.verbDiversity.hasIssues) {
+      for (const repeatedVerb of result.verbDiversity.repeatedVerbs) {
+        // Only create suggestion if this bullet starts with the repeated verb
+        const firstWord = result.bullet.trim().split(/\s+/)[0]?.toLowerCase()
+        if (firstWord === repeatedVerb.verb) {
+          suggestions.push({
+            type: 'action_verb',
+            section: 'experience',
+            originalText: result.bullet,
+            suggestedText: repeatedVerb.alternatives[0], // First alternative
+            reasoning: `Vary action verbs for stronger impact. "${repeatedVerb.verb}" used ${repeatedVerb.count} times. Try: ${repeatedVerb.alternatives.join(', ')}`,
+            urgency: 'medium',
+          })
+        }
+      }
+    }
+  }
+
+  return suggestions
+}
+
+/**
  * Generate ALL suggestions with calibration metadata
  *
  * Story 9.2: Task 3 - Update Suggestion Generation Action
+ * Story 9.3: Task 3 - Integrate Natural Writing Checks
  *
  * This is the main entry point for generating calibrated suggestions.
  * It orchestrates all suggestion types and adds calibration metadata.
  *
  * Process:
- * 1. Extract calibration signals from scan and user data
- * 2. Generate suggestions from all generators
- * 3. Add calibration metadata (suggestionMode, inferenceSignals) to each
- * 4. Return enriched suggestions
+ * 1. Run natural writing checks FIRST (Story 9.3)
+ * 2. Extract calibration signals from scan and user data (Story 9.2)
+ * 3. Generate suggestions from all generators
+ * 4. Add calibration metadata (suggestionMode, inferenceSignals) to each
+ * 5. Return enriched suggestions
  *
  * @param input - Scan ID and resume context
  * @returns ActionResponse with calibrated suggestions
@@ -1564,7 +1656,7 @@ export async function generateAllSuggestionsWithCalibration(input: {
   })
 
   try {
-    // Extract calibration signals (Task 3.1-3.3)
+    // Extract calibration signals first (needed for enrichment)
     const { signals, inferenceSignals, suggestionMode } = await extractCalibrationSignals(
       input.scanId,
       input.resumeText
@@ -1574,6 +1666,20 @@ export async function generateAllSuggestionsWithCalibration(input: {
     if (signals) {
       calibrationResult = calibrateSuggestions(signals)
     }
+
+    // Helper to enrich suggestions with calibration metadata (Task 3.7-3.10)
+    const enrichSuggestion = <T extends object>(suggestion: T) => ({
+      ...suggestion,
+      suggestionMode: suggestionMode,
+      inferenceSignals: inferenceSignals,
+    })
+
+    // Story 9.3: Run natural writing checks FIRST (before AI generation)
+    console.log('[generateAllSuggestionsWithCalibration] Running natural writing checks...')
+    const naturalWritingSuggestions = await generateNaturalWritingSuggestions(input.bulletPoints)
+    console.log('[generateAllSuggestionsWithCalibration] Natural writing checks complete:', {
+      suggestionCount: naturalWritingSuggestions.length,
+    })
 
     // Generate all suggestions using individual generators
     const allSuggestions: Array<{
@@ -1587,14 +1693,12 @@ export async function generateAllSuggestionsWithCalibration(input: {
       inferenceSignals: InferenceSignals | null
     }> = []
 
-    console.log('[generateAllSuggestionsWithCalibration] Generating suggestions...')
+    // Add natural writing suggestions first (with calibration metadata)
+    for (const nwSuggestion of naturalWritingSuggestions) {
+      allSuggestions.push(enrichSuggestion(nwSuggestion))
+    }
 
-    // Helper to enrich suggestions with calibration metadata (Task 3.7-3.10)
-    const enrichSuggestion = <T extends object>(suggestion: T) => ({
-      ...suggestion,
-      suggestionMode: suggestionMode,
-      inferenceSignals: inferenceSignals,
-    })
+    console.log('[generateAllSuggestionsWithCalibration] Generating AI suggestions...')
 
     // 1. Generate action verb and quantification suggestions (if bulletPoints provided)
     if (input.bulletPoints.length > 0) {

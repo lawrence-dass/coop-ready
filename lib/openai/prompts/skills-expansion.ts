@@ -3,6 +3,7 @@
  *
  * Story 5.4: Skills Expansion Suggestions
  * Story 9.2: Inference-Based Suggestion Calibration
+ * Story 9.3: Natural Writing Enforcement
  *
  * Generates prompt for AI to analyze skills and suggest expansions
  * that include commonly-used libraries, frameworks, and tools.
@@ -10,6 +11,19 @@
 
 import type { CalibrationContext } from './calibration-context';
 import { buildCalibrationInstructions } from './calibration-context';
+
+/**
+ * Banned AI-tell phrases that must be avoided
+ * @see Story 9.3: Natural Writing Enforcement
+ */
+const BANNED_PHRASES = [
+  'spearheaded',
+  'leveraged',
+  'synergized',
+  'utilize',
+  'utilized',
+  'utilizing',
+] as const;
 
 export const SKILL_EXPANSION_PROMPT = (
   skills: string[],
@@ -32,6 +46,11 @@ export const SKILL_EXPANSION_PROMPT = (
 
   return `You are an expert ATS and resume optimization specialist.
 ${calibrationInstructions}
+
+CRITICAL NATURAL WRITING RULES (Story 9.3):
+- NEVER use these AI-tell phrases in expansions or reasoning: ${BANNED_PHRASES.join(', ')}
+- Use natural, straightforward language
+- Avoid overused buzzwords
 
 Your task is to analyze the following skills and suggest specific expansions that will help the resume match ATS keyword searches and job descriptions more effectively.
 
