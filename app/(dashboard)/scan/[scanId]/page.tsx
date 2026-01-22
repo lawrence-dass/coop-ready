@@ -11,6 +11,7 @@ import { SectionBreakdown } from '@/components/analysis/SectionBreakdown'
 import { KeywordList } from '@/components/analysis/KeywordList'
 import { FormatIssues } from '@/components/analysis/FormatIssues'
 import { AnalysisError } from '@/components/analysis/AnalysisError'
+import { DownloadWrapper } from '@/components/download'
 
 /**
  * Scan Results Page
@@ -203,6 +204,21 @@ export default function ScanResultsPage() {
             View Suggestions
             <ChevronRight className="h-5 w-5" />
           </Link>
+        </div>
+      )}
+
+      {/* Download Resume Section - Story 6.4: AC1 */}
+      {scan.status === 'completed' && (
+        <div className="mt-8 pt-8 border-t">
+          <div className="text-center space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold">Ready to Download?</h2>
+              <p className="text-muted-foreground mt-1">
+                Download your optimized resume in PDF or DOCX format
+              </p>
+            </div>
+            <DownloadWrapper scanId={scan.id} />
+          </div>
         </div>
       )}
     </div>
