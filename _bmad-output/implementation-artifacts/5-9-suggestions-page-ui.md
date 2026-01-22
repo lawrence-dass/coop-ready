@@ -171,6 +171,53 @@ In `/app/(dashboard)/scan/[scanId]/page.tsx`:
 
 ---
 
+## Tasks/Subtasks
+
+### Phase 1: Setup & Page Structure
+- [ ] Update Analysis Results page with "View Suggestions" button (conditionally shown when status === 'completed')
+- [ ] Create suggestions page at `app/(dashboard)/analysis/[scanId]/suggestions/page.tsx`
+- [ ] Implement server-side fetching: scans table, suggestions table, RLS verification
+- [ ] Add error boundary and loading state handling
+
+### Phase 2: Main Container Component
+- [ ] Create `components/analysis/SuggestionsPageContainer.tsx` (Client Component)
+- [ ] Implement header with scan info and suggestion summary stats
+- [ ] Add stats display: "Total: 15, Pending: 10, Accepted: 3, Rejected: 2"
+- [ ] Implement footer with "Preview Optimized Resume" button
+
+### Phase 3: Suggestions List & Sections
+- [ ] Create `components/analysis/SuggestionsList.tsx` (Client Component)
+- [ ] Implement collapsible section headers with count badges
+- [ ] Loop through sections: experience, skills, education, projects, format
+- [ ] Show "✓ No suggestions" message for empty sections
+- [ ] Handle expand/collapse state with localStorage or component state
+
+### Phase 4: Suggestion Card Component
+- [ ] Create `components/analysis/SuggestionCard.tsx` (Client Component)
+- [ ] Display suggestion type badge with correct color mapping
+- [ ] Show "Before" text (gray, italic, or styled differently)
+- [ ] Show "After" text (bold or highlighted)
+- [ ] Display reasoning/explanation text
+- [ ] Implement Accept button (calls `updateSuggestionStatus` action)
+- [ ] Implement Reject button (calls `updateSuggestionStatus` action)
+- [ ] Add loading states on buttons during submission
+- [ ] Add visual feedback: green highlight on accept, red/gray on reject
+- [ ] Implement real-time status update (no page reload)
+
+### Phase 5: Integration & Testing
+- [ ] Verify server component fetches data correctly (transform snake_case → camelCase)
+- [ ] Test "View Suggestions" button appears and navigation works
+- [ ] Test collapsible sections expand/collapse properly
+- [ ] Test Accept button updates suggestion status in real-time
+- [ ] Test Reject button updates suggestion status in real-time
+- [ ] Test empty sections display correctly
+- [ ] Test "Preview" button navigates to `/analysis/[scanId]/preview`
+- [ ] Test error handling: missing scan, suggestions not found, API error
+- [ ] Test RLS: user can only see their own suggestions
+- [ ] Write E2E test: navigate → accept one → reject one → preview
+
+---
+
 ## Done Checklist
 
 - [ ] "View Suggestions" button added to Analysis Results page
