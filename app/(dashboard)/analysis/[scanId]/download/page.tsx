@@ -32,7 +32,7 @@ export default async function DownloadPage({ params }: PageProps) {
     redirect('/dashboard')
   }
 
-  const { hasAcceptedSuggestions, userName } = validation.data
+  const { hasAcceptedSuggestions } = validation.data
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -72,7 +72,6 @@ export default async function DownloadPage({ params }: PageProps) {
         <div className="bg-white rounded-xl shadow-lg p-8">
           <DownloadContainer
             scanId={params.scanId}
-            userName={userName}
             hasAcceptedSuggestions={hasAcceptedSuggestions}
           />
         </div>

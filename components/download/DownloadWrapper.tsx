@@ -20,7 +20,6 @@ export interface DownloadWrapperProps {
  */
 export function DownloadWrapper({ scanId }: DownloadWrapperProps): React.ReactElement | null {
   const [isLoading, setIsLoading] = useState(true)
-  const [userName, setUserName] = useState<string>('')
   const [hasAcceptedSuggestions, setHasAcceptedSuggestions] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,7 +39,6 @@ export function DownloadWrapper({ scanId }: DownloadWrapperProps): React.ReactEl
         }
 
         if (result.data) {
-          setUserName(result.data.userName)
           setHasAcceptedSuggestions(result.data.hasAcceptedSuggestions)
         }
 
@@ -71,7 +69,6 @@ export function DownloadWrapper({ scanId }: DownloadWrapperProps): React.ReactEl
   return (
     <DownloadContainer
       scanId={scanId}
-      userName={userName}
       hasAcceptedSuggestions={hasAcceptedSuggestions}
     />
   )

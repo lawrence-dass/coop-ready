@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
         original_text: parsed.data.originalText,
         suggested_text: parsed.data.suggestedText,
         reasoning: parsed.data.reasoning || null,
-        status: 'pending',
+        status: parsed.data.status || 'pending',
       })
       .select()
       .single()

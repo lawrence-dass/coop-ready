@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { userId, resumeId, jobDescription } = parsed.data
+    const { userId, resumeId, jobDescription, status, atsScore } = parsed.data
 
     // Use service role client for admin privileges (bypasses RLS)
     const supabase = createServiceRoleClient()
@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         resume_id: resumeId,
         job_description: jobDescription,
-        status: 'pending',
+        status: status || 'pending',
+        ats_score: atsScore ?? null,
       })
       .select()
       .single()
