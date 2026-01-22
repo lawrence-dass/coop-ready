@@ -9,28 +9,20 @@
 
 ## Development Progress
 
-### Completed Tasks
-✅ **Task 1: Create Suggestion Calibrator Utility**
-- Created `lib/utils/suggestionCalibrator.ts` with full calibration logic
-- 35 unit tests passing (getSuggestionMode, getTargetSuggestionCount, getFocusAreas, urgency boosts, etc.)
-- Supports all 4 modes: Transformation, Improvement, Optimization, Validation
-- Includes validation, descriptions, and reasoning generation
+### ✅ Completed
+- [x] Task 1: Create Suggestion Calibrator Utility (35 tests passing)
+- [x] Task 2: Update Suggestion Type Definitions (14 tests passing)
+- [x] 1.1-1.10: All subtasks for calibrator utility
+- [x] 2.1-2.9: All subtasks for type definitions
+- [x] Commit: `feat: Implement Tasks 1 & 4 - Calibration Foundation`
 
-✅ **Task 4: Update Suggestion Type Definitions**
-- Created `lib/types/suggestions.ts` with V1 & V2 suggestion structures
-- Type guards for backward compatibility (isCalibrationSuggestion, isLegacySuggestion)
-- 14 unit tests passing
-- Complete validation functions for urgency, types, and sections
+### 🔄 In Progress
+- [ ] Task 3: Update Suggestion Generation Action (AC: 1,2,3,4)
+- [ ] Task 4: Update Suggestion Prompts (AC: 1,2,3)
 
-### In Progress
-🔄 **Task 2: Update Suggestion Generation Action**
-- Next: Integrate calibrator into actions/suggestions.ts
-- Will pass calibration context to all suggestion generators
-
-### Pending Tasks
-⏳ **Task 3: Update Suggestion Prompts** - Will use calibration context
-⏳ **Task 5: Update UI** - Display calibration info to user
-⏳ **Task 6: Integration Tests** - End-to-end scenarios
+### ⏳ Pending
+- [ ] Task 5: Update Analysis Results Page UI (AC: 4)
+- [ ] Task 6: Integration Testing (AC: 1,2,3,4)
 
 ---
 
@@ -182,214 +174,107 @@ This improves user experience and increases suggestion acceptance rates.
 
 ---
 
-## Technical Tasks
+## Tasks & Subtasks
 
-### Task 1: Create Suggestion Calibrator Utility
+- [ ] **Task 1: Create Suggestion Calibrator Utility** (AC: 1, 2, 3)
+  - [ ] 1.1 Create `lib/utils/suggestionCalibrator.ts` file
+  - [ ] 1.2 Implement `getSuggestionMode()` for ATS score ranges
+  - [ ] 1.3 Implement `getTargetSuggestionCount()` per mode
+  - [ ] 1.4 Implement `getFocusAreasByExperience()` helper
+  - [ ] 1.5 Implement `getKeywordUrgencyBoost()` function
+  - [ ] 1.6 Implement `getQuantificationUrgencyBoost()` function
+  - [ ] 1.7 Implement `calibrateSuggestions()` main orchestrator
+  - [ ] 1.8 Add `validateCalibrationSignals()` validation
+  - [ ] 1.9 Write unit tests (8+ test scenarios)
+  - [ ] 1.10 Test all mode transitions (0-100 ATS scores)
+
+- [ ] **Task 2: Update Suggestion Type Definitions** (AC: 4)
+  - [ ] 2.1 Create `lib/types/suggestions.ts` file
+  - [ ] 2.2 Define `CalibrationSuggestion` type with metadata
+  - [ ] 2.3 Define `LegacySuggestion` type for backward compatibility
+  - [ ] 2.4 Add `SuggestionMode` and `ExperienceLevel` types
+  - [ ] 2.5 Create `InferenceSignals` interface
+  - [ ] 2.6 Implement type guards: `isCalibrationSuggestion()`, `isLegacySuggestion()`
+  - [ ] 2.7 Add validation functions for urgency, types, sections
+  - [ ] 2.8 Write type validation tests (8+ tests)
+  - [ ] 2.9 Ensure backward compatibility with V1 suggestions
+
+- [ ] **Task 3: Update Suggestion Generation Action** (AC: 1, 2, 3, 4)
+  - [ ] 3.1 Update `actions/suggestions.ts` to import calibrator
+  - [ ] 3.2 Extract ATS score from analysis context
+  - [ ] 3.3 Extract experience level from user profile
+  - [ ] 3.4 Extract missing keywords count from analysis
+  - [ ] 3.5 Extract quantification density from analysis (from 9.1)
+  - [ ] 3.6 Call `calibrateSuggestions()` with signals
+  - [ ] 3.7 Pass calibration context to all suggestion generators
+  - [ ] 3.8 Apply urgency boosts to suggestion urgency field
+  - [ ] 3.9 Add `suggestionMode` and `inferenceSignals` to suggestions
+  - [ ] 3.10 Maintain backward compatibility (old suggestions still work)
+  - [ ] 3.11 Update test mocks for new calibration fields
+  - [ ] 3.12 Integration tests with mock analysis data
+
+- [ ] **Task 4: Update Suggestion Prompts to Accept Calibration** (AC: 1, 2, 3)
+  - [ ] 4.1 Update `lib/openai/prompts/action-verbs.ts`
+  - [ ] 4.2 Update `lib/openai/prompts/bullet-rewrites.ts`
+  - [ ] 4.3 Update `lib/openai/prompts/skills-expansion.ts`
+  - [ ] 4.4 Update `lib/openai/prompts/skills.ts` (transferable skills)
+  - [ ] 4.5 Update `lib/openai/prompts/format-removal.ts`
+  - [ ] 4.6 Each prompt accepts calibration context parameter
+  - [ ] 4.7 Transformation mode: more aggressive suggestions
+  - [ ] 4.8 Improvement mode: balanced urgency mix
+  - [ ] 4.9 Optimization mode: refinement focus
+  - [ ] 4.10 Validation mode: strength-emphasizing language
+  - [ ] 4.11 Student mode: project/GPA-focused suggestions
+  - [ ] 4.12 Career changer mode: skill mapping emphasis
+  - [ ] 4.13 Experienced mode: leadership/scope emphasis
+  - [ ] 4.14 Test prompts with OpenAI API calls
+
+- [ ] **Task 5: Update Analysis Results Page UI** (AC: 4)
+  - [ ] 5.1 Create calibration summary card component
+  - [ ] 5.2 Display suggestion mode badge ("Transformation" / "Improvement" / etc.)
+  - [ ] 5.3 Display focus areas list
+  - [ ] 5.4 Display target suggestion count explanation
+  - [ ] 5.5 Integrate card into scan results page
+  - [ ] 5.6 Add tooltips explaining each field
+  - [ ] 5.7 Responsive design for mobile
+  - [ ] 5.8 Color coding for modes (red→green gradient)
+  - [ ] 5.9 Component tests
+
+- [ ] **Task 6: Integration Testing** (AC: 1, 2, 3, 4)
+  - [ ] 6.1 Create test scenario: Low ATS + Student
+  - [ ] 6.2 Create test scenario: Fair ATS + Career Changer
+  - [ ] 6.3 Create test scenario: Good ATS + Experienced
+  - [ ] 6.4 Create test scenario: Excellent ATS + Any level
+  - [ ] 6.5 Test 5+ keyword gaps → high urgency
+  - [ ] 6.6 Test 2-4 keyword gaps → medium urgency
+  - [ ] 6.7 Test 0-1 keyword gaps → focus shift
+  - [ ] 6.8 Test quantification density impacts
+  - [ ] 6.9 End-to-end: analysis → calibration → suggestions
+  - [ ] 6.10 Verify metadata appears in final suggestions
+
+---
+
+## Technical Implementation Details
+
+### Suggestion Calibrator Utility**
 **File:** `lib/utils/suggestionCalibrator.ts`
 
-Create a utility that infers calibration from available signals:
+Core functions for inference calibration:
 
-```typescript
-type SuggestionMode = 'Transformation' | 'Improvement' | 'Optimization' | 'Validation';
-type ExperienceLevel = 'student' | 'career_changer' | 'experienced';
+**Core Types & Interfaces:**
+- `SuggestionMode`: 'Transformation' | 'Improvement' | 'Optimization' | 'Validation'
+- `ExperienceLevel`: 'student' | 'career_changer' | 'experienced'
+- `CalibrationSignals`: atsScore, experienceLevel, missingKeywordsCount, quantificationDensity
+- `CalibrationResult`: mode, suggestionsTargetCount, priorityBoosts, focusAreas
 
-interface CalibrationSignals {
-  atsScore: number; // 0-100
-  experienceLevel: ExperienceLevel;
-  missingKeywordsCount: number;
-  quantificationDensity: number; // 0-100
-  totalBullets: number;
-}
-
-interface CalibrationResult {
-  mode: SuggestionMode;
-  suggestionsTargetCount: number; // How many suggestions to aim for
-  priorityBoosts: {
-    keyword: number;     // +/- urgency boost for keyword suggestions
-    quantification: number;
-    experience: number;
-  };
-  focusAreas: string[]; // ['keywords', 'quantification', 'leadership', etc]
-}
-
-export function calibrateSuggestions(signals: CalibrationSignals): CalibrationResult { }
-export function getSuggestionModeDescription(mode: SuggestionMode): string { }
-```
-
-**Implementation Notes:**
-- Mode determination: Based primarily on ATS score
-- Target count: Transformation (8-12), Improvement (5-8), Optimization (3-5), Validation (1-2)
-- Priority boosts: +1 to +3 for high-priority, -1 for low-priority
-- Focus areas: Based on experience level + gaps identified
-
-**Tests Required:**
-- Low ATS (25) → Transformation mode, 8+ target suggestions
-- Fair ATS (40) → Improvement mode, 5-8 target suggestions
-- Good ATS (60) → Optimization mode, 3-5 target suggestions
-- Excellent ATS (80) → Validation mode, 1-2 target suggestions
-- Student level → includes project/GPA focus areas
-- Career changer → includes skill mapping focus areas
-- Experienced → includes leadership focus areas
-
-### Task 2: Update Suggestion Generation Action
-**File:** `actions/suggestions.ts` (or location where suggestions are generated)
-
-Integrate calibration into the suggestion generation flow:
-
-```typescript
-// In the suggestion generation action:
-1. Receive: analysisResult (includes scoreBreakdown from 9.1)
-2. Get: userProfile (experience level)
-3. Extract: missingKeywordsCount from analysis
-4. Calculate: quantificationDensity from scoreBreakdown
-5. Call: calibrateSuggestions(signals) → CalibrationResult
-6. Pass calibration context to suggestion-generating prompts
-7. Apply priority boosters to suggestion urgencies
-8. Add suggestionMode and inferenceSignals to each suggestion
-9. Filter/order suggestions by calibration.focusAreas
-10. Limit total suggestions to calibration.suggestionsTargetCount
-```
-
-**Integration Points:**
-- Called after analysis is complete (depends on 9.1)
-- Passes calibration context to existing suggestion prompts
-- Modifies suggestion ordering/filtering
-- Adds metadata fields to suggestion output
-
-**Tests Required:**
-- Suggestions generated with correct mode metadata
-- Suggestion count matches calibration target
-- Priority order respects boosters
-- Correct focus areas applied per experience level
-
-### Task 3: Update Suggestion Prompts
-**Files:**
-- `lib/openai/prompts/action-verbs.ts`
-- `lib/openai/prompts/bullet-rewrites.ts`
-- `lib/openai/prompts/skills-expansion.ts`
-- (Other suggestion prompt files)
-
-Each suggestion prompt should accept and use calibration context:
-
-```typescript
-// Add to prompt parameters
-interface SuggestionPromptContext {
-  calibrationMode: SuggestionMode;
-  focusAreas: string[];
-  userExperienceLevel: ExperienceLevel;
-  atsScore: number;
-}
-
-// In prompts, e.g., for action verbs:
-export function buildActionVerbPrompt(
-  bullets: string[],
-  jobDescription: string,
-  calibrationContext: SuggestionPromptContext
-): string {
-  // If mode is "Transformation", be more aggressive about changes
-  // If mode is "Validation", focus on excellence not correction
-  // If experienceLevel is "student", focus on learning/project language
-  // If experienceLevel is "experienced", focus on leadership/scope
-}
-```
-
-**Changes per Prompt:**
-- **Action Verbs:** Intensity of suggestions varies by mode; language style varies by experience level
-- **Bullet Rewrites:** Transformation mode rewrites more aggressively; Validation mode focuses on polish
-- **Skills Expansion:** Student mode emphasizes "learn these"; Experienced mode emphasizes "deepen these"
-- **Quantification:** Priority varies based on missing keywords and quantification density
-- **Format/Content Removal:** Transformation mode more aggressive; Validation mode conservative
-
-**Tests Required:**
-- Prompts use calibration context correctly
-- Output varies appropriately by mode
-- Output reflects experience level appropriately
-
-### Task 4: Update Suggestion Type Definition
-**File:** `lib/types/suggestions.ts`
-
-Add new fields to suggestion types:
-
-```typescript
-interface Suggestion {
-  // ... existing fields ...
-  id: string;
-  type: string; // 'action_verb', 'bullet_rewrite', etc
-  section: string;
-  originalText: string;
-  suggestedText: string;
-  reasoning: string;
-  urgency: 'low' | 'medium' | 'high' | 'critical';
-
-  // NEW FIELDS:
-  suggestionMode: SuggestionMode;
-  inferenceSignals: {
-    atsScore: number;
-    experienceLevel: ExperienceLevel;
-    missingKeywordsCount: number;
-    quantificationDensity: number;
-  };
-}
-
-interface SuggestionsResponse {
-  suggestions: Suggestion[];
-  calibration: {
-    mode: SuggestionMode;
-    targetCount: number;
-    focusAreas: string[];
-  };
-}
-```
-
-**Tests Required:**
-- Type validation for new fields
-- Serialization/deserialization works
-- Database schema supports new fields if persisting
-
-### Task 5: Update UI to Display Calibration Info
-**File:** `app/(dashboard)/scan/[scanId]/suggestions/page.tsx` (or relevant suggestions display component)
-
-Optionally surface calibration information to user:
-
-```typescript
-// Display:
-- "We identified [X] key areas for improvement" (based on mode)
-- "Your resume would benefit from: [focus areas]" (based on inferenceSignals)
-- Visual indicator of suggestion intensity (mode: Transformation/Improvement/Optimization/Validation)
-- Explanation: "Suggestions calibrated based on your ATS score, experience level, and resume gaps"
-```
-
-**UI Changes (Optional but Recommended):**
-- Add calibration summary card at top of suggestions
-- Show "Suggestion Focus" indicator (what the system is prioritizing)
-- Display mode as badge or text
-- Explain why certain suggestions are prioritized
-
-**Tests Required:**
-- Calibration info displays correctly
-- No console errors
-- Responsive on mobile
-
-### Task 6: Integration Testing
-**File:** `tests/integration/suggestionCalibration.test.ts`
-
-End-to-end tests for complete calibration flow:
-
-```typescript
-// Test scenarios:
-1. Low ATS + Student → Transformation mode, project-focused suggestions
-2. Fair ATS + Career Changer → Improvement mode, skill-mapping-focused
-3. Good ATS + Experienced → Optimization mode, leadership-focused
-4. Excellent ATS + Any level → Validation mode, minimal suggestions
-5. Low ATS + High keyword gaps → Keyword suggestions prioritized
-6. High quantification density + Low ATS → Fewer quantification prompts
-```
-
-**Coverage:**
-- End-to-end flow from analysis → calibration → suggestions
-- All mode transitions
-- All experience level combinations
-- Edge cases (very low/high ATS, extreme keyword gaps)
+**Key Functions:**
+- `calibrateSuggestions()` - Main entry point
+- `getSuggestionMode()` - Maps ATS to mode
+- `getTargetSuggestionCount()` - Determines count range
+- `getFocusAreasByExperience()` - Experience-based focus
+- `getKeywordUrgencyBoost()` - Keyword priority
+- `getQuantificationUrgencyBoost()` - Quantification priority
+- `validateCalibrationSignals()` - Input validation
 
 ---
 
@@ -444,13 +329,15 @@ End-to-end tests for complete calibration flow:
 
 ## Estimated Effort
 
-**Tasks 1-2:** Foundation & Integration - ~4-5 hours
-**Task 3:** Prompt Updates - ~3-4 hours (depends on number of prompts)
-**Task 4:** Type Updates - ~1-2 hours
-**Task 5:** UI (optional) - ~2-3 hours
+**Task 1:** Calibrator Utility - COMPLETE ✓
+**Task 2:** Type Definitions - COMPLETE ✓
+**Task 3:** Suggestion Generation Action - ~3-4 hours
+**Task 4:** Prompt Updates - ~4-5 hours (5 prompts × cost per prompt)
+**Task 5:** UI Components - ~2-3 hours
 **Task 6:** Integration Tests - ~2-3 hours
 
-**Total:** ~12-17 hours
+**Remaining:** ~11-15 hours
+**Total (completed + remaining):** ~16-20 hours
 
 ---
 

@@ -104,84 +104,92 @@ AI-generated content often has recognizable patterns ("spearheaded", "leveraged"
 
 ## Tasks & Subtasks
 
-- [ ] **Task 1: Create Natural Writing Checker Utility**
+- [ ] **Task 1: Create Natural Writing Checker Utility** (AC: 1, 2, 3)
   - [ ] 1.1 Create `lib/utils/naturalWritingChecker.ts` file
-  - [ ] 1.2 Implement `detectBannedPhrases()` with phrase list
-  - [ ] 1.3 Implement `getAlternatives()` for each banned phrase
+  - [ ] 1.2 Implement `detectBannedPhrases()` function
+  - [ ] 1.3 Implement `getAlternatives()` for each phrase
   - [ ] 1.4 Implement `validateWordCount()` function
   - [ ] 1.5 Implement `checkVerbDiversity()` function
-  - [ ] 1.6 Implement `runNaturalWritingChecks()` main orchestrator
-  - [ ] 1.7 Write unit tests (banned phrases, word counts, diversity)
-  - [ ] 1.8 Test edge cases (hyphenated words, abbreviations, etc.)
+  - [ ] 1.6 Implement `runNaturalWritingChecks()` orchestrator
+  - [ ] 1.7 Write unit tests for banned phrase detection (8+ tests)
+  - [ ] 1.8 Write unit tests for word count validation (6+ tests)
+  - [ ] 1.9 Write unit tests for verb diversity (5+ tests)
+  - [ ] 1.10 Test edge cases (hyphens, abbreviations, contractions)
 
-- [ ] **Task 2: Create Verb Categories & Alternatives Mapping**
-  - [ ] 2.1 Create `lib/data/verbAlternatives.ts` with categories
+- [ ] **Task 2: Create Verb Categories & Alternatives Mapping** (AC: 1, 3)
+  - [ ] 2.1 Create `lib/data/verbAlternatives.ts`
   - [ ] 2.2 Define 5+ verb categories (leadership, technical, analytics, etc.)
-  - [ ] 2.3 Map alternatives for each category verb
+  - [ ] 2.3 Map 3-5 alternatives per category verb
   - [ ] 2.4 Include reasoning for each alternative
-  - [ ] 2.5 Unit tests for lookup and retrieval
+  - [ ] 2.5 Unit tests for lookup (4+ tests)
+  - [ ] 2.6 Test category mapping consistency
 
-- [ ] **Task 3: Integrate into Suggestion Generation Pipeline**
-  - [ ] 3.1 Update `actions/suggestions.ts` to call natural writing checks
-  - [ ] 3.2 Add checks BEFORE AI generation (to avoid suggesting banned phrases)
-  - [ ] 3.3 Convert check results to suggestion format
-  - [ ] 3.4 Add urgency scoring based on check type
-  - [ ] 3.5 Unit tests for integration
+- [ ] **Task 3: Integrate into Suggestion Generation Pipeline** (AC: 1, 2, 3)
+  - [ ] 3.1 Update `actions/suggestions.ts` to import checker
+  - [ ] 3.2 Call `runNaturalWritingChecks()` BEFORE AI generation
+  - [ ] 3.3 Extract banned phrase suggestions from results
+  - [ ] 3.4 Extract word count suggestions from results
+  - [ ] 3.5 Extract verb diversity suggestions from results
+  - [ ] 3.6 Convert check results to suggestion format
+  - [ ] 3.7 Apply appropriate urgency scores
+  - [ ] 3.8 Combine with AI-generated suggestions
+  - [ ] 3.9 Unit tests for integration (5+ tests)
+  - [ ] 3.10 Test with real resume data
 
-- [ ] **Task 4: Update Suggestion Prompts to Avoid Banned Phrases**
+- [ ] **Task 4: Update Prompts to Avoid Banned Phrases** (AC: 1, 2, 3)
   - [ ] 4.1 Update `lib/openai/prompts/action-verbs.ts`
-  - [ ] 4.2 Update `lib/openai/prompts/suggestions.ts` (bullet rewrites)
-  - [ ] 4.3 Add constraint: "Never use: spearheaded, leveraged, synergized, utilize, utilized, utilizing"
-  - [ ] 4.4 Add constraint: "Ensure bullets are 20-35 words (ideal range)"
-  - [ ] 4.5 Test with OpenAI API to verify compliance
+  - [ ] 4.2 Update `lib/openai/prompts/bullet-rewrites.ts`
+  - [ ] 4.3 Update `lib/openai/prompts/skills-expansion.ts`
+  - [ ] 4.4 Update `lib/openai/prompts/skills.ts`
+  - [ ] 4.5 Update `lib/openai/prompts/format-removal.ts`
+  - [ ] 4.6 Add banned phrase constraint to each prompt
+  - [ ] 4.7 Add word count guidance (20-35 words optimal)
+  - [ ] 4.8 Test with OpenAI API (5+ prompts × test scenarios)
 
-- [ ] **Task 5: Update UI to Highlight Natural Writing Issues**
-  - [ ] 5.1 Create `NaturalWritingIssues` component
-  - [ ] 5.2 Display banned phrases with visual highlighting
-  - [ ] 5.3 Show word count indicators (red <15, green 20-35, red >40)
+- [ ] **Task 5: Update UI to Display Writing Issues** (AC: 1, 2, 3)
+  - [ ] 5.1 Create `NaturalWritingIssuesCard` component
+  - [ ] 5.2 Display banned phrases with highlighting
+  - [ ] 5.3 Show word count indicators (color-coded)
   - [ ] 5.4 Display verb diversity warnings
-  - [ ] 5.5 Responsive design for mobile
-  - [ ] 5.6 Unit tests for component
+  - [ ] 5.5 Show alternatives for each issue
+  - [ ] 5.6 Add explanation tooltips
+  - [ ] 5.7 Responsive design for mobile
+  - [ ] 5.8 Component unit tests (6+ tests)
+  - [ ] 5.9 Integration test with suggestions page
 
-- [ ] **Task 6: Create Comprehensive Tests**
-  - [ ] 6.1 Unit tests for natural writing checker (20+ tests)
+- [ ] **Task 6: Create Comprehensive Tests** (AC: 1, 2, 3)
+  - [ ] 6.1 Unit tests for checker utility (20+ tests)
   - [ ] 6.2 Integration tests with real bullets (10+ scenarios)
-  - [ ] 6.3 Test interaction with verb diversity across sections
-  - [ ] 6.4 Test word count edge cases (hyphens, abbreviations, contractions)
-  - [ ] 6.5 Test banned phrase detection with capitalization variants
-  - [ ] 6.6 End-to-end test from bullet input to suggestion output
+  - [ ] 6.3 Test verb diversity across sections
+  - [ ] 6.4 Test word count edge cases
+  - [ ] 6.5 Test banned phrase detection variants (capitalization, punctuation)
+  - [ ] 6.6 End-to-end: bullet input → check → suggestions
+  - [ ] 6.7 Test all banned phrases in list
+  - [ ] 6.8 Test interaction with other suggestion types
 
 ---
 
-## Technical Details
+## Technical Reference
 
-### Banned Phrases List
-```
-Primary (Always replace):
-- spearheaded
-- leveraged
-- synergized
-- utilized / utilize / utilizing
+### Banned Phrases
+**Primary (always replace):**
+- spearheaded, leveraged, synergized, utilize, utilized, utilizing
 
-Secondary (Context-dependent):
-- pushed (often overused)
-- driven (often passive)
-- impacted (overused in tech)
-```
+**Secondary (context-aware):**
+- pushed, driven, impacted (overused in resumes)
 
-### Word Count Calculation
-- Split on whitespace
-- Count tokens (handle contractions: "don't" = 1 word)
-- Ignore punctuation for counting
+### Word Count Rules
+- Optimal: 20-35 words per bullet
+- Low warning: < 15 words
+- High warning: > 40 words
+- Contractions count as 1 word
 
 ### Verb Categories
-```
-Leadership: Led, Directed, Managed, Coordinated, Guided, Organized
-Technical: Built, Designed, Implemented, Developed, Created, Engineered
-Analytics: Analyzed, Evaluated, Assessed, Measured, Quantified, Determined
-Communication: Communicated, Presented, Articulated, Explained, Conveyed
-Problem-Solving: Resolved, Solved, Addressed, Overcame, Improved
-```
+- **Leadership:** Led, Directed, Managed, Coordinated, Guided, Organized
+- **Technical:** Built, Designed, Implemented, Developed, Created, Engineered
+- **Analytics:** Analyzed, Evaluated, Assessed, Measured, Quantified, Determined
+- **Communication:** Communicated, Presented, Articulated, Explained, Conveyed
+- **Problem-Solving:** Resolved, Solved, Addressed, Overcame, Improved
 
 ---
 
