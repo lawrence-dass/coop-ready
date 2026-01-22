@@ -28,7 +28,9 @@ archive/
 ├── epic-2-completed/     # Epic 2 test artifacts
 ├── epic-3-completed/     # Epic 3 test artifacts
 ├── epic-4-completed/     # Epic 4 test artifacts
-├── epic-8-completed/     # Epic 8 test artifacts
+├── epic-5-completed/     # Epic 5 story files (9 stories)
+├── epic-6-completed/     # Epic 6 story files (4 stories)
+├── epic-8-completed/     # Epic 8 test artifacts + docs
 ├── discovery-phase/      # Product brief, initial docs
 └── planning-redundant/   # Superseded planning docs
 ```
@@ -68,8 +70,30 @@ mv _bmad-output/archive/epic-1-completed/file.md _bmad-output/
 ### epic-4-completed/ (32KB)
 - `epic-4-traceability-matrix.md` - Epic 4 traceability matrix
 
-### epic-8-completed/ (32KB)
+### epic-5-completed/ (~180KB, 9 stories)
+- `5-1-bullet-point-rewrite-generation.md`
+- `5-2-transferable-skills-detection-mapping.md`
+- `5-3-action-verb-quantification-suggestions.md`
+- `5-4-skills-expansion-suggestions.md`
+- `5-5-format-content-removal-suggestions.md`
+- `5-6-suggestions-display-by-section.md`
+- `5-7-accept-reject-individual-suggestions.md`
+- `5-8-optimized-resume-preview.md`
+- `5-9-suggestions-page-ui.md`
+
+### epic-6-completed/ (~70KB, 4 stories)
+- `6-1-resume-content-merging.md`
+- `6-2-pdf-resume-generation.md`
+- `6-3-docx-resume-generation.md`
+- `6-4-download-ui-format-selection.md`
+
+### epic-8-completed/ (~65KB)
 - `traceability-epic-8.md` - Epic 8 traceability matrix
+- `TEST-AUTOMATION-COMPLETE.md` - Test automation status
+- `TEST-AUTOMATION-FINAL-REPORT.md` - Final test report
+- `TEST-AUTOMATION-INDEX.md` - Test file index
+- `CI-CD-SETUP-GUIDE.md` - CI/CD configuration
+- `SESSION-SUMMARY-TEST-AUTOMATION.md` - Session notes
 
 ### discovery-phase/ (20KB)
 - `product-brief-CoopReady-2026-01-18.md` - Initial product discovery
@@ -79,4 +103,4 @@ mv _bmad-output/archive/epic-1-completed/file.md _bmad-output/
 - `epic-list.md` - Duplicated index.md
 - `requirements-inventory.md` - Superseded by epic files
 
-**Total Archived: ~488KB**
+**Total Archived: ~803KB** (updated 2026-01-22)
