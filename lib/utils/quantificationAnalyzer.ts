@@ -3,6 +3,9 @@
  *
  * Detects and measures quantifiable metrics in resume bullet points.
  * Used for calculating quantification density in ATS scoring.
+ *
+ * @see Story 9.1: ATS Scoring Recalibration (dependency)
+ * @see Story 9.2: Inference-Based Suggestion Calibration
  */
 
 export interface QuantificationAnalysis {
@@ -157,4 +160,33 @@ export function getDensityCategory(density: number): 'low' | 'moderate' | 'stron
 function extractMatches(text: string, pattern: RegExp): string[] {
   const matches = text.match(pattern);
   return matches ? Array.from(new Set(matches)) : [];
+}
+
+/**
+ * Calculate quantification density from resume text
+ *
+ * Simplified function for Story 9.2 calibration that works with raw text.
+ * For detailed analysis, use analyzeBulletQuantification and calculateDensity.
+ *
+ * @param resumeText - Full resume text or experience section
+ * @returns Percentage (0-100) of bullets with quantification
+ */
+export function calculateQuantificationDensity(resumeText: string): number {
+  if (!resumeText || resumeText.trim().length === 0) {
+    return 0
+  }
+
+  // Extract bullet points (split by common delimiters)
+  const bullets = resumeText
+    .split(/\n|•|●|○|―/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 15) // Ignore very short lines
+
+  if (bullets.length === 0) {
+    return 0
+  }
+
+  // Use the detailed analyzer
+  const result = calculateDensity(bullets)
+  return result.density
 }
