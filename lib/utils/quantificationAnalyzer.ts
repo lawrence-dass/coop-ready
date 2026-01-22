@@ -47,6 +47,12 @@ const PATTERNS = {
   // Time units: "3 months", "5 days", "40 hours", "2 years"
   timeUnits: /\d+(?:\.\d+)?\s*(?:days?|weeks?|months?|years?|hours?|minutes?|seconds?)/gi,
 
+  // Multipliers: "3x", "10x", "2X" performance improvements
+  multipliers: /\d+x\b/gi,
+
+  // Large number words: "2 million", "50 thousand", "1 billion"
+  largeNumbers: /\d+\s*(?:million|thousand|billion)/gi,
+
   // Numbers: integers and decimals (but exclude those already matched above)
   numbers: /\b\d+(?:\.\d+)?(?:[kKmMbB]\+?)?\b/g,
 };
@@ -63,6 +69,8 @@ export function analyzeBulletQuantification(bullets: string[]): QuantificationAn
     const percentages = extractMatches(text, PATTERNS.percentages);
     const currency = extractMatches(text, PATTERNS.currency);
     const timeUnits = extractMatches(text, PATTERNS.timeUnits);
+    const multipliers = extractMatches(text, PATTERNS.multipliers);
+    const largeNumbers = extractMatches(text, PATTERNS.largeNumbers);
 
     // Remove parts already matched by higher priority patterns
     let textForNumbers = text;
@@ -74,6 +82,12 @@ export function analyzeBulletQuantification(bullets: string[]): QuantificationAn
     });
     timeUnits.forEach(t => {
       textForNumbers = textForNumbers.replace(t, '');
+    });
+    multipliers.forEach(m => {
+      textForNumbers = textForNumbers.replace(m, '');
+    });
+    largeNumbers.forEach(l => {
+      textForNumbers = textForNumbers.replace(l, '');
     });
 
     const numbers = extractMatches(textForNumbers, PATTERNS.numbers);
@@ -91,6 +105,8 @@ export function analyzeBulletQuantification(bullets: string[]): QuantificationAn
       ...percentages,
       ...currency,
       ...timeUnits,
+      ...multipliers,
+      ...largeNumbers,
     ];
 
     // Has metrics if any category has matches
