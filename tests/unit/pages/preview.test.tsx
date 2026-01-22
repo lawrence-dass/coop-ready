@@ -57,7 +57,7 @@ describe('Preview Page', () => {
     const component = await PreviewPage({ params })
     render(component)
 
-    expect(screen.getByText('No Changes Applied')).toBeInTheDocument()
+    expect(screen.getByText('No changes accepted')).toBeInTheDocument()
   })
 
   it('should display accepted suggestions count', async () => {

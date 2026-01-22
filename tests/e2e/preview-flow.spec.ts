@@ -48,7 +48,7 @@ test.describe('Resume Preview Flow', () => {
 
     if (isVisible) {
       // If no changes were accepted, verify empty state messaging
-      await expect(page.locator('text=No Changes Applied')).toBeVisible()
+      await expect(page.locator('text=No changes accepted')).toBeVisible()
       await expect(
         page.getByRole('link', { name: /Back to Review|Download Anyway/i })
       ).toBeVisible()

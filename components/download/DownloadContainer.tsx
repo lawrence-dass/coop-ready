@@ -129,7 +129,7 @@ export function DownloadContainer({
                 <AlertCircle className="h-5 w-5 text-yellow-600" aria-hidden="true" />
               </div>
               <div className="flex-1">
-                <SheetTitle>No Changes Accepted</SheetTitle>
+                <SheetTitle>No changes accepted</SheetTitle>
                 <SheetDescription className="mt-1">
                   You haven&apos;t accepted any suggestions yet. Do you want to download your original resume?
                 </SheetDescription>

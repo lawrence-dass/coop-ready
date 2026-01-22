@@ -12,7 +12,6 @@ import { SectionBreakdown } from '@/components/analysis/SectionBreakdown'
 import { KeywordList } from '@/components/analysis/KeywordList'
 import { FormatIssues } from '@/components/analysis/FormatIssues'
 import { AnalysisError } from '@/components/analysis/AnalysisError'
-import { DownloadWrapper } from '@/components/download'
 import { Button } from '@/components/ui/button'
 
 /**

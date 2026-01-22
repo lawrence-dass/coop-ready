@@ -60,12 +60,12 @@ export function PreviewHeader({ stats, hasChanges }: PreviewHeaderProps) {
           </div>
         </div>
       ) : (
-        <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <AlertCircle className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium text-blue-900">No changes accepted</p>
-            <p className="text-sm text-blue-700">
-              You can review your suggestions again or download your resume as-is.
+            <p className="font-medium text-gray-700">Ready to review</p>
+            <p className="text-sm text-gray-600">
+              Review your options below to continue.
             </p>
           </div>
         </div>
