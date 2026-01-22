@@ -18,6 +18,7 @@ import {
   parseAnalysisResponse,
   isValidAnalysisResult,
 } from '@/lib/openai/prompts/parseAnalysis'
+import { parseAnalysisResponseV2 } from '@/lib/openai/prompts/parseAnalysisV2'
 import {
   parseKeywordsResponse,
   toKeywordAnalysis,
@@ -41,6 +42,7 @@ jest.mock('@/lib/supabase/queries')
 jest.mock('@/lib/openai')
 jest.mock('@/lib/openai/retry')
 jest.mock('@/lib/openai/prompts/parseAnalysis')
+jest.mock('@/lib/openai/prompts/parseAnalysisV2')
 jest.mock('@/lib/openai/prompts/parseKeywords')
 jest.mock('@/lib/openai/prompts/parseSectionScores')
 jest.mock('@/lib/openai/prompts/parseFormatIssues')
@@ -54,6 +56,7 @@ const mockGetOpenAIClient = getOpenAIClient as jest.MockedFunction<typeof getOpe
 const mockWithRetry = withRetry as jest.MockedFunction<typeof withRetry>
 const mockParseOpenAIResponse = parseOpenAIResponse as jest.MockedFunction<typeof parseOpenAIResponse>
 const mockParseAnalysisResponse = parseAnalysisResponse as jest.MockedFunction<typeof parseAnalysisResponse>
+const mockParseAnalysisResponseV2 = parseAnalysisResponseV2 as jest.MockedFunction<typeof parseAnalysisResponseV2>
 const mockIsValidAnalysisResult = isValidAnalysisResult as jest.MockedFunction<typeof isValidAnalysisResult>
 const mockParseKeywordsResponse = parseKeywordsResponse as jest.MockedFunction<typeof parseKeywordsResponse>
 const mockToKeywordAnalysis = toKeywordAnalysis as jest.MockedFunction<typeof toKeywordAnalysis>
@@ -122,13 +125,39 @@ describe('runAnalysis Server Action', () => {
     target_role: 'Software Engineer',
   }
 
+  // V2 score breakdown format (Story 9.1)
   const mockAnalysisResult = {
     overallScore: 75,
     scoreBreakdown: {
-      keywords: 80,
-      skills: 75,
-      experience: 70,
-      format: 70,
+      overall: 75,
+      categories: {
+        keywordAlignment: {
+          score: 80,
+          weight: 0.25,
+          reason: 'Good keyword coverage',
+        },
+        contentRelevance: {
+          score: 78,
+          weight: 0.25,
+          reason: 'Content aligns well',
+        },
+        quantificationImpact: {
+          score: 65,
+          weight: 0.20,
+          reason: 'Moderate quantification density: 60%',
+          quantificationDensity: 60,
+        },
+        formatStructure: {
+          score: 85,
+          weight: 0.15,
+          reason: 'Clear formatting',
+        },
+        skillsCoverage: {
+          score: 70,
+          weight: 0.15,
+          reason: 'Decent skills match',
+        },
+      },
     },
     justification: 'Strong keyword alignment with job requirements.',
     strengths: [
@@ -199,7 +228,9 @@ describe('runAnalysis Server Action', () => {
     mockGetOpenAIClient.mockReturnValue({} as any)
     mockWithRetry.mockResolvedValue({} as any)
     mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
-    mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult)
+    // V2 parser is now used (Story 9.1)
+    mockParseAnalysisResponseV2.mockReturnValue(mockAnalysisResult)
+    mockParseAnalysisResponse.mockReturnValue(mockAnalysisResult) // Keep for backward compat tests
     mockIsValidAnalysisResult.mockReturnValue(true)
     mockParseKeywordsResponse.mockReturnValue(mockKeywordExtraction)
     mockToKeywordAnalysis.mockReturnValue(mockKeywordAnalysis)
@@ -451,7 +482,10 @@ describe('runAnalysis Server Action', () => {
 
       expect(result.error).toBeNull()
       expect(result.data?.overallScore).toBe(75)
-      expect(result.data?.scoreBreakdown.keywords).toBe(80)
+      // V2 format check (Story 9.1)
+      const breakdown = result.data?.scoreBreakdown as any
+      expect(breakdown?.categories?.keywordAlignment?.score).toBe(80)
+      expect(breakdown?.overall).toBe(75)
       expect(result.data?.keywords).toEqual(mockKeywordAnalysis)
       expect(result.data?.keywords?.keywordsFound).toHaveLength(3)
       expect(result.data?.keywords?.keywordsMissing).toHaveLength(2)
@@ -509,10 +543,11 @@ describe('runAnalysis Server Action', () => {
       // Verify update was called for processing status
       expect(updateCalls[0]).toEqual({ status: 'processing' })
 
-      // Verify update was called for completed status with score, keywords, section scores, experience context, and format issues
+      // Verify update was called for completed status with score, keywords, section scores, experience context, format issues, and score_breakdown (Story 9.1)
       expect(updateCalls[1]).toEqual({
         ats_score: 75,
         score_justification: mockAnalysisResult.justification,
+        score_breakdown: mockAnalysisResult.scoreBreakdown, // Story 9.1
         keywords_found: mockKeywordAnalysis.keywordsFound,
         keywords_missing: mockKeywordAnalysis.keywordsMissing,
         section_scores: mockSectionScoresResult.sectionScores,
@@ -523,14 +558,19 @@ describe('runAnalysis Server Action', () => {
     })
 
     it('should handle high match scenario (70+ score)', async () => {
+      // V2 format high score result (Story 9.1)
       const highScoreResult = {
         ...mockAnalysisResult,
         overallScore: 85,
         scoreBreakdown: {
-          keywords: 90,
-          skills: 85,
-          experience: 80,
-          format: 80,
+          overall: 85,
+          categories: {
+            keywordAlignment: { score: 90, weight: 0.25, reason: 'Excellent keyword match' },
+            contentRelevance: { score: 88, weight: 0.25, reason: 'Highly relevant content' },
+            quantificationImpact: { score: 80, weight: 0.20, reason: 'Strong quantification: 85%', quantificationDensity: 85 },
+            formatStructure: { score: 85, weight: 0.15, reason: 'Clean format' },
+            skillsCoverage: { score: 82, weight: 0.15, reason: 'Good skills coverage' },
+          },
         },
         justification: 'Excellent match with strong keyword alignment.',
         strengths: [
@@ -578,7 +618,7 @@ describe('runAnalysis Server Action', () => {
       mockGetOpenAIClient.mockReturnValue({} as any)
       mockWithRetry.mockResolvedValue({} as any)
       mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
-      mockParseAnalysisResponse.mockReturnValue(highScoreResult)
+      mockParseAnalysisResponseV2.mockReturnValue(highScoreResult) // V2 parser (Story 9.1)
       mockIsValidAnalysisResult.mockReturnValue(true)
 
       const result = await runAnalysis({ scanId: validScanId })
@@ -589,14 +629,19 @@ describe('runAnalysis Server Action', () => {
     })
 
     it('should handle low match scenario (<50 score)', async () => {
+      // V2 format low score result (Story 9.1)
       const lowScoreResult = {
         ...mockAnalysisResult,
         overallScore: 35,
         scoreBreakdown: {
-          keywords: 25,
-          skills: 40,
-          experience: 35,
-          format: 45,
+          overall: 35,
+          categories: {
+            keywordAlignment: { score: 25, weight: 0.25, reason: 'Poor keyword match' },
+            contentRelevance: { score: 40, weight: 0.25, reason: 'Limited relevance' },
+            quantificationImpact: { score: 30, weight: 0.20, reason: 'Low quantification: 20%', quantificationDensity: 20 },
+            formatStructure: { score: 45, weight: 0.15, reason: 'Format issues' },
+            skillsCoverage: { score: 38, weight: 0.15, reason: 'Weak skills coverage' },
+          },
         },
         justification: 'Limited keyword overlap with job requirements.',
         weaknesses: [
@@ -644,7 +689,7 @@ describe('runAnalysis Server Action', () => {
       mockGetOpenAIClient.mockReturnValue({} as any)
       mockWithRetry.mockResolvedValue({} as any)
       mockParseOpenAIResponse.mockReturnValue(mockOpenAIResponse)
-      mockParseAnalysisResponse.mockReturnValue(lowScoreResult)
+      mockParseAnalysisResponseV2.mockReturnValue(lowScoreResult) // V2 parser (Story 9.1)
       mockIsValidAnalysisResult.mockReturnValue(true)
 
       const result = await runAnalysis({ scanId: validScanId })

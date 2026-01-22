@@ -6,7 +6,17 @@
  * @see Story 4.4: Section-Level Score Breakdown
  * @see Story 4.5: Experience-Level-Aware Analysis
  * @see Story 4.6: Resume Format Issues Detection
+ * @see Story 9.1: ATS Scoring Recalibration (NEW weight distribution)
  */
+
+/**
+ * Import and re-export DensityResult from quantificationAnalyzer for convenience
+ * Story 9.1: ATS Scoring Recalibration
+ */
+import type { DensityResult as DensityResultImport, QuantificationAnalysis as QuantificationAnalysisImport } from '../utils/quantificationAnalyzer';
+
+export type DensityResult = DensityResultImport;
+export type QuantificationAnalysis = QuantificationAnalysisImport;
 
 /**
  * Experience level options
@@ -25,14 +35,57 @@ export interface ExperienceContext {
 }
 
 /**
+ * Category score with weight and reasoning
+ * Story 9.1: NEW scoring structure
+ */
+export interface CategoryScore {
+  score: number; // 0-100 score for this category
+  weight: number; // Weight in overall score (0.0-1.0, sum to 1.0)
+  reason: string; // Brief explanation
+}
+
+/**
+ * Quantification Impact category includes density metric
+ * Story 9.1: NEW category
+ */
+export interface QuantificationImpactScore extends CategoryScore {
+  quantificationDensity: number; // 0-100 percentage of bullets with metrics
+}
+
+/**
  * Score breakdown by analysis category
- * Total percentages: Keywords (40%) + Skills (30%) + Experience (20%) + Format (10%) = 100%
+ * Story 9.1: UPDATED weight distribution
+ *
+ * New weights (sum to 100%):
+ * - Keyword Alignment: 25% (was 40%)
+ * - Content Relevance: 25% (NEW consolidated weight)
+ * - Quantification & Impact: 20% (NEW)
+ * - Format & Structure: 15% (was 10%)
+ * - Skills Coverage: 15% (was 30%)
+ *
+ * @deprecated The old ScoreBreakdown structure (keywords/skills/experience/format) is deprecated
+ *   Use ScoreBreakdownLegacy for backward compatibility with old analyses
  */
 export interface ScoreBreakdown {
-  keywords: number // 0-100 score for keyword density and match
-  skills: number // 0-100 score for skills alignment
-  experience: number // 0-100 score for experience relevance
-  format: number // 0-100 score for ATS-parseable formatting
+  overall: number; // 0-100 overall weighted score
+  categories: {
+    keywordAlignment: CategoryScore;
+    contentRelevance: CategoryScore;
+    quantificationImpact: QuantificationImpactScore;
+    formatStructure: CategoryScore;
+    skillsCoverage: CategoryScore;
+  };
+}
+
+/**
+ * Legacy score breakdown structure (pre-Story 9.1)
+ * Used for backward compatibility with existing scan results
+ */
+export interface ScoreBreakdownLegacy {
+  keywords: number; // 0-100 score for keyword density and match
+  skills: number; // 0-100 score for skills alignment
+  experience: number; // 0-100 score for experience relevance
+  format: number; // 0-100 score for ATS-parseable formatting
 }
 
 /**
@@ -73,15 +126,16 @@ export interface KeywordAnalysis extends KeywordExtractionResult {
  * Result from ATS analysis
  */
 export interface AnalysisResult {
-  overallScore: number // 0-100 overall ATS compatibility score
-  scoreBreakdown: ScoreBreakdown
-  justification: string // Brief explanation of the score
-  strengths: string[] // What's working well (max 5 items)
-  weaknesses: string[] // Areas to improve (max 5 items)
-  keywords?: KeywordAnalysis // Keyword extraction results (added in Story 4.3)
-  sectionScores?: SectionScores // Section-level scores (added in Story 4.4)
-  experienceLevelContext?: string // Experience context used for analysis (added in Story 4.5)
-  formatIssues?: FormatIssue[] // Format issues detected (added in Story 4.6)
+  overallScore: number; // 0-100 overall ATS compatibility score
+  scoreBreakdown: ScoreBreakdown | ScoreBreakdownLegacy; // New or legacy structure
+  justification: string; // Brief explanation of the score
+  strengths: string[]; // What's working well (max 5 items)
+  weaknesses: string[]; // Areas to improve (max 5 items)
+  keywords?: KeywordAnalysis; // Keyword extraction results (added in Story 4.3)
+  sectionScores?: SectionScores; // Section-level scores (added in Story 4.4)
+  experienceLevelContext?: string; // Experience context used for analysis (added in Story 4.5)
+  formatIssues?: FormatIssue[]; // Format issues detected (added in Story 4.6)
+  quantificationAnalysis?: DensityResult; // Quantification density analysis (added in Story 9.1)
 }
 
 /**

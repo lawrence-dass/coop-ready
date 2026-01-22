@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { scanInputSchema } from '@/lib/validations/scan'
+import type { ScoreBreakdown, ScoreBreakdownLegacy } from '@/lib/types/analysis'
 
 /**
  * Server Actions for Scan Management
@@ -18,6 +19,7 @@ export interface ScanData {
   status: 'pending' | 'processing' | 'completed' | 'failed'
   atsScore: number | null
   scoreJustification: string | null
+  scoreBreakdown: ScoreBreakdown | ScoreBreakdownLegacy | null // Story 9.1: Added for new breakdown
   keywordsFound: Array<{ keyword: string; frequency: number }> | null
   keywordsMissing: Array<{ keyword: string; frequency: number; priority: 'high' | 'medium' | 'low' }> | null
   sectionScores: Record<string, { score: number; explanation: string; strengths: string[]; weaknesses: string[] }> | null
@@ -121,6 +123,7 @@ export async function createScan(input: {
       status: scan.status,
       atsScore: scan.ats_score,
       scoreJustification: scan.score_justification,
+      scoreBreakdown: scan.score_breakdown, // Story 9.1
       keywordsFound: scan.keywords_found,
       keywordsMissing: scan.keywords_missing,
       sectionScores: scan.section_scores,
@@ -192,6 +195,7 @@ export async function getScan(scanId: string): Promise<ActionResponse<ScanData>>
       status: scan.status,
       atsScore: scan.ats_score,
       scoreJustification: scan.score_justification,
+      scoreBreakdown: scan.score_breakdown, // Story 9.1
       keywordsFound: scan.keywords_found,
       keywordsMissing: scan.keywords_missing,
       sectionScores: scan.section_scores,
