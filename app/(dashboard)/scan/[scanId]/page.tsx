@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { runAnalysis } from '@/actions/analysis'
 import { useScanPolling } from '@/lib/hooks/useScanPolling'
 import { ScoreCard } from '@/components/analysis/ScoreCard'
+import { ScoreBreakdownCard } from '@/components/analysis/ScoreBreakdownCard'
 import { SectionBreakdown } from '@/components/analysis/SectionBreakdown'
 import { KeywordList } from '@/components/analysis/KeywordList'
 import { FormatIssues } from '@/components/analysis/FormatIssues'
@@ -163,6 +164,9 @@ export default function ScanResultsPage() {
         atsScore={scan.atsScore}
         justification={scan.scoreJustification}
       />
+
+      {/* Score Breakdown Card - Story 9.1 */}
+      <ScoreBreakdownCard scoreBreakdown={scan.scoreBreakdown} />
 
       {/* Section Breakdown */}
       <SectionBreakdown sectionScores={scan.sectionScores} />

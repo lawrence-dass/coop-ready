@@ -6,7 +6,47 @@
  * @see Story 4.2: ATS Score Calculation
  */
 
-import type { AnalysisResult } from '@/lib/types/analysis'
+import type { AnalysisResult, ScoreBreakdown, ScoreBreakdownLegacy } from '@/lib/types/analysis'
+
+/**
+ * Type guard to check if scoreBreakdown is legacy format
+ */
+function isLegacyScoreBreakdown(breakdown: unknown): breakdown is ScoreBreakdownLegacy {
+  if (!breakdown || typeof breakdown !== 'object') return false
+  const b = breakdown as Record<string, unknown>
+  return (
+    typeof b.keywords === 'number' &&
+    typeof b.skills === 'number' &&
+    typeof b.experience === 'number' &&
+    typeof b.format === 'number'
+  )
+}
+
+/**
+ * Type guard to check if scoreBreakdown is V2 format
+ * Story 9.1: ATS Scoring Recalibration
+ */
+function isV2ScoreBreakdown(breakdown: unknown): breakdown is ScoreBreakdown {
+  if (!breakdown || typeof breakdown !== 'object') return false
+  const b = breakdown as Record<string, unknown>
+  if (typeof b.overall !== 'number' || typeof b.categories !== 'object' || !b.categories) {
+    return false
+  }
+  const cats = b.categories as Record<string, unknown>
+  const requiredCategories = [
+    'keywordAlignment',
+    'contentRelevance',
+    'quantificationImpact',
+    'formatStructure',
+    'skillsCoverage',
+  ]
+  for (const cat of requiredCategories) {
+    if (!cats[cat] || typeof cats[cat] !== 'object') return false
+    const c = cats[cat] as Record<string, unknown>
+    if (typeof c.score !== 'number' || typeof c.weight !== 'number') return false
+  }
+  return true
+}
 
 /**
  * Clamp score to valid 0-100 range
@@ -154,16 +194,97 @@ export function isValidAnalysisResult(result: AnalysisResult): boolean {
 
   // Check breakdown scores are valid
   const breakdown = result.scoreBreakdown
-  if (
-    breakdown.keywords < 0 ||
-    breakdown.keywords > 100 ||
-    breakdown.skills < 0 ||
-    breakdown.skills > 100 ||
-    breakdown.experience < 0 ||
-    breakdown.experience > 100 ||
-    breakdown.format < 0 ||
-    breakdown.format > 100
-  ) {
+
+  // V2 format validation (Story 9.1)
+  if (isV2ScoreBreakdown(breakdown)) {
+    const cats = breakdown.categories
+
+    // Validate all category scores are in range
+    const allCategories = [
+      cats.keywordAlignment,
+      cats.contentRelevance,
+      cats.quantificationImpact,
+      cats.formatStructure,
+      cats.skillsCoverage,
+    ]
+
+    for (const cat of allCategories) {
+      if (cat.score < 0 || cat.score > 100) {
+        console.warn('[isValidAnalysisResult] V2 category score out of range', { score: cat.score })
+        return false
+      }
+      if (cat.weight < 0 || cat.weight > 1) {
+        console.warn('[isValidAnalysisResult] V2 category weight out of range', { weight: cat.weight })
+        return false
+      }
+    }
+
+    // Validate weights sum to approximately 1.0
+    const weightSum = allCategories.reduce((sum, cat) => sum + cat.weight, 0)
+    if (Math.abs(weightSum - 1.0) > 0.05) {
+      console.warn('[isValidAnalysisResult] V2 weights do not sum to 1.0', { weightSum })
+      return false
+    }
+
+    // Calculate weighted average and check consistency
+    const calculatedScore = allCategories.reduce((sum, cat) => sum + cat.score * cat.weight, 0)
+    const scoreDifference = Math.abs(breakdown.overall - calculatedScore)
+    if (scoreDifference > 10) {
+      console.warn('[isValidAnalysisResult] V2 overall score mismatch', {
+        overall: breakdown.overall,
+        calculated: calculatedScore.toFixed(1),
+        difference: scoreDifference.toFixed(1),
+      })
+      return false
+    }
+
+    // Validate quantificationDensity is present and in range
+    if (
+      typeof cats.quantificationImpact.quantificationDensity !== 'number' ||
+      cats.quantificationImpact.quantificationDensity < 0 ||
+      cats.quantificationImpact.quantificationDensity > 100
+    ) {
+      console.warn('[isValidAnalysisResult] V2 quantificationDensity invalid', {
+        density: cats.quantificationImpact.quantificationDensity,
+      })
+      return false
+    }
+  }
+  // Legacy format validation
+  else if (isLegacyScoreBreakdown(breakdown)) {
+    if (
+      breakdown.keywords < 0 ||
+      breakdown.keywords > 100 ||
+      breakdown.skills < 0 ||
+      breakdown.skills > 100 ||
+      breakdown.experience < 0 ||
+      breakdown.experience > 100 ||
+      breakdown.format < 0 ||
+      breakdown.format > 100
+    ) {
+      return false
+    }
+
+    // Calculate weighted average from breakdown (40% keywords, 30% skills, 20% exp, 10% format)
+    const calculatedScore =
+      breakdown.keywords * 0.4 +
+      breakdown.skills * 0.3 +
+      breakdown.experience * 0.2 +
+      breakdown.format * 0.1
+
+    // Overall score should be reasonably close to calculated score (within 15 points tolerance)
+    const scoreDifference = Math.abs(result.overallScore - calculatedScore)
+    if (scoreDifference > 15) {
+      console.warn('[isValidAnalysisResult] Score mismatch detected', {
+        overallScore: result.overallScore,
+        calculatedScore: calculatedScore.toFixed(1),
+        difference: scoreDifference.toFixed(1),
+      })
+      return false
+    }
+  } else {
+    // Unknown format - validation fails
+    console.warn('[isValidAnalysisResult] Unknown scoreBreakdown format')
     return false
   }
 
@@ -174,24 +295,6 @@ export function isValidAnalysisResult(result: AnalysisResult): boolean {
 
   // Check justification is not fallback message
   if (result.justification.includes('Analysis incomplete')) {
-    return false
-  }
-
-  // Calculate weighted average from breakdown (40% keywords, 30% skills, 20% exp, 10% format)
-  const calculatedScore =
-    breakdown.keywords * 0.4 +
-    breakdown.skills * 0.3 +
-    breakdown.experience * 0.2 +
-    breakdown.format * 0.1
-
-  // Overall score should be reasonably close to calculated score (within 15 points tolerance)
-  const scoreDifference = Math.abs(result.overallScore - calculatedScore)
-  if (scoreDifference > 15) {
-    console.warn('[isValidAnalysisResult] Score mismatch detected', {
-      overallScore: result.overallScore,
-      calculatedScore: calculatedScore.toFixed(1),
-      difference: scoreDifference.toFixed(1),
-    })
     return false
   }
 

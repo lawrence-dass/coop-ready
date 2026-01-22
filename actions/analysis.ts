@@ -6,11 +6,15 @@ import { getOpenAIClient } from '@/lib/openai'
 import { withRetry } from '@/lib/openai/retry'
 import { parseOpenAIResponse } from '@/lib/openai'
 import { createATSScoringPrompt } from '@/lib/openai/prompts/scoring'
+import { createATSScoringPromptV2 } from '@/lib/openai/prompts/scoringV2'
 import { buildExperienceContext } from '@/lib/openai/prompts/experienceContext'
 import {
   parseAnalysisResponse,
   isValidAnalysisResult,
 } from '@/lib/openai/prompts/parseAnalysis'
+import { parseAnalysisResponseV2 } from '@/lib/openai/prompts/parseAnalysisV2'
+import { calculateDensity } from '@/lib/utils/quantificationAnalyzer'
+import { extractBullets, extractBulletsFromText } from '@/lib/utils/extractBullets'
 import {
   parseKeywordsResponse,
   toKeywordAnalysis,
@@ -309,8 +313,35 @@ export async function runAnalysis(
       }
     }
 
-    // Create analysis prompt with detected sections
-    const messages = createATSScoringPrompt(context, detectedSections)
+    // Extract bullets and calculate quantification density (Story 9.1)
+    let bullets: string[] = []
+    if (resume.parsed_sections) {
+      try {
+        const parsedResume = resume.parsed_sections as unknown as ParsedResume
+        bullets = extractBullets(parsedResume)
+      } catch (error) {
+        console.warn('[runAnalysis] Failed to extract bullets from parsed resume, using text fallback', {
+          scanId: parsed.data.scanId,
+          error,
+        })
+      }
+    }
+
+    // Fallback to text extraction if no bullets found
+    if (bullets.length === 0) {
+      bullets = extractBulletsFromText(resume.extracted_text)
+    }
+
+    const quantificationDensity = calculateDensity(bullets)
+    console.log('[runAnalysis] Quantification density calculated (Story 9.1)', {
+      scanId: parsed.data.scanId,
+      totalBullets: quantificationDensity.totalBullets,
+      bulletsWithMetrics: quantificationDensity.bulletsWithMetrics,
+      density: quantificationDensity.density,
+    })
+
+    // Create analysis prompt with V2 scoring (Story 9.1)
+    const messages = createATSScoringPromptV2(context, quantificationDensity, detectedSections)
 
     console.log('[runAnalysis] ====== CALLING OPENAI ======', {
       scanId: parsed.data.scanId,
@@ -340,8 +371,11 @@ export async function runAnalysis(
     // Parse OpenAI response to extract content and token usage
     const parsedResponse = parseOpenAIResponse(completion)
 
-    // Parse analysis result from response content
-    const analysisResult = parseAnalysisResponse(parsedResponse.content)
+    // Parse analysis result from response content using V2 parser (Story 9.1)
+    const analysisResult = parseAnalysisResponseV2(parsedResponse.content)
+
+    // Add quantification analysis to result (Story 9.1)
+    analysisResult.quantificationAnalysis = quantificationDensity
 
     // Parse keyword extraction from response content (Story 4.3)
     const keywordExtraction = parseKeywordsResponse(parsedResponse.content)
@@ -403,12 +437,13 @@ export async function runAnalysis(
       // Continue with empty section scores rather than failing the entire analysis
     }
 
-    // Update scan record with analysis results (includes format_issues from Story 4.6)
+    // Update scan record with analysis results (includes format_issues from Story 4.6, score_breakdown from Story 9.1)
     const { error: updateError } = await supabase
       .from('scans')
       .update({
         ats_score: analysisResult.overallScore,
         score_justification: analysisResult.justification,
+        score_breakdown: analysisResult.scoreBreakdown as unknown as Record<string, unknown>, // Story 9.1
         keywords_found: keywordAnalysis.keywordsFound as unknown as Record<string, unknown>,
         keywords_missing: keywordAnalysis.keywordsMissing as unknown as Record<string, unknown>,
         section_scores: sectionScoresResult.sectionScores as unknown as Record<string, unknown>,
