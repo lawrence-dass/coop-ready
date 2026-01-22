@@ -91,11 +91,11 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Resume Export & Download
-  epic-6: in-progress
+  epic-6: done
   6-1-resume-content-merging: done
   6-2-pdf-resume-generation: done
   6-3-docx-resume-generation: done
-  6-4-download-ui-format-selection: ready-for-dev
+  6-4-download-ui-format-selection: done
   epic-6-retrospective: optional
 
   # Epic 7: Subscription & Billing
