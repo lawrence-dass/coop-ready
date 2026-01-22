@@ -128,6 +128,6 @@ development_status:
   10-1-fix-suggestion-generation-flow: done
   10-2-fix-download-resume-error: done
   10-3-improve-button-visibility: done
-  10-4-fix-page-flow-issues: ready-for-dev
+  10-4-fix-page-flow-issues: done
   10-5-migrate-openai-to-claude: ready-for-dev
   epic-10-retrospective: optional

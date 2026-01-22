@@ -5,6 +5,8 @@ import { PreviewHeader } from './_components/PreviewHeader'
 import { PreviewFooter } from './_components/PreviewFooter'
 import { mergeAcceptedSuggestions } from '@/lib/utils/resume-merging'
 import type { StoredResume } from '@/lib/types/resume'
+import Link from 'next/link'
+import { ChevronRight, Home } from 'lucide-react'
 
 interface PageProps {
   params: {
@@ -84,6 +86,36 @@ export default async function PreviewPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Breadcrumb Navigation */}
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1 text-sm text-gray-500 mb-6"
+        >
+          <Link
+            href="/dashboard"
+            className="hover:text-gray-700 transition-colors flex items-center gap-1"
+          >
+            <Home className="h-4 w-4" />
+            <span>Dashboard</span>
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link
+            href={`/scan/${params.scanId}`}
+            className="hover:text-gray-700 transition-colors"
+          >
+            Analysis
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link
+            href={`/analysis/${params.scanId}/suggestions`}
+            className="hover:text-gray-700 transition-colors"
+          >
+            Suggestions
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-gray-900 font-medium">Preview</span>
+        </nav>
+
         {/* Header */}
         <PreviewHeader
           stats={stats}
@@ -95,24 +127,24 @@ export default async function PreviewPage({ params }: PageProps) {
           {stats.accepted === 0 ? (
             <div className="p-12 text-center">
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                No Changes Applied
+                No changes accepted
               </h2>
               <p className="text-gray-600 mb-6">
                 You haven't accepted any suggestions yet. You can go back and review them if you'd like to optimize your resume.
               </p>
               <div className="flex gap-4 justify-center">
-                <a
+                <Link
                   href={`/analysis/${params.scanId}/suggestions`}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Back to Review
-                </a>
-                <a
+                </Link>
+                <Link
                   href={`/analysis/${params.scanId}/download`}
                   className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
                   Download Anyway
-                </a>
+                </Link>
               </div>
             </div>
           ) : (

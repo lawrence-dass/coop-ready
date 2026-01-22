@@ -183,7 +183,7 @@ test.describe('Preview Flow - Comprehensive', () => {
 
     if (emptyVisible) {
       // Should show "No Changes Applied" message
-      await expect(emptyState).toContainText(/No Changes|No suggestions applied/i)
+      await expect(emptyState).toContainText(/No changes accepted|No suggestions applied/i)
 
       // Should have "Go Back" button
       const backButton = page.locator('[data-testid="back-button"]')
