@@ -2,14 +2,14 @@
 Last updated: 2026-01-21 (evening)
 
 ## Current Focus
-Epic 6: Resume Export & Download - Starting Story 6.1 (Resume Content Merging)
+Epic 6: Resume Export & Download - Story 6.1 Complete (Merged to Main), Starting Story 6.2 (PDF Generation)
 
 ## BMAD Status
 - **Phase:** Implementation
-- **Last Workflow:** Create-Story workflow for Story 6.1
-- **Active Story:** 6-1-resume-content-merging (ready-for-dev)
-- **Branch:** `feat/epic-6-story-1-resume-merge` (renamed to reflect story focus)
-- **Sprint Status:** Epic 5 done, Epic 6 in-progress (Story 6-1 ready-for-dev)
+- **Last Workflow:** Create-Story workflow for Story 6.2
+- **Active Story:** 6-2-pdf-resume-generation (ready-for-dev)
+- **Branch:** `feat/epic-6-story-2-pdf-generation` (new branch for Story 6.2)
+- **Sprint Status:** Epic 5 done, Epic 6 in-progress (Story 6-1 done/merged to main, Story 6-2 ready-for-dev)
 
 ## Session Context
 
@@ -34,23 +34,37 @@ Epic 6: Resume Export & Download - Starting Story 6.1 (Resume Content Merging)
 
 ## Notes for Next Session
 
-### Session 2 Completion (THIS SESSION)
-✅ Created comprehensive Story 6.1 file: `_bmad-output/implementation-artifacts/6-1-resume-content-merging.md`
-✅ Updated sprint-status.yaml: Epic 6 marked in-progress, Story 6-1 marked ready-for-dev
-✅ Renamed git branch: `feat/epic-6-story-1-resume-merge`
+### Session 2 Completion (COMPLETED)
+✅ Story 6.1 created, implemented, code-reviewed, and merged to main
+✅ All acceptance criteria met, 35+ tests passing
+✅ Ready for downstream consumers (6-2, 6-3, 6-4)
 
-### Story 6.1 Summary
-- **File:** `_bmad-output/implementation-artifacts/6-1-resume-content-merging.md`
-- **Scope:** Build merge engine that combines accepted suggestions with parsed resume data
-- **Key Files to Create:** `lib/generators/merge.ts`, `lib/generators/merge-operations.ts`
-- **Testing:** Unit tests for merge operations, integration tests for full flow
-- **Blocking:** Stories 6-2 (PDF), 6-3 (DOCX), 6-4 (Download UI) all depend on this
+### Session 3 Completion (THIS SESSION)
+✅ Story 6.1 merged to main, pulled latest from remote
+✅ Created comprehensive Story 6.2 file: `_bmad-output/implementation-artifacts/6-2-pdf-resume-generation.md`
+✅ Updated sprint-status.yaml: Story 6-1 marked done, Story 6-2 marked ready-for-dev
+✅ Created new git branch: `feat/epic-6-story-2-pdf-generation`
 
-### Immediate Next Action (Session 3)
-Run `/bmad:bmm:workflows:dev-story` to implement Story 6.1: Resume Content Merging
+### Story 6.2 Summary
+- **File:** `_bmad-output/implementation-artifacts/6-2-pdf-resume-generation.md`
+- **Scope:** Generate professional, ATS-friendly PDF resumes from merged resume data
+- **Dependencies:** Story 6-1 (merge engine) provides input data
+- **Key Files to Create:** `lib/generators/pdf.ts`, `components/pdf/*` (7 components)
+- **Library:** `@react-pdf/renderer` for PDF generation
+- **Constraints:** One-page max, < 500KB, ATS-compatible (no tables, standard fonts)
+- **Testing:** Unit tests for PDF components, integration tests for full flow, text extraction validation
+- **Blocking:** Story 6-4 (Download UI) needs PDF generation capability
+
+### Immediate Next Action (Session 4)
+Run `/bmad:bmm:workflows:dev-story` to implement Story 6.2: PDF Resume Generation
 
 ### Key References
 - Epic 6 spec: `_bmad-output/planning-artifacts/epics/epic-6-resume-export-download.md`
-- Story 6.1: `_bmad-output/implementation-artifacts/6-1-resume-content-merging.md` (ready-for-dev)
+- Story 6.1: `_bmad-output/implementation-artifacts/6-1-resume-content-merging.md` (DONE)
+- Story 6.2: `_bmad-output/implementation-artifacts/6-2-pdf-resume-generation.md` (ready-for-dev)
 - Project context: `_bmad-output/project-context.md`
 - Sprint status: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+### Upcoming Stories (After 6.2)
+- **Story 6.3:** DOCX Resume Generation (similar pattern to PDF)
+- **Story 6.4:** Download UI & Format Selection (uses 6.2, 6.3)

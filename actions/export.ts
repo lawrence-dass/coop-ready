@@ -4,10 +4,12 @@
  * Export Server Actions
  * Handles resume content merging and export operations
  * Story 6.1: Resume Content Merging
+ * Story 6.2: PDF Resume Generation
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { mergeResumeContent, type MergeResult, type DatabaseSuggestion } from '@/lib/generators/merge'
+import { generatePDF, generateFileName, PDFGenerationError } from '@/lib/generators/pdf'
 import type { ParsedResume } from '@/lib/parsers/types'
 import { z } from 'zod'
 
@@ -16,11 +18,109 @@ type ActionResponse<T> =
   | { data: null; error: { message: string; code?: string } }
 
 /**
- * Input validation for generateMergedResume
+ * Input validation for scanId
  */
-const generateMergedResumeSchema = z.object({
+const scanIdSchema = z.object({
   scanId: z.string().uuid('Invalid scan ID'),
 })
+
+/**
+ * Internal helper to fetch and merge resume data (no auth check)
+ * Used by both generateMergedResume and generateResumePDF to avoid duplicate auth calls
+ */
+async function _fetchAndMergeResumeData(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  scanId: string
+): Promise<ActionResponse<MergeResult>> {
+  // 1. Fetch scan with resume data
+  const { data: scan, error: scanError } = await supabase
+    .from('scans')
+    .select('id, user_id, resume_id')
+    .eq('id', scanId)
+    .single()
+
+  if (scanError || !scan) {
+    console.error('[_fetchAndMergeResumeData] Scan fetch error:', scanError)
+    return {
+      data: null,
+      error: {
+        message: 'Scan not found',
+        code: 'NOT_FOUND',
+      },
+    }
+  }
+
+  // Verify user owns this scan
+  if (scan.user_id !== userId) {
+    return {
+      data: null,
+      error: {
+        message: 'Scan not found',
+        code: 'NOT_FOUND',
+      },
+    }
+  }
+
+  // 2. Fetch resume with parsed sections
+  const { data: resume, error: resumeError } = await supabase
+    .from('resumes')
+    .select('id, parsed_sections')
+    .eq('id', scan.resume_id)
+    .single()
+
+  if (resumeError || !resume) {
+    console.error('[_fetchAndMergeResumeData] Resume fetch error:', resumeError)
+    return {
+      data: null,
+      error: {
+        message: 'Resume not found',
+        code: 'NOT_FOUND',
+      },
+    }
+  }
+
+  if (!resume.parsed_sections) {
+    return {
+      data: null,
+      error: {
+        message: 'Resume has not been parsed yet',
+        code: 'INVALID_STATE',
+      },
+    }
+  }
+
+  // 3. Fetch all suggestions for this scan
+  const { data: suggestions, error: suggestionsError } = await supabase
+    .from('suggestions')
+    .select('*')
+    .eq('scan_id', scanId)
+
+  if (suggestionsError) {
+    console.error('[_fetchAndMergeResumeData] Suggestions fetch error:', suggestionsError)
+    return {
+      data: null,
+      error: {
+        message: 'Failed to fetch suggestions',
+        code: 'DATABASE_ERROR',
+      },
+    }
+  }
+
+  // Cast parsed_sections to ParsedResume
+  const resumeData = resume.parsed_sections as unknown as ParsedResume
+
+  // 4. Call merge function
+  const mergeResult = await mergeResumeContent(
+    resumeData,
+    suggestions as DatabaseSuggestion[]
+  )
+
+  return {
+    data: mergeResult,
+    error: null,
+  }
+}
 
 /**
  * Generate merged resume content by applying accepted suggestions
@@ -33,7 +133,7 @@ export async function generateMergedResume(input: {
   scanId: string
 }): Promise<ActionResponse<MergeResult>> {
   // Validate input
-  const parsed = generateMergedResumeSchema.safeParse(input)
+  const parsed = scanIdSchema.safeParse(input)
   if (!parsed.success) {
     return {
       data: null,
@@ -61,99 +161,116 @@ export async function generateMergedResume(input: {
       }
     }
 
-    // 1. Fetch scan with resume data
-    const { data: scan, error: scanError } = await supabase
-      .from('scans')
-      .select('id, user_id, resume_id')
-      .eq('id', scanId)
-      .single()
-
-    if (scanError || !scan) {
-      console.error('[generateMergedResume] Scan fetch error:', scanError)
-      return {
-        data: null,
-        error: {
-          message: 'Scan not found',
-          code: 'NOT_FOUND',
-        },
-      }
-    }
-
-    // Verify user owns this scan
-    if (scan.user_id !== user.id) {
-      return {
-        data: null,
-        error: {
-          message: 'Scan not found',
-          code: 'NOT_FOUND',
-        },
-      }
-    }
-
-    // 2. Fetch resume with parsed sections
-    const { data: resume, error: resumeError } = await supabase
-      .from('resumes')
-      .select('id, parsed_sections')
-      .eq('id', scan.resume_id)
-      .single()
-
-    if (resumeError || !resume) {
-      console.error('[generateMergedResume] Resume fetch error:', resumeError)
-      return {
-        data: null,
-        error: {
-          message: 'Resume not found',
-          code: 'NOT_FOUND',
-        },
-      }
-    }
-
-    if (!resume.parsed_sections) {
-      return {
-        data: null,
-        error: {
-          message: 'Resume has not been parsed yet',
-          code: 'INVALID_STATE',
-        },
-      }
-    }
-
-    // 3. Fetch all suggestions for this scan
-    const { data: suggestions, error: suggestionsError } = await supabase
-      .from('suggestions')
-      .select('*')
-      .eq('scan_id', scanId)
-
-    if (suggestionsError) {
-      console.error('[generateMergedResume] Suggestions fetch error:', suggestionsError)
-      return {
-        data: null,
-        error: {
-          message: 'Failed to fetch suggestions',
-          code: 'DATABASE_ERROR',
-        },
-      }
-    }
-
-    // Cast parsed_sections to ParsedResume
-    const resumeData = resume.parsed_sections as unknown as ParsedResume
-
-    // 4. Call merge function
-    const mergeResult = await mergeResumeContent(
-      resumeData,
-      suggestions as DatabaseSuggestion[]
-    )
-
-    return {
-      data: mergeResult,
-      error: null,
-    }
+    // Fetch and merge resume data
+    return await _fetchAndMergeResumeData(supabase, user.id, scanId)
   } catch (error) {
     console.error('[generateMergedResume] Unexpected error:', error)
     return {
       data: null,
       error: {
         message: 'Failed to generate merged resume',
+        code: 'INTERNAL_ERROR',
+      },
+    }
+  }
+}
+
+/**
+ * Input validation for generateResumePDF
+ */
+const generateResumePDFSchema = z.object({
+  scanId: z.string().uuid('Invalid scan ID'),
+  format: z.literal('pdf'),
+})
+
+/**
+ * Generate and download resume as PDF
+ *
+ * @param input - Contains scanId and format
+ * @returns PDF file data with filename and MIME type, or error
+ */
+export async function generateResumePDF(input: {
+  scanId: string
+  format: 'pdf'
+}): Promise<ActionResponse<{
+  fileBlob: Buffer
+  fileName: string
+  mimeType: string
+}>> {
+  // Validate input
+  const parsed = generateResumePDFSchema.safeParse(input)
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: {
+        message: 'Invalid input',
+        code: 'VALIDATION_ERROR',
+      },
+    }
+  }
+
+  const { scanId } = parsed.data
+
+  try {
+    const supabase = await createClient()
+
+    // Get current user for authorization (single auth check)
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return {
+        data: null,
+        error: {
+          message: 'Unauthorized',
+          code: 'UNAUTHORIZED',
+        },
+      }
+    }
+
+    // Fetch and merge resume data using internal helper (no duplicate auth check)
+    const mergeResult = await _fetchAndMergeResumeData(supabase, user.id, scanId)
+    if (mergeResult.error) {
+      return mergeResult as ActionResponse<{
+        fileBlob: Buffer
+        fileName: string
+        mimeType: string
+      }>
+    }
+
+    const { mergedContent } = mergeResult.data
+
+    // Generate PDF from merged content
+    const pdfBuffer = await generatePDF(mergedContent)
+
+    // Generate filename from contact info
+    const fileName = generateFileName(mergedContent.contact)
+
+    return {
+      data: {
+        fileBlob: pdfBuffer,
+        fileName,
+        mimeType: 'application/pdf',
+      },
+      error: null,
+    }
+  } catch (error) {
+    // Handle PDF generation errors with specific codes
+    if (error instanceof PDFGenerationError) {
+      console.error('[generateResumePDF] PDF generation error:', error)
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+        },
+      }
+    }
+
+    // Handle unexpected errors
+    console.error('[generateResumePDF] Unexpected error:', error)
+    return {
+      data: null,
+      error: {
+        message: 'Failed to generate PDF',
         code: 'INTERNAL_ERROR',
       },
     }

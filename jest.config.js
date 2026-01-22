@@ -17,11 +17,16 @@ const config = {
       },
     }],
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(@react-pdf|yoga-wasm-web)/)',
+  ],
   collectCoverageFrom: [
     'lib/parsers/**/*.ts',
     'lib/openai/**/*.ts',
+    'lib/generators/**/*.ts',
     '!lib/parsers/**/*.d.ts',
     '!lib/openai/**/*.d.ts',
+    '!lib/generators/**/*.d.ts',
   ],
   coverageDirectory: 'coverage',
   verbose: true,
