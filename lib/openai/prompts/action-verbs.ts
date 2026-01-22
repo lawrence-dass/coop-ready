@@ -4,9 +4,12 @@
  * Generates prompts for AI-powered action verb improvements and quantification suggestions.
  *
  * @see Story 5.3: Action Verb & Quantification Suggestions
+ * @see Story 9.2: Inference-Based Suggestion Calibration
  */
 
 import { STRONG_VERBS_BY_CATEGORY, WEAK_VERBS } from "@/lib/validations/verbs";
+import type { CalibrationContext } from './calibration-context';
+import { buildCalibrationInstructions } from './calibration-context';
 
 /**
  * Create action verb and quantification analysis prompt
@@ -16,20 +19,29 @@ import { STRONG_VERBS_BY_CATEGORY, WEAK_VERBS } from "@/lib/validations/verbs";
  * - Detects missing metrics and provides contextual quantification prompts
  * - Categorizes achievements to provide targeted suggestions
  * - Only suggests improvements where needed (AC5)
+ * - Story 9.2: Adapts to calibration mode and experience level
  *
  * @param bulletPoints - Array of bullet points to analyze
  * @param achievementTypes - Array of achievement classifications (performance, team, scaling, etc.)
+ * @param calibration - Optional calibration context for mode-aware suggestions
  * @returns Formatted prompt string
  */
 export function createActionVerbAndQuantificationPrompt(
   bulletPoints: string[],
-  achievementTypes: string[]
+  achievementTypes: string[],
+  calibration?: CalibrationContext
 ): string {
   const verbCategories = Object.entries(STRONG_VERBS_BY_CATEGORY)
     .map(([category, verbs]) => `${category}: ${verbs.join(", ")}`)
     .join("\n");
 
+  // Story 9.2: Build calibration-aware instructions
+  const calibrationInstructions = calibration
+    ? `\n\n${buildCalibrationInstructions(calibration)}\n`
+    : '';
+
   return `You are an expert resume writer specializing in action verbs and achievement quantification.
+${calibrationInstructions}
 
 Your task is to analyze the following bullet points and provide TWO types of suggestions:
 1. ACTION VERB improvements - replace weak verbs with strong alternatives

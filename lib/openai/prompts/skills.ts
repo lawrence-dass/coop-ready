@@ -5,7 +5,11 @@
  * from non-tech backgrounds to tech industry terminology.
  *
  * @see Story 5.2: Transferable Skills Detection & Mapping
+ * @see Story 9.2: Inference-Based Suggestion Calibration
  */
+
+import type { CalibrationContext } from './calibration-context';
+import { buildCalibrationInstructions } from './calibration-context';
 
 /**
  * Experience to analyze for transferable skills
@@ -34,16 +38,19 @@ export interface UserProfile {
  * - Provides reasoning for each mapping to build trust
  * - Aligns with job description keywords for ATS optimization
  * - Handles quantified experiences intelligently
+ * - Story 9.2: Adapts to calibration mode and experience level
  *
  * @param experiences - Array of experiences with text and context
  * @param userProfile - User's background and target role
  * @param jdKeywords - Keywords from job description for alignment
+ * @param calibration - Optional calibration context for mode-aware suggestions
  * @returns Formatted prompt string with JSON instructions
  */
 export function createTransferableSkillsPrompt(
   experiences: Experience[],
   userProfile: UserProfile,
-  jdKeywords: string[]
+  jdKeywords: string[],
+  calibration?: CalibrationContext
 ): string {
   // Context-specific guidance for different user backgrounds
   const contextGuidance = userProfile.isStudent
@@ -73,7 +80,13 @@ export function createTransferableSkillsPrompt(
   const keywordsText =
     jdKeywords.length > 0 ? jdKeywords.join(", ") : "No specific keywords provided"
 
+  // Story 9.2: Build calibration-aware instructions
+  const calibrationInstructions = calibration
+    ? `\n\n${buildCalibrationInstructions(calibration)}\n`
+    : '';
+
   return `You are an expert career coach specializing in helping career changers and new professionals map their experience to technology industry terminology.
+${calibrationInstructions}
 
 ${contextGuidance}
 
