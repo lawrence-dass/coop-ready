@@ -23,6 +23,7 @@ export async function SuggestionList({ scanId }: SuggestionListProps) {
       scanId={scanId}
       suggestionsBySection={suggestionsBySection}
       totalSuggestions={totalSuggestions}
+      atsScore={null}
     />
   );
 }

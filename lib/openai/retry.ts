@@ -4,7 +4,7 @@
  * Handles rate limiting and network errors with appropriate retry strategies.
  */
 
-import { MAX_RETRIES, NETWORK_RETRY_COUNT } from './types'
+import { MAX_RETRIES, NETWORK_RETRY_COUNT, TIMEOUT_RETRY_COUNT } from './types'
 import type { OpenAIError, OpenAIErrorType } from './types'
 
 /**
@@ -180,6 +180,8 @@ export function shouldRetry(
       // Retry once for network errors
       return attemptNumber < NETWORK_RETRY_COUNT
     case 'timeout':
+      // Story 10.1: Allow one retry for timeout errors (OpenAI can be slow for large prompts)
+      return attemptNumber < TIMEOUT_RETRY_COUNT
     case 'config':
     case 'malformed':
     case 'unknown':

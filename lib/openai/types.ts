@@ -54,9 +54,10 @@ export interface OpenAIClientConfig {
 /**
  * Constants for OpenAI configuration
  */
-export const OPENAI_TIMEOUT_MS = 30000 // 30 seconds
+export const OPENAI_TIMEOUT_MS = 60000 // 60 seconds - increased for suggestion generation with many bullets
 export const MAX_RETRIES = 3 // For rate limit errors
 export const NETWORK_RETRY_COUNT = 1 // For network errors
+export const TIMEOUT_RETRY_COUNT = 1 // For timeout errors (Story 10.1)
 
 // GPT-4o-mini pricing (per 1M tokens) - as of 2026-01-20
 export const OPENAI_PRICING = {
