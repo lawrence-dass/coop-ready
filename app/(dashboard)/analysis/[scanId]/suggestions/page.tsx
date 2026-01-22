@@ -1,11 +1,13 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { fetchSuggestionsBySection } from '@/lib/supabase/suggestions'
+import { fetchSuggestionsBySection, getCalibrationSummary } from '@/lib/supabase/suggestions'
 import { SuggestionListClient } from '@/components/analysis/SuggestionListClient'
 import { SuggestionsSummary } from '@/components/analysis/SuggestionsSummary'
 import { SuggestionsErrorState } from '@/components/analysis/SuggestionsErrorState'
+import { CalibrationSummary } from '@/components/analysis/CalibrationSummary'
 import Link from 'next/link'
 import { ChevronRight, Home, ArrowLeft } from 'lucide-react'
+import type { SuggestionMode } from '@/lib/utils/suggestionCalibrator'
 
 interface PageProps {
   params: Promise<{
@@ -52,12 +54,26 @@ export default async function SuggestionsPage({ params }: PageProps) {
   let totalSuggestions = 0
   let error: Error | null = null
 
+  // Story 9.2: Fetch calibration summary
+  let calibration: {
+    suggestionMode: string | null
+    targetSuggestionCount: number | null
+    focusAreas: string[]
+    reasoning: string | null
+    atsScore: number | null
+  } | null = null
+
   try {
     suggestionsBySection = await fetchSuggestionsBySection(scanId)
     totalSuggestions = Object.values(suggestionsBySection).reduce(
       (sum, suggestions) => sum + suggestions.length,
       0
     )
+
+    // Fetch calibration if suggestions exist
+    if (totalSuggestions > 0) {
+      calibration = await getCalibrationSummary(scanId)
+    }
   } catch (e) {
     console.error('[suggestions page]', 'Error fetching suggestions:', e)
     error = e as Error
@@ -104,6 +120,17 @@ export default async function SuggestionsPage({ params }: PageProps) {
           Review AI-powered suggestions to improve your resume's ATS compatibility
         </p>
       </div>
+
+      {/* Story 9.2: Calibration Summary */}
+      {calibration && (
+        <CalibrationSummary
+          suggestionMode={calibration.suggestionMode as SuggestionMode}
+          targetSuggestionCount={calibration.targetSuggestionCount || undefined}
+          focusAreas={calibration.focusAreas}
+          reasoning={calibration.reasoning || undefined}
+          atsScore={calibration.atsScore || undefined}
+        />
+      )}
 
       {/* Summary Stats */}
       <SuggestionsSummary scanId={scanId} />

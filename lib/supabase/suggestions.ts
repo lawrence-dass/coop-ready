@@ -1,11 +1,19 @@
 /**
  * Supabase Queries for Suggestions
  * Handles all database operations for suggestion management
+ *
+ * @see Story 9.2: Inference-Based Suggestion Calibration
  */
 
 import { createClient } from "@/lib/supabase/server";
 import { RESUME_SECTIONS } from "@/lib/utils/suggestion-types";
 import type { DisplaySuggestion } from "@/lib/utils/suggestion-types";
+import {
+  getTargetSuggestionCount,
+  getFocusAreasByExperience,
+  type SuggestionMode,
+  type ExperienceLevel
+} from "@/lib/utils/suggestionCalibrator";
 
 interface SuggestionRow {
   id: string;
@@ -18,6 +26,9 @@ interface SuggestionRow {
   reasoning: string;
   status: string;
   created_at: string;
+  // Story 9.2: Calibration metadata
+  suggestion_mode?: string;
+  inference_signals?: any; // JSONB
 }
 
 /**
@@ -129,6 +140,61 @@ export async function countSuggestionsByType(
   }
 
   return counts;
+}
+
+/**
+ * Get calibration summary from suggestions
+ *
+ * Story 9.2: Extract calibration metadata from first suggestion
+ * (all suggestions in a scan share the same calibration)
+ */
+export async function getCalibrationSummary(scanId: string): Promise<{
+  suggestionMode: string | null;
+  targetSuggestionCount: number | null;
+  focusAreas: string[];
+  reasoning: string | null;
+  atsScore: number | null;
+} | null> {
+  const supabase = await createClient();
+
+  // Get first suggestion with calibration metadata
+  const { data, error } = await supabase
+    .from("suggestions")
+    .select("suggestion_mode, inference_signals")
+    .eq("scan_id", scanId)
+    .not("suggestion_mode", "is", null)
+    .limit(1)
+    .single();
+
+  if (error || !data || !data.suggestion_mode) {
+    // No calibration data available (legacy suggestions or not yet generated)
+    return null;
+  }
+
+  const mode = data.suggestion_mode as SuggestionMode;
+  const inferenceSignals = data.inference_signals || {};
+  const experienceLevel = (inferenceSignals.experienceLevel || 'experienced') as ExperienceLevel;
+  const atsScore = inferenceSignals.atsScore || null;
+
+  // Calculate target count from mode
+  const targetRange = getTargetSuggestionCount(mode);
+  const targetCount = Math.floor((targetRange.min + targetRange.max) / 2);
+
+  // Get focus areas from experience level
+  const focusAreas = getFocusAreasByExperience(experienceLevel);
+
+  // Build reasoning from signals
+  const missingKeywords = inferenceSignals.missingKeywordsCount || 0;
+  const quantificationDensity = inferenceSignals.quantificationDensity || 0;
+  const reasoning = `ATS Score ${atsScore} → ${mode} mode | ${missingKeywords} missing keywords | ${quantificationDensity}% quantification`;
+
+  return {
+    suggestionMode: mode,
+    targetSuggestionCount: targetCount,
+    focusAreas,
+    reasoning,
+    atsScore,
+  };
 }
 
 /**

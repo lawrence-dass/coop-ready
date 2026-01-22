@@ -2,15 +2,20 @@
  * OpenAI Prompt for Skills Expansion Suggestions
  *
  * Story 5.4: Skills Expansion Suggestions
+ * Story 9.2: Inference-Based Suggestion Calibration
  *
  * Generates prompt for AI to analyze skills and suggest expansions
  * that include commonly-used libraries, frameworks, and tools.
  */
 
+import type { CalibrationContext } from './calibration-context';
+import { buildCalibrationInstructions } from './calibration-context';
+
 export const SKILL_EXPANSION_PROMPT = (
   skills: string[],
   jdContent?: string,
-  jdKeywords?: string[]
+  jdKeywords?: string[],
+  calibration?: CalibrationContext
 ) => {
   const keywordContext = jdKeywords?.length
     ? `\n\nJob Description Keywords: ${jdKeywords.join(", ")}\n\nPrioritize expansions that include these keywords.`
@@ -20,7 +25,13 @@ export const SKILL_EXPANSION_PROMPT = (
     ? `\n\nJob Description excerpt: "${jdContent.substring(0, 500)}..."`
     : "";
 
+  // Story 9.2: Build calibration-aware instructions
+  const calibrationInstructions = calibration
+    ? `\n\n${buildCalibrationInstructions(calibration)}\n`
+    : '';
+
   return `You are an expert ATS and resume optimization specialist.
+${calibrationInstructions}
 
 Your task is to analyze the following skills and suggest specific expansions that will help the resume match ATS keyword searches and job descriptions more effectively.
 

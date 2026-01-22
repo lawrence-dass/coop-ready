@@ -1,226 +1,172 @@
-import {
-  analyzeBulletQuantification,
-  calculateDensity,
-  getDensityCategory,
-} from '@/lib/utils/quantificationAnalyzer';
+/**
+ * Tests for Quantification Density Analyzer
+ *
+ * @see Story 9.1: ATS Scoring Recalibration (dependency)
+ * @see Story 9.2: Inference-Based Suggestion Calibration
+ */
 
-describe('analyzeBulletQuantification', () => {
-  it('should detect numbers in bullets', () => {
-    const bullets = [
-      'Increased sales by 150 units',
-      'Managed 5 team members',
-      'No metrics here',
-    ];
+import { calculateQuantificationDensity } from '@/lib/utils/quantificationAnalyzer'
 
-    const result = analyzeBulletQuantification(bullets);
+describe('Quantification Density Analyzer', () => {
+  describe('calculateQuantificationDensity', () => {
+    it('should return 100% for resume with all quantified bullets', () => {
+      const resumeText = `
+        • Increased sales by 25% through strategic campaigns
+        • Managed team of 10 developers across 3 projects
+        • Reduced costs by $50K annually
+        • Improved performance by 3x
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-    expect(result[0].hasMetrics).toBe(true);
-    expect(result[0].metrics.numbers).toContain('150');
+    it('should return 0% for resume with no quantification', () => {
+      const resumeText = `
+        • Led development team
+        • Implemented new features
+        • Collaborated with stakeholders
+        • Improved system architecture
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(0)
+    })
 
-    expect(result[1].hasMetrics).toBe(true);
-    expect(result[1].metrics.numbers).toContain('5');
+    it('should calculate partial quantification correctly', () => {
+      const resumeText = `
+        • Increased sales by 25%
+        • Led development team
+        • Managed 10 developers
+        • Collaborated with stakeholders
+      `
+      // 2 out of 4 bullets have quantification = 50%
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(50)
+    })
 
-    expect(result[2].hasMetrics).toBe(false);
-    expect(result[2].metrics.numbers).toHaveLength(0);
-  });
+    it('should detect percentages', () => {
+      const resumeText = `
+        • Improved efficiency by 30%
+        • Increased retention by 15.5%
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-  it('should detect percentages', () => {
-    const bullets = [
-      'Improved efficiency by 25%',
-      'Achieved 100% completion rate',
-      'Ranked in top 5% of team',
-    ];
+    it('should detect currency amounts', () => {
+      const resumeText = `
+        • Reduced costs by $50K
+        • Generated $1.2M in revenue
+        • Saved $500 per transaction
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-    const result = analyzeBulletQuantification(bullets);
+    it('should detect user/customer counts', () => {
+      const resumeText = `
+        • Served 10,000 users daily
+        • Managed 50 clients
+        • Supported 100 customers
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-    expect(result[0].hasMetrics).toBe(true);
-    expect(result[0].metrics.percentages).toContain('25%');
+    it('should detect time metrics', () => {
+      const resumeText = `
+        • Completed project in 3 weeks
+        • Reduced processing time by 5 hours
+        • Maintained 99.9% uptime for 2 years
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-    expect(result[1].hasMetrics).toBe(true);
-    expect(result[1].metrics.percentages).toContain('100%');
+    it('should detect multipliers (2x, 3x, etc)', () => {
+      const resumeText = `
+        • Increased performance by 3x
+        • Improved speed by 10x
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-    expect(result[2].hasMetrics).toBe(true);
-    expect(result[2].metrics.percentages).toContain('5%');
-  });
+    it('should detect large number formats (million, thousand)', () => {
+      const resumeText = `
+        • Processed 2 million transactions
+        • Managed 50 thousand records
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-  it('should detect currency amounts', () => {
-    const bullets = [
-      'Generated $500,000 in revenue',
-      'Saved £25,000 annually',
-      'Managed €1.5M budget',
-    ];
+    it('should detect general numbers', () => {
+      const resumeText = `
+        • Led team of 5 engineers
+        • Implemented 20 new features
+      `
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-    const result = analyzeBulletQuantification(bullets);
+    it('should return 0 for empty string', () => {
+      const density = calculateQuantificationDensity('')
+      expect(density).toBe(0)
+    })
 
-    expect(result[0].hasMetrics).toBe(true);
-    expect(result[0].metrics.currency).toContain('$500,000');
+    it('should return 0 for whitespace only', () => {
+      const density = calculateQuantificationDensity('   \n  \n  ')
+      expect(density).toBe(0)
+    })
 
-    expect(result[1].hasMetrics).toBe(true);
-    expect(result[1].metrics.currency).toContain('£25,000');
+    it('should handle mixed bullet point formats', () => {
+      const resumeText = `
+        • Increased sales by 25%
+        ● Led 10 developers
+        ○ Collaborated with stakeholders
+        ― Reduced costs by $50K
+      `
+      // 3 out of 4 bullets have quantification = 75%
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(75)
+    })
 
-    expect(result[2].hasMetrics).toBe(true);
-    expect(result[2].metrics.currency.some(c => c.includes('€1.5'))).toBe(true);
-  });
+    it('should ignore very short lines', () => {
+      const resumeText = `
+        • Increased sales by 25%
+        •
+        • Very short
+        • Led development team with 10 engineers
+      `
+      // Only 2 valid bullets (short ones ignored), both quantified = 100%
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(100)
+    })
 
-  it('should detect time units', () => {
-    const bullets = [
-      'Completed project in 3 months',
-      'Reduced processing time by 5 days',
-      'Worked 40 hours per week',
-      'Delivered in 2 years',
-    ];
+    it('should round to nearest integer', () => {
+      const resumeText = `
+        • Increased sales by 25%
+        • Led development team across multiple projects
+        • Managed 10 developers
+      `
+      // 2 out of 3 = 66.666...% rounds to 67%
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBe(67)
+    })
 
-    const result = analyzeBulletQuantification(bullets);
-
-    expect(result[0].hasMetrics).toBe(true);
-    expect(result[0].metrics.timeUnits).toContain('3 months');
-
-    expect(result[1].hasMetrics).toBe(true);
-    expect(result[1].metrics.timeUnits).toContain('5 days');
-
-    expect(result[2].hasMetrics).toBe(true);
-    expect(result[2].metrics.timeUnits).toContain('40 hours');
-
-    expect(result[3].hasMetrics).toBe(true);
-    expect(result[3].metrics.timeUnits).toContain('2 years');
-  });
-
-  it('should handle edge cases', () => {
-    const bullets = [
-      'Saved $50k in costs',
-      'Managed 500M+ records',
-      'Ranked in top 5% globally',
-      'Experience: 3-5 years',
-      'Grew revenue by $1.5M',
-    ];
-
-    const result = analyzeBulletQuantification(bullets);
-
-    // $50k
-    expect(result[0].hasMetrics).toBe(true);
-    expect(result[0].metrics.currency.some(c => c.includes('$50'))).toBe(true);
-
-    // 500M+
-    expect(result[1].hasMetrics).toBe(true);
-    expect(result[1].metrics.numbers.some(n => n.includes('500'))).toBe(true);
-
-    // top 5%
-    expect(result[2].hasMetrics).toBe(true);
-    expect(result[2].metrics.percentages).toContain('5%');
-
-    // 3-5 years - contains time units
-    expect(result[3].hasMetrics).toBe(true);
-    expect(result[3].metrics.timeUnits.some(t => t.includes('years'))).toBe(true);
-
-    // $1.5M
-    expect(result[4].hasMetrics).toBe(true);
-    expect(result[4].metrics.currency.some(c => c.includes('$1.5'))).toBe(true);
-  });
-
-  it('should return all metrics found in metricsFound array', () => {
-    const bullets = ['Increased revenue by $100k and improved efficiency by 25% in 6 months'];
-
-    const result = analyzeBulletQuantification(bullets);
-
-    expect(result[0].hasMetrics).toBe(true);
-    expect(result[0].metricsFound.length).toBeGreaterThan(0);
-    expect(result[0].metrics.currency.length).toBeGreaterThan(0);
-    expect(result[0].metrics.percentages.length).toBeGreaterThan(0);
-    expect(result[0].metrics.timeUnits.length).toBeGreaterThan(0);
-  });
-});
-
-describe('calculateDensity', () => {
-  it('should return 0% density when no metrics present', () => {
-    const bullets = [
-      'Worked on various projects',
-      'Collaborated with team members',
-      'Developed software solutions',
-    ];
-
-    const result = calculateDensity(bullets);
-
-    expect(result.totalBullets).toBe(3);
-    expect(result.bulletsWithMetrics).toBe(0);
-    expect(result.density).toBe(0);
-  });
-
-  it('should return 100% density when all bullets have metrics', () => {
-    const bullets = [
-      'Increased sales by 50%',
-      'Managed team of 10 people',
-      'Saved $25,000 annually',
-    ];
-
-    const result = calculateDensity(bullets);
-
-    expect(result.totalBullets).toBe(3);
-    expect(result.bulletsWithMetrics).toBe(3);
-    expect(result.density).toBe(100);
-  });
-
-  it('should calculate correct percentage for mixed bullets (AC2 test case)', () => {
-    const bullets = [
-      'Increased revenue by $100k',
-      'Managed team of 5',
-      'Improved efficiency by 25%',
-      'Led project implementation', // No metrics
-      'Reduced costs by $50k',
-      'Completed in 6 months', // Has metrics (timeUnits)
-      'Achieved 95% customer satisfaction',
-      'Streamlined processes by 30%',
-      'No metrics here', // No metrics
-      'Handled 200 customer requests', // Has metrics
-    ];
-
-    const result = calculateDensity(bullets);
-
-    expect(result.totalBullets).toBe(10);
-    expect(result.bulletsWithMetrics).toBe(8);
-    expect(result.density).toBe(80);
-  });
-
-  it('should categorize metrics by type', () => {
-    const bullets = [
-      'Saved $100k',
-      'Improved by 25%',
-      'Managed 10 people',
-      'Completed in 3 months',
-    ];
-
-    const result = calculateDensity(bullets);
-
-    expect(result.byCategory.currency).toBe(1);
-    expect(result.byCategory.percentages).toBe(1);
-    expect(result.byCategory.numbers).toBe(1); // "10 people" - "3 months" is in timeUnits
-    expect(result.byCategory.timeUnits).toBe(1);
-  });
-
-  it('should handle empty array', () => {
-    const result = calculateDensity([]);
-
-    expect(result.totalBullets).toBe(0);
-    expect(result.bulletsWithMetrics).toBe(0);
-    expect(result.density).toBe(0);
-  });
-});
-
-describe('getDensityCategory', () => {
-  it('should return "low" for density below 50%', () => {
-    expect(getDensityCategory(0)).toBe('low');
-    expect(getDensityCategory(30)).toBe('low');
-    expect(getDensityCategory(49)).toBe('low');
-  });
-
-  it('should return "moderate" for density between 50% and 79%', () => {
-    expect(getDensityCategory(50)).toBe('moderate');
-    expect(getDensityCategory(65)).toBe('moderate');
-    expect(getDensityCategory(79)).toBe('moderate');
-  });
-
-  it('should return "strong" for density 80% and above', () => {
-    expect(getDensityCategory(80)).toBe('strong');
-    expect(getDensityCategory(90)).toBe('strong');
-    expect(getDensityCategory(100)).toBe('strong');
-  });
-});
+    it('should handle real-world resume text', () => {
+      const resumeText = `
+        • Architected and deployed microservices platform serving 1M+ users
+        • Led team of 8 engineers across 3 product areas
+        • Reduced API response time by 60% through optimization
+        • Implemented CI/CD pipeline, increasing deployment frequency by 5x
+        • Mentored 5 junior developers and conducted code reviews
+        • Collaborated with product managers on feature prioritization
+      `
+      // Should detect reasonable quantification in real-world text
+      const density = calculateQuantificationDensity(resumeText)
+      expect(density).toBeGreaterThanOrEqual(50) // At least half quantified
+      expect(density).toBeLessThanOrEqual(100)
+    })
+  })
+})

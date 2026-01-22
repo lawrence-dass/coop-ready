@@ -4,7 +4,11 @@
  * Generates prompts for AI-powered bullet point rewrites.
  *
  * @see Story 5.1: Bullet Point Rewrite Generation
+ * @see Story 9.2: Inference-Based Suggestion Calibration
  */
+
+import type { CalibrationContext } from './calibration-context';
+import { buildCalibrationInstructions } from './calibration-context';
 
 /**
  * User profile for context-aware rewrite generation
@@ -24,22 +28,31 @@ export interface UserProfile {
  * - Preserves honesty while maximizing impact
  * - Aligns with job description keywords
  * - Provides reasoning for transparency
+ * - Story 9.2: Adapts to calibration mode and experience level
  *
  * @param bulletPoints - Array of original bullet points to rewrite
  * @param userProfile - User's experience level and context
  * @param jdKeywords - Keywords from job description for alignment
+ * @param calibration - Optional calibration context for mode-aware suggestions
  * @returns Formatted prompt string
  */
 export function createBulletRewritePrompt(
   bulletPoints: string[],
   userProfile: UserProfile,
-  jdKeywords: string[]
+  jdKeywords: string[],
+  calibration?: CalibrationContext
 ): string {
   const contextGuidance = userProfile.isStudent
     ? "For academic projects and coursework, translate academic achievements into professional language that technical hiring managers understand. Frame coursework as practical experience and emphasize technical skills demonstrated."
     : "Focus on business impact, metrics, and technical achievement for a professional audience. Emphasize leadership, scale, and measurable outcomes."
 
+  // Story 9.2: Build calibration-aware instructions
+  const calibrationInstructions = calibration
+    ? `\n\n${buildCalibrationInstructions(calibration)}\n`
+    : '';
+
   return `You are an expert resume writer specializing in ATS optimization and impact maximization.
+${calibrationInstructions}
 
 Given the following experience bullet points, generate improved rewrites that:
 1. Add specific metrics, percentages, or quantifiable outcomes (when appropriate)

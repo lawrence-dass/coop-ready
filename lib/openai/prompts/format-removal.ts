@@ -1,20 +1,32 @@
 /**
  * Format and content removal analysis prompt for OpenAI
  * Analyzes resume for prohibited content, format issues, and content relevance
+ *
+ * Story 9.2: Inference-Based Suggestion Calibration
  */
+
+import type { CalibrationContext } from './calibration-context';
+import { buildCalibrationInstructions } from './calibration-context';
 
 export const FORMAT_AND_REMOVAL_PROMPT = (
   resumeContent: string,
   detectedFields: string[],
   experienceYears: number,
   targetRole: string,
-  isInternationalStudent: boolean = false
+  isInternationalStudent: boolean = false,
+  calibration?: CalibrationContext
 ) => {
   const internationalContext = isInternationalStudent
     ? "\n\nNote: This is an international student. Be especially sensitive about visa status, work authorization status - these should be flagged for removal due to bias/legal concerns."
     : "";
 
+  // Story 9.2: Build calibration-aware instructions
+  const calibrationInstructions = calibration
+    ? `\n\n${buildCalibrationInstructions(calibration)}\n`
+    : '';
+
   return `You are an expert in North American resume standards and ATS optimization. Your task is to identify format and content that should be removed or improved.
+${calibrationInstructions}
 
 RESUME ANALYSIS CONTEXT:
 - Experience Level: ${experienceYears} years
