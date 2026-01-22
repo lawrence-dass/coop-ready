@@ -112,6 +112,7 @@ const generateActionVerbAndQuantificationSchema = z.object({
   scanId: z.string().uuid(),
   bulletPoints: z.array(z.string()).min(1),
   achievementTypes: z.array(z.string()).optional(), // defaults to 'general'
+  targetRole: z.string().optional(), // Story 9.4: target role for context prioritization
 })
 
 /**
@@ -663,7 +664,7 @@ export async function generateActionVerbAndQuantificationSuggestions(
     }
   }
 
-  const { scanId, bulletPoints, achievementTypes = [] } = parsed.data
+  const { scanId, bulletPoints, achievementTypes = [], targetRole } = parsed.data
 
   try {
     // Pad achievement types with 'general' if not enough provided
@@ -695,7 +696,8 @@ export async function generateActionVerbAndQuantificationSuggestions(
     console.log('[generateActionVerbAndQuantificationSuggestions] Building prompt...')
 
     // Create prompt using action verb and quantification template (with optional calibration)
-    const prompt = createActionVerbAndQuantificationPrompt(bulletPoints, types, calibrationContext)
+    // Story 9.4: Pass targetRole for context-aware metric prioritization
+    const prompt = createActionVerbAndQuantificationPrompt(bulletPoints, types, calibrationContext, targetRole)
 
     console.log('[generateActionVerbAndQuantificationSuggestions] Calling OpenAI API...')
 

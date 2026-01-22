@@ -14,6 +14,7 @@ ADD COLUMN score_breakdown JSONB;
 COMMENT ON COLUMN scans.score_breakdown IS 'Detailed score breakdown with 5 categories (V2) or 4 categories (legacy). Structure: { overall: number, categories: { keywordAlignment, contentRelevance, quantificationImpact, formatStructure, skillsCoverage } }';
 
 -- Create index for querying by overall score in breakdown (optional optimization)
+-- Using CAST syntax for Supabase compatibility
 CREATE INDEX idx_scans_score_breakdown_overall
-ON scans ((score_breakdown->>'overall')::int)
+ON scans (CAST(score_breakdown->>'overall' AS integer))
 WHERE score_breakdown IS NOT NULL;

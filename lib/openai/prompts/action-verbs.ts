@@ -5,11 +5,15 @@
  *
  * @see Story 5.3: Action Verb & Quantification Suggestions
  * @see Story 9.2: Inference-Based Suggestion Calibration
+ * @see Story 9.4: Context-Aware Metric Prompts
  */
 
 import { STRONG_VERBS_BY_CATEGORY, WEAK_VERBS } from "@/lib/validations/verbs";
 import type { CalibrationContext } from './calibration-context';
 import { buildCalibrationInstructions } from './calibration-context';
+import { classifyContext } from '@/lib/utils/contextDetector';
+import { getContextPrompt, getMetricTemplate } from '@/lib/data/metricExamples';
+import { prioritizeContextByRole, getScaleAdjustmentForRole } from '@/lib/utils/roleToContextMapping';
 
 /**
  * Create action verb and quantification analysis prompt
@@ -24,12 +28,14 @@ import { buildCalibrationInstructions } from './calibration-context';
  * @param bulletPoints - Array of bullet points to analyze
  * @param achievementTypes - Array of achievement classifications (performance, team, scaling, etc.)
  * @param calibration - Optional calibration context for mode-aware suggestions
- * @returns Formatted prompt string
+ * @param targetRole - Optional target role for context prioritization (Story 9.4)
+ * @returns Formatted prompt string with context-aware metric guidance
  */
 export function createActionVerbAndQuantificationPrompt(
   bulletPoints: string[],
   achievementTypes: string[],
-  calibration?: CalibrationContext
+  calibration?: CalibrationContext,
+  targetRole?: string
 ): string {
   const verbCategories = Object.entries(STRONG_VERBS_BY_CATEGORY)
     .map(([category, verbs]) => `${category}: ${verbs.join(", ")}`)
@@ -39,6 +45,30 @@ export function createActionVerbAndQuantificationPrompt(
   const calibrationInstructions = calibration
     ? `\n\n${buildCalibrationInstructions(calibration)}\n`
     : '';
+
+  // Story 9.4: Detect context for each bullet and build context-aware prompts
+  // Use targetRole to prioritize context when bullet has no detected context
+  const bulletContexts = bulletPoints.map(bp => classifyContext(bp));
+  const bulletsWithContext = bulletPoints.map((bp, i) => {
+    const bulletContext = bulletContexts[i];
+    // Prioritize context based on target role (AC1, AC2 - role-based prioritization)
+    const prioritizedContext = targetRole
+      ? prioritizeContextByRole(bulletContext.primaryContext, targetRole)
+      : bulletContext.primaryContext;
+
+    // Get scale adjustment for metric examples based on role seniority
+    const scaleMultiplier = targetRole
+      ? getScaleAdjustmentForRole(prioritizedContext, targetRole)
+      : 1;
+
+    // Build context prompt with scale-aware guidance
+    const contextPrompt = getContextPrompt(prioritizedContext);
+    const scaleNote = scaleMultiplier > 1
+      ? ` (Use ${scaleMultiplier}x scale for ${targetRole} level metrics)`
+      : '';
+
+    return `${i + 1}. ${bp}\n   Achievement Type: ${achievementTypes[i] || "general"}\n   Context: ${prioritizedContext}\n   Metric Guidance: ${contextPrompt}${scaleNote}`;
+  }).join("\n\n");
 
   return `You are an expert resume writer specializing in action verbs and achievement quantification.
 ${calibrationInstructions}
@@ -53,7 +83,7 @@ ${verbCategories}
 Weak Verbs to Replace: ${WEAK_VERBS.map(v => `"${v}"`).join(", ")}
 
 Bullet Points to Analyze:
-${bulletPoints.map((bp, i) => `${i + 1}. ${bp}\n   Achievement Type: ${achievementTypes[i] || "general"}`).join("\n\n")}
+${bulletsWithContext}
 
 For each bullet point, respond with:
 
@@ -66,14 +96,10 @@ For each bullet point, respond with:
 2. QUANTIFICATION SUGGESTION (if applicable):
    - Only suggest if the bullet lacks specific numbers or metrics
    - If it already has metrics, skip this suggestion
-   - Provide contextual prompts based on achievement type:
-     * performance: "Consider adding: percentage improvement, time saved, users impacted"
-     * scaling: "Consider adding: number of users, data volume, deployment scale"
-     * savings: "Consider adding: cost savings percentage, time saved per unit"
-     * team: "Consider adding: team size, scope, impact"
-     * delivery: "Consider adding: timeline, scope, complexity metrics"
-     * general: "Consider adding: specific numbers or metrics relevant to this achievement"
-   - Explain why the metric matters for impact
+   - Use the context-specific Metric Guidance provided for each bullet
+   - The context (financial, tech, leadership, competitive, scale) determines which metrics are most relevant
+   - Include specific examples from the Metric Guidance in your suggestions
+   - Explain why the metric matters for impact in this specific context
 
 Respond as valid JSON:
 {

@@ -2,8 +2,9 @@
 
 **Epic:** Epic 9 - Logic Refinement & Scoring Enhancement
 **Story Key:** 9-4-context-aware-metric-prompts
-**Status:** ready-for-dev
+**Status:** done
 **Created:** 2026-01-22
+**Completed:** 2026-01-22
 **Priority:** High
 **Dependencies:** Story 9.1 (ATS Scoring) - COMPLETED ✓, Story 9.2 (Calibration) - COMPLETED ✓
 
@@ -100,57 +101,57 @@ Different resume contexts require different metrics to be compelling. A finance 
 
 ## Tasks & Subtasks
 
-- [ ] **Task 1: Create Context Detection Utility** (AC: 1, 2, 3, 4, 5)
-  - [ ] 1.1 Create `lib/utils/contextDetector.ts` file
-  - [ ] 1.2 Implement `detectFinancialContext()` function
-  - [ ] 1.3 Implement `detectTechContext()` function
-  - [ ] 1.4 Implement `detectLeadershipContext()` function
-  - [ ] 1.5 Implement `detectCompetitiveContext()` function
-  - [ ] 1.6 Implement `detectScaleContext()` function
-  - [ ] 1.7 Implement `classifyContext()` orchestrator (returns primary context)
-  - [ ] 1.8 Write unit tests for context detection (20+ tests)
-  - [ ] 1.9 Test keyword matching (case-insensitive, variations)
-  - [ ] 1.10 Test edge cases (multiple contexts, none detected)
+- [x] **Task 1: Create Context Detection Utility** (AC: 1, 2, 3, 4, 5)
+  - [x] 1.1 Create `lib/utils/contextDetector.ts` file
+  - [x] 1.2 Implement `detectFinancialContext()` function
+  - [x] 1.3 Implement `detectTechContext()` function
+  - [x] 1.4 Implement `detectLeadershipContext()` function
+  - [x] 1.5 Implement `detectCompetitiveContext()` function
+  - [x] 1.6 Implement `detectScaleContext()` function
+  - [x] 1.7 Implement `classifyContext()` orchestrator (returns primary context)
+  - [x] 1.8 Write unit tests for context detection (20+ tests)
+  - [x] 1.9 Test keyword matching (case-insensitive, variations)
+  - [x] 1.10 Test edge cases (multiple contexts, none detected)
 
-- [ ] **Task 2: Create Metric Example Templates** (AC: 1, 2, 3, 4, 5)
-  - [ ] 2.1 Create `lib/data/metricExamples.ts`
-  - [ ] 2.2 Define financial metric templates (5+ types)
-  - [ ] 2.3 Define tech metric templates (5+ types)
-  - [ ] 2.4 Define leadership metric templates (5+ types)
-  - [ ] 2.5 Define competitive metric templates (3+ types)
-  - [ ] 2.6 Define scale/scope metric templates (5+ types)
-  - [ ] 2.7 Include realistic examples per context
-  - [ ] 2.8 Unit tests for template lookup (5+ tests)
+- [x] **Task 2: Create Metric Example Templates** (AC: 1, 2, 3, 4, 5)
+  - [x] 2.1 Create `lib/data/metricExamples.ts`
+  - [x] 2.2 Define financial metric templates (5+ types)
+  - [x] 2.3 Define tech metric templates (5+ types)
+  - [x] 2.4 Define leadership metric templates (5+ types)
+  - [x] 2.5 Define competitive metric templates (3+ types)
+  - [x] 2.6 Define scale/scope metric templates (5+ types)
+  - [x] 2.7 Include realistic examples per context
+  - [x] 2.8 Unit tests for template lookup (5+ tests)
 
-- [ ] **Task 3: Update Quantification Prompt Generator** (AC: 1, 2, 3, 4, 5)
-  - [ ] 3.1 Update `lib/openai/prompts/action-verbs.ts`
-  - [ ] 3.2 Import `contextDetector` utilities
-  - [ ] 3.3 Pass bullet content to detector
-  - [ ] 3.4 Get context classification
-  - [ ] 3.5 Use context to select metric examples
-  - [ ] 3.6 Include context in prompt instruction
-  - [ ] 3.7 Update prompt template to leverage context
-  - [ ] 3.8 Unit tests for context-aware prompts (8+ tests)
+- [x] **Task 3: Update Quantification Prompt Generator** (AC: 1, 2, 3, 4, 5)
+  - [x] 3.1 Update `lib/openai/prompts/action-verbs.ts`
+  - [x] 3.2 Import `contextDetector` utilities
+  - [x] 3.3 Pass bullet content to detector
+  - [x] 3.4 Get context classification
+  - [x] 3.5 Use context to select metric examples
+  - [x] 3.6 Include context in prompt instruction
+  - [x] 3.7 Update prompt template to leverage context
+  - [x] 3.8 Unit tests for context-aware prompts (8+ tests)
 
-- [ ] **Task 4: Integrate User Target Role Context** (AC: 1, 2, 3, 4, 5)
-  - [ ] 4.1 Update suggestion generation action to pass targetRole
-  - [ ] 4.2 Create `roleToContextMapping()` utility
-  - [ ] 4.3 Map finance-related roles to financial context
-  - [ ] 4.4 Map tech-related roles to tech context
-  - [ ] 4.5 Map leadership-related roles to leadership context
-  - [ ] 4.6 Prioritize context based on role when both detected
-  - [ ] 4.7 Unit tests for role mapping (6+ tests)
+- [x] **Task 4: Integrate User Target Role Context** (AC: 1, 2, 3, 4, 5)
+  - [x] 4.1 Update suggestion generation action to pass targetRole
+  - [x] 4.2 Create `roleToContextMapping()` utility
+  - [x] 4.3 Map finance-related roles to financial context
+  - [x] 4.4 Map tech-related roles to tech context
+  - [x] 4.5 Map leadership-related roles to leadership context
+  - [x] 4.6 Prioritize context based on role when both detected
+  - [x] 4.7 Unit tests for role mapping (6+ tests)
 
-- [ ] **Task 5: Create Comprehensive Tests** (AC: 1, 2, 3, 4, 5)
-  - [ ] 5.1 Context detection unit tests (20+ tests across all types)
-  - [ ] 5.2 Integration tests: bullet + context → correct prompts
-  - [ ] 5.3 Test all financial keywords and variations
-  - [ ] 5.4 Test all tech keywords and variations
-  - [ ] 5.5 Test all leadership keywords and variations
-  - [ ] 5.6 Test edge cases (typos, abbreviations, mixed contexts)
-  - [ ] 5.7 Test role-based prioritization
-  - [ ] 5.8 Test fallback to generic metrics when no context detected
-  - [ ] 5.9 End-to-end: bullet input → context detection → quantification prompts
+- [x] **Task 5: Create Comprehensive Tests** (AC: 1, 2, 3, 4, 5)
+  - [x] 5.1 Context detection unit tests (20+ tests across all types)
+  - [x] 5.2 Integration tests: bullet + context → correct prompts
+  - [x] 5.3 Test all financial keywords and variations
+  - [x] 5.4 Test all tech keywords and variations
+  - [x] 5.5 Test all leadership keywords and variations
+  - [x] 5.6 Test edge cases (typos, abbreviations, mixed contexts)
+  - [x] 5.7 Test role-based prioritization
+  - [x] 5.8 Test fallback to generic metrics when no context detected
+  - [x] 5.9 End-to-end: bullet input → context detection → quantification prompts
 
 ---
 
@@ -199,16 +200,16 @@ Different resume contexts require different metrics to be compelling. A finance 
 
 ## Definition of Done
 
-- [ ] All acceptance criteria pass
-- [ ] 20+ context detection unit tests passing
-- [ ] 10+ integration tests passing
-- [ ] Context correctly detected for all 5 categories
-- [ ] Metric examples are realistic and industry-appropriate
-- [ ] Target role integration working correctly
-- [ ] Prompts verified to use context-aware examples
-- [ ] No console errors or TypeScript issues
-- [ ] Code review approved
-- [ ] Story status updated to "done" in sprint-status.yaml
+- [x] All acceptance criteria pass
+- [x] 20+ context detection unit tests passing (48 tests)
+- [x] 10+ integration tests passing (17 prompt integration tests)
+- [x] Context correctly detected for all 5 categories
+- [x] Metric examples are realistic and industry-appropriate
+- [x] Target role integration working correctly (fixed in code review)
+- [x] Prompts verified to use context-aware examples
+- [x] No console errors or TypeScript issues
+- [x] Code review approved
+- [x] Story status updated to "done" in sprint-status.yaml
 
 ---
 
@@ -246,5 +247,121 @@ Different resume contexts require different metrics to be compelling. A finance 
 - Should financial examples use different scales based on industry (healthcare vs. tech)?
 - How should we handle bullets with no detected context - use generic scale context?
 - Should we cache context detection per scan to avoid re-analyzing same bullets?
+
+---
+
+## Dev Agent Record
+
+### Implementation Plan
+Story 9.4 implements context-aware metric prompts by detecting bullet context (financial, tech, leadership, competitive, scale) and providing relevant quantification examples based on detected context and user's target role.
+
+**Architecture Approach:**
+1. Context Detection (`lib/utils/contextDetector.ts`) - Detects primary bullet context via keyword matching
+2. Metric Templates (`lib/data/metricExamples.ts`) - Provides context-specific example metrics and prompts
+3. Prompt Integration (`lib/openai/prompts/action-verbs.ts`) - Injects context-aware guidance into quantification prompts
+4. Role Mapping (`lib/utils/roleToContextMapping.ts`) - Maps target roles to preferred contexts and scales examples appropriately
+
+### Debug Log
+- Initial context detection used simple keyword matching without prioritization - updated to priority-based classification
+- Scale keyword list was missing "weekly" and "monthly" variants - added for broader detection
+- Role mapping initially matched "Engineering Manager" as tech instead of leadership - fixed by counting keyword matches across contexts
+- Executive detection incorrectly matched "director" (contains "cto") - fixed with word boundary regex
+- All 87 new tests passing, 1057 total tests passing (22 pre-existing failures in PDF rendering)
+
+### Code Review Fixes (2026-01-22)
+**Reviewer:** Claude Opus 4.5 (Adversarial Review)
+**Issues Found:** 1 CRITICAL, 2 HIGH, 2 MEDIUM
+
+**CRITICAL FIX: Task 4 Integration - roleToContextMapping was dead code**
+- Imported `prioritizeContextByRole` and `getScaleAdjustmentForRole` into `action-verbs.ts`
+- Added `targetRole?: string` parameter to `createActionVerbAndQuantificationPrompt()`
+- Implemented context prioritization based on target role when bullet has no detected context
+- Added scale adjustment notes for senior/executive roles in prompts
+
+**HIGH FIX: suggestions.ts not passing targetRole**
+- Added `targetRole` to `generateActionVerbAndQuantificationSchema`
+- Pass `targetRole` from parsed input to prompt generator
+
+**MEDIUM FIX: False positive keyword matching**
+- Replaced `.includes()` with word boundary regex (`\b${keyword}\b`)
+- Prevents "settled" matching "led", "bestseller" matching "best", etc.
+- Added `containsWholeWord()` helper function
+
+**MEDIUM FIX: Test coverage for role integration**
+- Added 11 new tests for false positive rejection (word boundary)
+- Added 8 new tests for target role integration in prompts
+- Total tests: 106 (was 87)
+
+### Completion Notes
+✅ **All Tasks Completed (5/5)**
+
+**Task 1: Context Detection Utility**
+- Created `contextDetector.ts` with 5 context detectors + classifier
+- 37 unit tests covering all contexts, edge cases, confidence scoring
+
+**Task 2: Metric Example Templates**
+- Created `metricExamples.ts` with templates for all 5 contexts
+- Industry-appropriate scales (finance: $100K-$10M+, tech: 10K-10M+ users, leadership: 3-50+ reports)
+- 18 unit tests for template lookup and prompt generation
+
+**Task 3: Prompt Generator Updates**
+- Updated `action-verbs.ts` to detect context per bullet
+- Injects context-specific metric guidance into AI prompts
+- 9 unit tests for context-aware prompt generation
+
+**Task 4: Role Context Integration**
+- Created `roleToContextMapping.ts` for role→context mapping
+- Maps 50+ role keywords to financial/tech/leadership contexts
+- Scale adjustment based on seniority (entry/senior/executive)
+- 23 unit tests for role mapping and prioritization
+
+**Task 5: Comprehensive Testing**
+- 106 total tests across all components (after code review fixes)
+- Coverage: context detection, metric templates, prompts, role mapping
+- Integration tests: bullet → context → prompts end-to-end
+- False positive rejection tests: word boundary matching
+- Role integration tests: targetRole parameter and prioritization
+
+**Key Design Decisions:**
+- Bullet context takes priority over role context (more specific)
+- Word boundary regex for c-suite detection (avoid "director" matching "cto")
+- Count-based role matching to handle compound roles correctly
+- Confidence scoring: 1.0 for single context, 0.7 for multiple contexts
+
+---
+
+## File List
+
+**New Files:**
+- `lib/utils/contextDetector.ts` - Context detection utility with word boundary matching
+- `lib/data/metricExamples.ts` - Metric templates by context
+- `lib/utils/roleToContextMapping.ts` - Role to context mapping
+- `tests/unit/lib/utils/contextDetector.test.ts` - Context detection tests (48 tests - including 11 false positive rejection tests)
+- `tests/unit/lib/data/metricExamples.test.ts` - Metric template tests (18 tests)
+- `tests/unit/lib/openai/prompts/action-verbs-context.test.ts` - Prompt integration tests (17 tests - including 8 role integration tests)
+- `tests/unit/lib/utils/roleToContextMapping.test.ts` - Role mapping tests (23 tests)
+
+**Modified Files:**
+- `lib/openai/prompts/action-verbs.ts` - Added context detection, metric guidance injection, targetRole parameter, and role-based prioritization
+- `actions/suggestions.ts` - Added targetRole to schema and pass to prompt generator
+
+---
+
+## Change Log
+
+**2026-01-22:** Story 9.4 - Context-Aware Metric Prompts - COMPLETED
+- Implemented context detection for financial, tech, leadership, competitive, and scale contexts
+- Created metric example templates with industry-appropriate scales
+- Updated quantification prompt generator to inject context-specific guidance
+- Added role-to-context mapping with seniority-based scale adjustment
+- Added 87 comprehensive tests (100% passing)
+- All acceptance criteria satisfied
+
+**2026-01-22:** Code Review Fixes Applied
+- Fixed CRITICAL: Integrated roleToContextMapping into action-verbs.ts (was dead code)
+- Fixed HIGH: Added targetRole parameter to prompt generator and suggestions.ts schema
+- Fixed MEDIUM: Replaced substring matching with word boundary regex to prevent false positives
+- Fixed MEDIUM: Added 19 new tests for false positive rejection and role integration
+- Total tests now: 106 (was 87)
 
 ---
