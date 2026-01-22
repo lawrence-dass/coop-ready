@@ -2,10 +2,35 @@
 
 **Epic:** Epic 9 - Logic Refinement & Scoring Enhancement
 **Story Key:** 9-2-inference-based-suggestion-calibration
-**Status:** ready-for-dev
+**Status:** in-progress
 **Created:** 2026-01-22
 **Priority:** High
 **Dependencies:** Story 9.1 (ATS Scoring Recalibration) - COMPLETED ✓
+
+## Development Progress
+
+### Completed Tasks
+✅ **Task 1: Create Suggestion Calibrator Utility**
+- Created `lib/utils/suggestionCalibrator.ts` with full calibration logic
+- 35 unit tests passing (getSuggestionMode, getTargetSuggestionCount, getFocusAreas, urgency boosts, etc.)
+- Supports all 4 modes: Transformation, Improvement, Optimization, Validation
+- Includes validation, descriptions, and reasoning generation
+
+✅ **Task 4: Update Suggestion Type Definitions**
+- Created `lib/types/suggestions.ts` with V1 & V2 suggestion structures
+- Type guards for backward compatibility (isCalibrationSuggestion, isLegacySuggestion)
+- 14 unit tests passing
+- Complete validation functions for urgency, types, and sections
+
+### In Progress
+🔄 **Task 2: Update Suggestion Generation Action**
+- Next: Integrate calibrator into actions/suggestions.ts
+- Will pass calibration context to all suggestion generators
+
+### Pending Tasks
+⏳ **Task 3: Update Suggestion Prompts** - Will use calibration context
+⏳ **Task 5: Update UI** - Display calibration info to user
+⏳ **Task 6: Integration Tests** - End-to-end scenarios
 
 ---
 
