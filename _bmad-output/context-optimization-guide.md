@@ -323,3 +323,21 @@ Epic {N} is complete. Consider running `/context-optimize archive` to:
 **Files Modified**:
 - `_bmad/bmm/workflows/4-implementation/retrospective/instructions.md` (added reminder)
 - `_bmad/bmm/workflows/4-implementation/code-review/instructions.xml` (added context health check)
+
+### 2026-01-21: Full Optimization (Epics 3, 4, 8)
+
+**Changes**:
+1. Archived Epic 3 artifacts (atdd-checklist-3-1, atdd-checklist-3-4, traceability, manual-testing)
+2. Archived Epic 4 artifacts (traceability matrix)
+3. Archived Epic 8 artifacts (traceability matrix)
+4. Moved Epic 1 & 2 traceability files to archive
+5. Updated CLAUDE.md with correct epic status
+
+**Results**:
+- Implementation artifacts: 1.0M → 844K (16% reduction)
+- Archive: 224K → 488K (+264K archived)
+- CLAUDE.md updated: Epic 8 marked done, Epic 5 in-progress
+- Total active context reduced by ~255K
+
+**Pending Manual Actions**:
+- [ ] Consider sharding prd.md (577 lines, threshold 500)
