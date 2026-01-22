@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Project guidance for Claude Code. Keep this file minimal - detailed docs are in `_bmad-output/`.
+Project guidance for Claude Code. Detailed docs in `_bmad-output/`.
 
 ## Project: CoopReady
 
@@ -8,56 +8,51 @@ AI-powered resume optimization for students and career changers.
 
 ## Current State
 
-- **Phase**: Implementation (6 of 9 epics complete)
-- **Done**: Epic 1, 2, 3, 4, 5, 6, 8 (42 stories)
-- **Ready for dev**: Epic 7 (Subscription & Billing) or Epic 9 (Logic Refinement)
-- **Backlog**: Epic 7, 9
+- **Phase**: Implementation (7 of 9 epics complete)
+- **Done**: Epic 1-6, 8 (38 stories, 150+ tests)
+- **Backlog**: Epic 7 (Billing), Epic 9 (AI Refinement)
 
 ## Quick Commands
 
 ```bash
-# Story creation (use haiku - 70% cost savings)
-/bmad:bmm:workflows:create-story --model haiku
-
-# Development (use sonnet - best balance for complex tasks)
-/bmad:bmm:workflows:dev-story --model sonnet
-
-# Code review (use opus - comprehensive analysis)
-/bmad:bmm:workflows:code-review --model opus
-
-# Session management
-/session-start    # Beginning of session
-/session-end      # Before ending
+/bmad:bmm:workflows:create-story   # Create next story
+/bmad:bmm:workflows:dev-story      # Implement story
+/bmad:bmm:workflows:code-review    # Review code
+/session-start                      # Resume work
+/session-end                        # Save state
 ```
 
-## Completed Features (Epic 1-6)
+## What's Built
 
-✅ User authentication, onboarding, profile management
-✅ Resume upload, parsing, ATS analysis with scoring
-✅ Smart suggestions (bullets, skills, removal flags)
-✅ Suggestion review and acceptance workflow
-✅ Resume export: PDF (ATS-friendly) and DOCX (editable)
+Complete user journey: **Upload → Analyze → Suggest → Accept/Reject → Merge → Export → Download**
 
-**Current**: Complete user journey from upload → optimize → export → download (150+ tests)
+- Auth, onboarding, profile management
+- Resume upload, parsing, ATS scoring
+- AI suggestions with accept/reject workflow
+- PDF & DOCX export with format selection
 
 ## Key Files
 
 | Purpose | Location |
 |---------|----------|
-| Project rules | `_bmad-output/project-context.md` |
+| Rules & patterns | `_bmad-output/project-context.md` |
 | Architecture | `_bmad-output/planning-artifacts/architecture.md` |
 | Sprint status | `_bmad-output/implementation-artifacts/sprint-status.yaml` |
-| Stories | `_bmad-output/implementation-artifacts/*.md` |
 
 ## Tech Stack
 
-Next.js 14 + TypeScript + Tailwind + shadcn/ui + Supabase + OpenAI + Stripe + Vercel
+Next.js 14 · TypeScript · Tailwind · shadcn/ui · Supabase · OpenAI · Stripe · Vercel
 
-See `project-context.md` for patterns and conventions.
+## Next Up
 
-## Next: Epic 7 or Epic 9
+| Epic | Stories | Focus |
+|------|---------|-------|
+| 7 | 6 | Stripe billing, rate limiting, subscriptions |
+| 9 | 4 | ATS recalibration, better AI suggestions |
 
-- **Epic 7** (6 stories): Stripe, billing, rate limiting, subscriptions
-- **Epic 9** (4 stories): ATS recalibration, better suggestions, natural writing
+## BMAD Structure
 
-**Session Context**: `.claude/handoff/CURRENT.md` - Latest handoff notes and epic status
+```
+_bmad/bmm/           # Workflows, agents
+_bmad-output/        # PRD, architecture, stories, sprint-status, archive
+```
