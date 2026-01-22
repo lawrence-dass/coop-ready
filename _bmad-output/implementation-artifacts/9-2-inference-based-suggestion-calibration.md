@@ -176,81 +176,81 @@ This improves user experience and increases suggestion acceptance rates.
 
 ## Tasks & Subtasks
 
-- [ ] **Task 1: Create Suggestion Calibrator Utility** (AC: 1, 2, 3)
-  - [ ] 1.1 Create `lib/utils/suggestionCalibrator.ts` file
-  - [ ] 1.2 Implement `getSuggestionMode()` for ATS score ranges
-  - [ ] 1.3 Implement `getTargetSuggestionCount()` per mode
-  - [ ] 1.4 Implement `getFocusAreasByExperience()` helper
-  - [ ] 1.5 Implement `getKeywordUrgencyBoost()` function
-  - [ ] 1.6 Implement `getQuantificationUrgencyBoost()` function
-  - [ ] 1.7 Implement `calibrateSuggestions()` main orchestrator
-  - [ ] 1.8 Add `validateCalibrationSignals()` validation
-  - [ ] 1.9 Write unit tests (8+ test scenarios)
-  - [ ] 1.10 Test all mode transitions (0-100 ATS scores)
+- [x] **Task 1: Create Suggestion Calibrator Utility** (AC: 1, 2, 3) ✅
+  - [x] 1.1 Create `lib/utils/suggestionCalibrator.ts` file
+  - [x] 1.2 Implement `getSuggestionMode()` for ATS score ranges
+  - [x] 1.3 Implement `getTargetSuggestionCount()` per mode
+  - [x] 1.4 Implement `getFocusAreasByExperience()` helper
+  - [x] 1.5 Implement `getKeywordUrgencyBoost()` function
+  - [x] 1.6 Implement `getQuantificationUrgencyBoost()` function
+  - [x] 1.7 Implement `calibrateSuggestions()` main orchestrator
+  - [x] 1.8 Add `validateCalibrationSignals()` validation
+  - [x] 1.9 Write unit tests (8+ test scenarios)
+  - [x] 1.10 Test all mode transitions (0-100 ATS scores)
 
-- [ ] **Task 2: Update Suggestion Type Definitions** (AC: 4)
-  - [ ] 2.1 Create `lib/types/suggestions.ts` file
-  - [ ] 2.2 Define `CalibrationSuggestion` type with metadata
-  - [ ] 2.3 Define `LegacySuggestion` type for backward compatibility
-  - [ ] 2.4 Add `SuggestionMode` and `ExperienceLevel` types
-  - [ ] 2.5 Create `InferenceSignals` interface
-  - [ ] 2.6 Implement type guards: `isCalibrationSuggestion()`, `isLegacySuggestion()`
-  - [ ] 2.7 Add validation functions for urgency, types, sections
-  - [ ] 2.8 Write type validation tests (8+ tests)
-  - [ ] 2.9 Ensure backward compatibility with V1 suggestions
+- [x] **Task 2: Update Suggestion Type Definitions** (AC: 4) ✅
+  - [x] 2.1 Create `lib/types/suggestions.ts` file
+  - [x] 2.2 Define `CalibrationSuggestion` type with metadata
+  - [x] 2.3 Define `LegacySuggestion` type for backward compatibility
+  - [x] 2.4 Add `SuggestionMode` and `ExperienceLevel` types
+  - [x] 2.5 Create `InferenceSignals` interface
+  - [x] 2.6 Implement type guards: `isCalibrationSuggestion()`, `isLegacySuggestion()`
+  - [x] 2.7 Add validation functions for urgency, types, sections
+  - [x] 2.8 Write type validation tests (8+ tests)
+  - [x] 2.9 Ensure backward compatibility with V1 suggestions
 
-- [ ] **Task 3: Update Suggestion Generation Action** (AC: 1, 2, 3, 4)
-  - [ ] 3.1 Update `actions/suggestions.ts` to import calibrator
-  - [ ] 3.2 Extract ATS score from analysis context
-  - [ ] 3.3 Extract experience level from user profile
-  - [ ] 3.4 Extract missing keywords count from analysis
-  - [ ] 3.5 Extract quantification density from analysis (from 9.1)
-  - [ ] 3.6 Call `calibrateSuggestions()` with signals
-  - [ ] 3.7 Pass calibration context to all suggestion generators
-  - [ ] 3.8 Apply urgency boosts to suggestion urgency field
-  - [ ] 3.9 Add `suggestionMode` and `inferenceSignals` to suggestions
-  - [ ] 3.10 Maintain backward compatibility (old suggestions still work)
-  - [ ] 3.11 Update test mocks for new calibration fields
-  - [ ] 3.12 Integration tests with mock analysis data
+- [x] **Task 3: Update Suggestion Generation Action** (AC: 1, 2, 3, 4) ✅
+  - [x] 3.1 Update `actions/suggestions.ts` to import calibrator
+  - [x] 3.2 Extract ATS score from analysis context
+  - [x] 3.3 Extract experience level from user profile
+  - [x] 3.4 Extract missing keywords count from analysis
+  - [x] 3.5 Extract quantification density from analysis (from 9.1)
+  - [x] 3.6 Call `calibrateSuggestions()` with signals
+  - [x] 3.7 Pass calibration context to all suggestion generators
+  - [x] 3.8 Apply urgency boosts to suggestion urgency field
+  - [x] 3.9 Add `suggestionMode` and `inferenceSignals` to suggestions
+  - [x] 3.10 Maintain backward compatibility (old suggestions still work)
+  - [x] 3.11 Update test mocks for new calibration fields
+  - [x] 3.12 Integration tests with mock analysis data
 
-- [ ] **Task 4: Update Suggestion Prompts to Accept Calibration** (AC: 1, 2, 3)
-  - [ ] 4.1 Update `lib/openai/prompts/action-verbs.ts`
-  - [ ] 4.2 Update `lib/openai/prompts/bullet-rewrites.ts`
-  - [ ] 4.3 Update `lib/openai/prompts/skills-expansion.ts`
-  - [ ] 4.4 Update `lib/openai/prompts/skills.ts` (transferable skills)
-  - [ ] 4.5 Update `lib/openai/prompts/format-removal.ts`
-  - [ ] 4.6 Each prompt accepts calibration context parameter
-  - [ ] 4.7 Transformation mode: more aggressive suggestions
-  - [ ] 4.8 Improvement mode: balanced urgency mix
-  - [ ] 4.9 Optimization mode: refinement focus
-  - [ ] 4.10 Validation mode: strength-emphasizing language
-  - [ ] 4.11 Student mode: project/GPA-focused suggestions
-  - [ ] 4.12 Career changer mode: skill mapping emphasis
-  - [ ] 4.13 Experienced mode: leadership/scope emphasis
-  - [ ] 4.14 Test prompts with OpenAI API calls
+- [x] **Task 4: Update Suggestion Prompts to Accept Calibration** (AC: 1, 2, 3) ✅
+  - [x] 4.1 Update `lib/openai/prompts/action-verbs.ts`
+  - [x] 4.2 Update `lib/openai/prompts/bullet-rewrites.ts`
+  - [x] 4.3 Update `lib/openai/prompts/skills-expansion.ts`
+  - [x] 4.4 Update `lib/openai/prompts/skills.ts` (transferable skills)
+  - [x] 4.5 Update `lib/openai/prompts/format-removal.ts`
+  - [x] 4.6 Each prompt accepts calibration context parameter
+  - [x] 4.7 Transformation mode: more aggressive suggestions
+  - [x] 4.8 Improvement mode: balanced urgency mix
+  - [x] 4.9 Optimization mode: refinement focus
+  - [x] 4.10 Validation mode: strength-emphasizing language
+  - [x] 4.11 Student mode: project/GPA-focused suggestions
+  - [x] 4.12 Career changer mode: skill mapping emphasis
+  - [x] 4.13 Experienced mode: leadership/scope emphasis
+  - [x] 4.14 Test prompts with OpenAI API calls
 
-- [ ] **Task 5: Update Analysis Results Page UI** (AC: 4)
-  - [ ] 5.1 Create calibration summary card component
-  - [ ] 5.2 Display suggestion mode badge ("Transformation" / "Improvement" / etc.)
-  - [ ] 5.3 Display focus areas list
-  - [ ] 5.4 Display target suggestion count explanation
-  - [ ] 5.5 Integrate card into scan results page
-  - [ ] 5.6 Add tooltips explaining each field
-  - [ ] 5.7 Responsive design for mobile
-  - [ ] 5.8 Color coding for modes (red→green gradient)
-  - [ ] 5.9 Component tests
+- [x] **Task 5: Update Analysis Results Page UI** (AC: 4) ✅
+  - [x] 5.1 Create calibration summary card component
+  - [x] 5.2 Display suggestion mode badge ("Transformation" / "Improvement" / etc.)
+  - [x] 5.3 Display focus areas list
+  - [x] 5.4 Display target suggestion count explanation
+  - [x] 5.5 Integrate card into scan results page
+  - [x] 5.6 Add tooltips explaining each field
+  - [x] 5.7 Responsive design for mobile
+  - [x] 5.8 Color coding for modes (red→green gradient)
+  - [x] 5.9 Component tests
 
-- [ ] **Task 6: Integration Testing** (AC: 1, 2, 3, 4)
-  - [ ] 6.1 Create test scenario: Low ATS + Student
-  - [ ] 6.2 Create test scenario: Fair ATS + Career Changer
-  - [ ] 6.3 Create test scenario: Good ATS + Experienced
-  - [ ] 6.4 Create test scenario: Excellent ATS + Any level
-  - [ ] 6.5 Test 5+ keyword gaps → high urgency
-  - [ ] 6.6 Test 2-4 keyword gaps → medium urgency
-  - [ ] 6.7 Test 0-1 keyword gaps → focus shift
-  - [ ] 6.8 Test quantification density impacts
-  - [ ] 6.9 End-to-end: analysis → calibration → suggestions
-  - [ ] 6.10 Verify metadata appears in final suggestions
+- [x] **Task 6: Integration Testing** (AC: 1, 2, 3, 4) ✅
+  - [x] 6.1 Create test scenario: Low ATS + Student
+  - [x] 6.2 Create test scenario: Fair ATS + Career Changer
+  - [x] 6.3 Create test scenario: Good ATS + Experienced
+  - [x] 6.4 Create test scenario: Excellent ATS + Any level
+  - [x] 6.5 Test 5+ keyword gaps → high urgency
+  - [x] 6.6 Test 2-4 keyword gaps → medium urgency
+  - [x] 6.7 Test 0-1 keyword gaps → focus shift
+  - [x] 6.8 Test quantification density impacts
+  - [x] 6.9 End-to-end: analysis → calibration → suggestions
+  - [x] 6.10 Verify metadata appears in final suggestions
 
 ---
 
@@ -280,17 +280,17 @@ Core functions for inference calibration:
 
 ## Definition of Done
 
-- [ ] Suggestion Calibrator utility created and tested
-- [ ] Suggestion generation action updated to use calibration
-- [ ] All suggestion prompts updated to accept calibration context
-- [ ] Suggestion type includes new metadata fields
-- [ ] UI optionally displays calibration information
-- [ ] Integration tests cover all calibration scenarios
-- [ ] All acceptance criteria pass
-- [ ] No TypeScript errors or console warnings
+- [x] Suggestion Calibrator utility created and tested ✅
+- [x] Suggestion generation action updated to use calibration ✅
+- [x] All suggestion prompts updated to accept calibration context ✅
+- [x] Suggestion type includes new metadata fields ✅
+- [x] UI optionally displays calibration information ✅
+- [x] Integration tests cover all calibration scenarios ✅
+- [x] All acceptance criteria pass ✅
+- [x] No TypeScript errors or console warnings ✅
 - [ ] Code review approved (via `/bmad:bmm:workflows:code-review`)
 - [ ] Story status updated to "done" in sprint-status.yaml
-- [ ] Changes committed to `9-2-inference-based-suggestion-calibration` branch
+- [x] Changes committed to `9-2-inference-based-suggestion-calibration` branch ✅
 
 ---
 
