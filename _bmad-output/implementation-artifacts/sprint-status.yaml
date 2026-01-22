@@ -114,3 +114,11 @@ development_status:
   8-2-ci-cd-test-pipeline: done
   8-3-test-api-endpoints: done
   epic-8-retrospective: optional
+
+  # Epic 9: Logic Refinement & Scoring Enhancement (Deferred - after Epic 6)
+  epic-9: backlog
+  9-1-ats-scoring-recalibration: backlog
+  9-2-inference-based-suggestion-calibration: backlog
+  9-3-natural-writing-enforcement: backlog
+  9-4-context-aware-metric-prompts: backlog
+  epic-9-retrospective: optional
