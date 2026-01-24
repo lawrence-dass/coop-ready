@@ -19,7 +19,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 | Technology | Version | Notes |
 |------------|---------|-------|
-| Next.js | 15.x | App Router, Server Components default |
+| Next.js | 16.x | App Router, Server Components default |
 | TypeScript | 5.x | Strict mode enabled |
 | Tailwind CSS | 4.x | CSS variables theming |
 | shadcn/ui | Latest | Copy-paste component model |

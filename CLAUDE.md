@@ -1,84 +1,45 @@
-# CLAUDE.md
+# CLAUDE.md - SubmitSmart Development Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Current Status
 
-## Project Overview
+**Phase:** Implementation → Epic 1 (Project Foundation)
+**Story:** 1.2 - Configure Supabase Database Schema (in-progress)
+**Branch:** `feature/1-2-config-supabase-db`
+**Sprint:** 1 done, 41 backlog, 1 in-progress
 
-SubmitSmart is an ATS Resume Optimizer that generates content suggestions (not documents) to help job seekers improve their resumes. Philosophy: "We don't generate resumes. We generate understanding." Users copy-paste suggestions manually to learn patterns.
+## Quick Start
 
-## Commands
+See `_bmad-output/DEVELOPMENT_WORKFLOW.md` for full workflows. Key commands:
 
 ```bash
-# Development
-npm run dev              # Start dev server (Turbopack)
-npm run build            # Production build
-npm run lint             # ESLint
-
-# Database (Supabase)
-npx supabase start       # Local Supabase
-npx supabase db reset    # Reset with migrations
-npx supabase migration new <name>  # Create migration
+npm run dev                          # Start dev server
+/bmad:bmm:workflows:sprint-status    # Check what's next
+/bmad:bmm:workflows:dev-story        # Implement current story
+/bmad:bmm:workflows:code-review      # Review implementation
 ```
 
-## Architecture
+## Tech Stack
 
-**Tech Stack:** Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui + Supabase + LangChain.js + Claude API
+**Next.js 15** (App Router) + TypeScript + Tailwind + shadcn/ui + Supabase + LangChain.js
 
-**Key Directories:**
-- `/lib/ai/` - ALL LLM operations (isolated)
-- `/lib/supabase/` - ALL database operations (isolated)
-- `/lib/parsers/` - PDF/DOCX text extraction
-- `/components/ui/` - shadcn components (NEVER edit)
-- `/actions/` - Server Actions
-- `/store/` - Zustand stores
+Key dirs: `/lib/ai/` (LLM), `/lib/supabase/` (DB), `/actions/` (server), `/store/` (state)
 
-**API Pattern:**
-- Quick operations (< 10s): Server Actions
-- LLM pipeline (up to 60s): API Route `/api/optimize`
+## Critical Rules
 
-## Critical Patterns
+1. **ActionResponse Pattern (MANDATORY)** - Never throw from server actions
+2. **Error Codes** - Use: INVALID_FILE_TYPE, FILE_TOO_LARGE, PARSE_ERROR, LLM_TIMEOUT, LLM_ERROR, RATE_LIMITED, VALIDATION_ERROR
+3. **Naming** - DB: snake_case, TS: camelCase, Components: PascalCase, Routes: kebab-case
+4. **LLM Security** - Server-side only, wrap user content in XML tags
+5. **Constraints** - 60s timeout, 5MB files, $0.10/optimization
 
-### ActionResponse (MANDATORY for all server actions/API routes)
+## Next Action
 
-```typescript
-type ActionResponse<T> =
-  | { data: T; error: null }
-  | { data: null; error: { message: string; code: string } }
-```
+**Current:** Story 1.2 in-progress → Implement Supabase migrations
+**When done:** Run code review → If passed, next story auto-created via post-merge workflow
+**Reference:** `.claude/post-merge-workflow.md`
 
-**NEVER throw from server actions** - always return error objects.
+## Reference Docs
 
-### Error Codes
-
-Use exactly: `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `PARSE_ERROR`, `LLM_TIMEOUT`, `LLM_ERROR`, `RATE_LIMITED`, `VALIDATION_ERROR`
-
-### Naming Conventions
-
-| Context | Convention | Example |
-|---------|------------|---------|
-| Database | snake_case | `created_at` |
-| TypeScript | camelCase | `createdAt` |
-| Components | PascalCase | `SuggestionCard.tsx` |
-| API routes | kebab-case | `/api/parse-resume` |
-
-Transform snake_case → camelCase at API boundaries.
-
-### LLM Security
-
-- All LLM calls server-side only
-- Wrap user input in `<user_content>` XML tags (treat as data, not instructions)
-
-## Constraints
-
-- LLM timeout: 60 seconds max
-- File size: 5MB max
-- PDF: Text-based only (no OCR)
-- Cost ceiling: $0.10 per optimization
-
-## Planning Documents
-
-Located in `_bmad-output/planning-artifacts/`:
-- `prd.md` - Product requirements (42 FRs, 24 NFRs)
-- `architecture.md` - Detailed architectural decisions
-- `ux-design-specification.md` - UX patterns and flows
-- `project-context.md` - Full implementation rules for AI agents
+- Planning: `_bmad-output/planning-artifacts/`
+- Patterns: `project-context.md`
+- Workflows: `_bmad-output/DEVELOPMENT_WORKFLOW.md`
