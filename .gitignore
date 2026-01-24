@@ -28,11 +28,15 @@
 *.pem
 
 # IDE / Editor configs
+.claude/
 .codex/
 .cursor/
 .gemini/
 .idea/
 .vscode/
+
+# BMAD workflow system (reinstallable)
+_bmad/
 
 # debug
 npm-debug.log*

@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Optimizer - Design Direction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #635BFF;
+            --primary-hover: #5851DB;
+            --primary-light: #F5F3FF;
+            --success: #10B981;
+            --success-light: #D1FAE5;
+            --warning: #F59E0B;
+            --warning-light: #FEF3C7;
+            --danger: #EF4444;
+            --danger-light: #FEE2E2;
+            --gray-900: #111827;
+            --gray-700: #374151;
+            --gray-500: #6B7280;
+            --gray-300: #D1D5DB;
+            --gray-100: #F3F4F6;
+            --gray-50: #F9FAFB;
+            --white: #FFFFFF;
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-100);
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-tab {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-500);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-tab:hover {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .nav-tab.active {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            margin-top: 64px;
+            min-height: calc(100vh - 64px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background: var(--white);
+            border-right: 1px solid var(--gray-100);
+            padding: 24px 16px;
+            position: fixed;
+            top: 64px;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+            padding: 0 12px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--gray-700);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background: var(--gray-100);
+        }
+
+        .sidebar-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .sidebar-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 32px;
+            max-width: 1040px;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 30px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: var(--gray-500);
+        }
+
+        /* Score Card */
+        .score-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .score-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
+        }
+
+        .score-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .score-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-500);
+        }
+
+        .score-badge {
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .score-badge.low {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
+        .score-badge.improved {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .score-display {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .score-number {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .score-percent {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--gray-500);
+        }
+
+        .score-change {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--success);
+            margin-top: 8px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 16px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--gray-100);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.low {
+            background: var(--danger);
+            width: 38%;
+        }
+
+        .progress-fill.high {
+            background: var(--success);
+            width: 71%;
+        }
+
+        /* Tabs */
+        .section-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--gray-100);
+            padding-bottom: 0;
+        }
+
+        .section-tab {
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-500);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.2s;
+        }
+
+        .section-tab:hover {
+            color: var(--gray-700);
+        }
+
+        .section-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Suggestion Card */
+        .suggestion-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--gray-100);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .suggestion-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .suggestion-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .suggestion-points {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--success);
+        }
+
+        .suggestion-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .suggestion-side {
+            padding: 20px;
+        }
+
+        .suggestion-side:first-child {
+            background: var(--gray-50);
+            border-right: 1px solid var(--gray-100);
+        }
+
+        .suggestion-side-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray-500);
+            margin-bottom: 12px;
+        }
+
+        .suggestion-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--gray-700);
+        }
+
+        .suggestion-text.optimized {
+            color: var(--gray-900);
+        }
+
+        .suggestion-footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--gray-100);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--gray-50);
+        }
+
+        .suggestion-help {
+            font-size: 13px;
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .suggestion-help:hover {
+            text-decoration: underline;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--gray-600);
+        }
+
+        .btn-ghost:hover {
+            background: var(--gray-100);
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--gray-300);
+            border-radius: var(--radius-lg);
+            padding: 48px;
+            text-align: center;
+            background: var(--white);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            color: var(--gray-400);
+        }
+
+        .upload-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .upload-subtitle {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--gray-900);
+            color: var(--white);
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-success {
+            background: var(--success);
+        }
+
+        /* Section Break */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 16px;
+            margin-top: 32px;
+        }
+
+        /* View Switcher */
+        .view-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--gray-900);
+            color: var(--white);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+        }
+
+        .view-tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .view-tab {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-400);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-tab:hover {
+            color: var(--white);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .view-tab.active {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        /* Mockup Container */
+        .mockup-container {
+            margin-top: 56px;
+        }
+
+        .mockup-frame {
+            display: none;
+        }
+
+        .mockup-frame.active {
+            display: block;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 64px;
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            color: var(--gray-300);
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-bottom: 24px;
+        }
+
+        /* Keywords Section */
+        .keywords-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .keyword-tag {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .keyword-tag.match {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .keyword-tag.missing {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 0;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        .progress-step.complete {
+            color: var(--success);
+        }
+
+        .progress-step.active {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .step-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .progress-step.complete .step-dot {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .progress-step.active .step-dot {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .step-line {
+            width: 40px;
+            height: 2px;
+            background: var(--gray-200);
+        }
+
+        .progress-step.complete + .step-line {
+            background: var(--success);
+        }
+    </style>
+</head>
+<body>
+    <!-- View Switcher -->
+    <div class="view-header">
+        <div style="font-weight: 600;">ATS Resume Optimizer - Design Direction</div>
+        <div class="view-tabs">
+            <div class="view-tab active" onclick="showView('results')">Results View</div>
+            <div class="view-tab" onclick="showView('upload')">Upload View</div>
+            <div class="view-tab" onclick="showView('loading')">Loading State</div>
+            <div class="view-tab" onclick="showView('compare')">Compare View</div>
+        </div>
+    </div>
+
+    <div class="mockup-container">
+        <!-- Results View (Main) -->
+        <div class="mockup-frame active" id="view-results">
+            <nav class="nav" style="top: 56px;">
+                <div class="nav-brand">submit_smart</div>
+                <div class="nav-tabs">
+                    <div class="nav-tab">New Optimization</div>
+                    <div class="nav-tab active">Results</div>
+                    <div class="nav-tab">History</div>
+                </div>
+            </nav>
+
+            <div class="app-container" style="margin-top: 120px;">
+                <aside class="sidebar" style="top: 120px;">
+                    <div class="sidebar-section">
+                        <div class="sidebar-label">Current Session</div>
+                        <div class="sidebar-item active">
+                            <div class="sidebar-icon">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            Software_Dev_Resume.pdf
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-label">Sections</div>
+                        <div class="sidebar-item active">
+                            <div class="sidebar-icon">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+                            </div>
+                            Professional Summary
+                        </div>
+                        <div class="sidebar-item">
+                            <div class="sidebar-icon">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                            </div>
+                            Skills
+                        </div>
+                        <div class="sidebar-item">
+                            <div class="sidebar-icon">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            </div>
+                            Experience
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-label">Actions</div>
+                        <div class="sidebar-item">
+                            <div class="sidebar-icon">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            </div>
+                            Compare Scores
+                        </div>
+                        <div class="sidebar-item">
+                            <div class="sidebar-icon">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            </div>
+                            Regenerate
+                        </div>
+                    </div>
+                </aside>
+
+                <main class="main-content">
+                    <div class="page-header">
+                        <h1 class="page-title">Optimization Results</h1>
+                        <p class="page-subtitle">Shopify Jr. Frontend Developer • 7 suggestions generated</p>
+                    </div>
+
+                    <div class="score-section">
+                        <div class="score-card">
+                            <div class="score-card-header">
+                                <span class="score-label">Original Score</span>
+                                <span class="score-badge low">Needs Work</span>
+                            </div>
+                            <div class="score-display">
+                                <span class="score-number">38</span>
+                                <span class="score-percent">%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill low"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="score-card">
+                            <div class="score-card-header">
+                                <span class="score-label">Optimized Score</span>
+                                <span class="score-badge improved">Strong Match</span>
+                            </div>
+                            <div class="score-display">
+                                <span class="score-number">71</span>
+                                <span class="score-percent">%</span>
+                            </div>
+                            <div class="score-change">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                                +33 points improvement
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill high"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-tabs">
+                        <div class="section-tab active">Professional Summary</div>
+                        <div class="section-tab">Skills</div>
+                        <div class="section-tab">Experience</div>
+                    </div>
+
+                    <div class="suggestion-card">
+                        <div class="suggestion-header">
+                            <span class="suggestion-title">Summary Rewrite</span>
+                            <span class="suggestion-points">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                                +12 points
+                            </span>
+                        </div>
+                        <div class="suggestion-content">
+                            <div class="suggestion-side">
+                                <div class="suggestion-side-label">Original</div>
+                                <p class="suggestion-text">Computer science student looking for frontend development opportunities. I have experience with React and JavaScript.</p>
+                            </div>
+                            <div class="suggestion-side">
+                                <div class="suggestion-side-label">Optimized</div>
+                                <p class="suggestion-text optimized">Frontend developer with hands-on experience building responsive web applications using <strong>React</strong>, <strong>JavaScript ES6+</strong>, and modern CSS frameworks. Skilled in component-based architecture, state management, and RESTful API integration. Seeking to contribute to innovative e-commerce solutions at Shopify.</p>
+                            </div>
+                        </div>
+                        <div class="suggestion-footer">
+                            <span class="suggestion-help">Why this helps?</span>
+                            <button class="btn btn-primary">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                Copy to Clipboard
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-card">
+                        <div class="suggestion-header">
+                            <span class="suggestion-title">Experience Bullet #1</span>
+                            <span class="suggestion-points">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                                +8 points
+                            </span>
+                        </div>
+                        <div class="suggestion-content">
+                            <div class="suggestion-side">
+                                <div class="suggestion-side-label">Original</div>
+                                <p class="suggestion-text">Built a todo app using React</p>
+                            </div>
+                            <div class="suggestion-side">
+                                <div class="suggestion-side-label">Optimized</div>
+                                <p class="suggestion-text optimized">Developed responsive task management application using <strong>React hooks</strong> and <strong>Context API</strong>, implementing persistent local storage and optimized re-rendering for improved user experience</p>
+                            </div>
+                        </div>
+                        <div class="suggestion-footer">
+                            <span class="suggestion-help">Why this helps?</span>
+                            <button class="btn btn-primary">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                Copy to Clipboard
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title">Keywords Analysis</h3>
+                    <div class="suggestion-card" style="padding: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <div>
+                                <div class="suggestion-side-label" style="margin-bottom: 12px;">Matching Keywords (8)</div>
+                                <div class="keywords-grid">
+                                    <span class="keyword-tag match">React</span>
+                                    <span class="keyword-tag match">JavaScript</span>
+                                    <span class="keyword-tag match">CSS</span>
+                                    <span class="keyword-tag match">HTML</span>
+                                    <span class="keyword-tag match">Git</span>
+                                    <span class="keyword-tag match">REST API</span>
+                                    <span class="keyword-tag match">Frontend</span>
+                                    <span class="keyword-tag match">Responsive</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="suggestion-side-label" style="margin-bottom: 12px;">Missing Keywords (4)</div>
+                                <div class="keywords-grid">
+                                    <span class="keyword-tag missing">TypeScript</span>
+                                    <span class="keyword-tag missing">GraphQL</span>
+                                    <span class="keyword-tag missing">Testing</span>
+                                    <span class="keyword-tag missing">Accessibility</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <div class="toast toast-success">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Copied to clipboard! +12 points when applied
+            </div>
+        </div>
+
+        <!-- Upload View -->
+        <div class="mockup-frame" id="view-upload">
+            <nav class="nav" style="top: 56px;">
+                <div class="nav-brand">submit_smart</div>
+                <div class="nav-tabs">
+                    <div class="nav-tab active">New Optimization</div>
+                    <div class="nav-tab">History</div>
+                </div>
+            </nav>
+
+            <div class="app-container" style="margin-top: 120px;">
+                <aside class="sidebar" style="top: 120px;">
+                    <div class="sidebar-section">
+                        <div class="sidebar-label">Steps</div>
+                        <div class="sidebar-item active">
+                            <div class="sidebar-icon">1</div>
+                            Upload Resume
+                        </div>
+                        <div class="sidebar-item" style="opacity: 0.5;">
+                            <div class="sidebar-icon">2</div>
+                            Paste Job Description
+                        </div>
+                        <div class="sidebar-item" style="opacity: 0.5;">
+                            <div class="sidebar-icon">3</div>
+                            Get Suggestions
+                        </div>
+                    </div>
+                </aside>
+
+                <main class="main-content">
+                    <div class="page-header">
+                        <h1 class="page-title">Upload Your Resume</h1>
+                        <p class="page-subtitle">We'll analyze it against your target job description</p>
+                    </div>
+
+                    <div class="upload-zone">
+                        <div class="upload-icon">
+                            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        </div>
+                        <h3 class="upload-title">Drop your resume here</h3>
+                        <p class="upload-subtitle">or click to browse. Supports PDF and DOCX (max 5MB)</p>
+                    </div>
+
+                    <div style="margin-top: 32px; text-align: center;">
+                        <p style="font-size: 14px; color: var(--gray-500);">Your resume is processed securely and never stored permanently.</p>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="mockup-frame" id="view-loading">
+            <nav class="nav" style="top: 56px;">
+                <div class="nav-brand">submit_smart</div>
+            </nav>
+
+            <div class="app-container" style="margin-top: 120px;">
+                <main class="main-content" style="margin-left: 0; max-width: 600px; margin: 120px auto 0;">
+                    <div style="text-align: center; padding: 64px 0;">
+                        <div class="progress-steps" style="justify-content: center; margin-bottom: 48px;">
+                            <div class="progress-step complete">
+                                <div class="step-dot">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                                </div>
+                                <span>Parsing</span>
+                            </div>
+                            <div class="step-line" style="background: var(--success);"></div>
+                            <div class="progress-step active">
+                                <div class="step-dot">2</div>
+                                <span>Analyzing</span>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="progress-step">
+                                <div class="step-dot">3</div>
+                                <span>Optimizing</span>
+                            </div>
+                        </div>
+
+                        <div style="width: 80px; height: 80px; margin: 0 auto 24px; border: 4px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">Analyzing your resume...</h2>
+                        <p style="color: var(--gray-500);">Comparing against Shopify Jr. Frontend Developer requirements</p>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Compare View -->
+        <div class="mockup-frame" id="view-compare">
+            <nav class="nav" style="top: 56px;">
+                <div class="nav-brand">submit_smart</div>
+                <div class="nav-tabs">
+                    <div class="nav-tab">Results</div>
+                    <div class="nav-tab active">Compare</div>
+                </div>
+            </nav>
+
+            <div class="app-container" style="margin-top: 120px;">
+                <main class="main-content" style="margin-left: 0; max-width: 900px; margin: 120px auto 0;">
+                    <div class="page-header" style="text-align: center;">
+                        <h1 class="page-title">Score Comparison</h1>
+                        <p class="page-subtitle">See how your optimizations improved your ATS match</p>
+                    </div>
+
+                    <div style="display: flex; gap: 48px; justify-content: center; margin: 48px 0;">
+                        <div style="text-align: center;">
+                            <div style="width: 160px; height: 160px; border-radius: 50%; border: 8px solid var(--danger); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                                <div>
+                                    <div style="font-size: 48px; font-weight: 700;">38%</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 14px; color: var(--gray-500);">Original Score</div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <svg width="48" height="48" fill="none" stroke="var(--success)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 160px; height: 160px; border-radius: 50%; border: 8px solid var(--success); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                                <div>
+                                    <div style="font-size: 48px; font-weight: 700;">71%</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 14px; color: var(--gray-500);">Optimized Score</div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; padding: 24px; background: var(--success-light); border-radius: var(--radius-lg); margin-bottom: 32px;">
+                        <div style="font-size: 24px; font-weight: 600; color: var(--success);">+33 Point Improvement!</div>
+                        <div style="color: var(--gray-600); margin-top: 4px;">You're now a strong match for this role</div>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <button class="btn btn-primary" style="padding: 12px 24px; font-size: 16px;">Start New Optimization</button>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script>
+        function showView(viewId) {
+            // Hide all frames
+            document.querySelectorAll('.mockup-frame').forEach(frame => {
+                frame.classList.remove('active');
+            });
+            // Show selected frame
+            document.getElementById('view-' + viewId).classList.add('active');
+            // Update tabs
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
