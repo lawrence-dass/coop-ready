@@ -43,14 +43,14 @@ development_status:
   1-1-initialize-nextjs-project-with-core-dependencies: done
   1-2-configure-supabase-database-schema: done
   1-3-set-up-environment-configuration: done
-  1-4-implement-core-types-and-actionresponse-pattern: backlog
-  1-5-epic-1-integration-and-verification-testing: ready-for-dev
+  1-4-implement-core-types-and-actionresponse-pattern: done
+  1-5-epic-1-integration-and-verification-testing: backlog
 
   # Epic 2: Anonymous Access & Session (V0.1)
   epic-2: backlog
   2-1-implement-anonymous-authentication: backlog
   2-2-implement-session-persistence: backlog
-  epic-2-retrospective: optional
+  2-3-epic-2-integration-and-verification-testing: backlog
 
   # Epic 3: Resume Upload & Parsing (V0.1)
   epic-3: backlog
@@ -59,14 +59,14 @@ development_status:
   3-3-implement-pdf-text-extraction: backlog
   3-4-implement-docx-text-extraction: backlog
   3-5-implement-resume-section-parsing: backlog
-  epic-3-retrospective: optional
+  3-6-epic-3-integration-and-verification-testing: backlog
 
   # Epic 4: Job Description Input (V0.1)
   epic-4: backlog
   4-1-implement-job-description-input: backlog
   4-2-implement-job-description-editing: backlog
   4-3-implement-job-description-clear: backlog
-  epic-4-retrospective: optional
+  4-4-epic-4-integration-and-verification-testing: backlog
 
   # Epic 5: ATS Analysis & Scoring (V0.1)
   epic-5: backlog
@@ -74,7 +74,7 @@ development_status:
   5-2-implement-ats-score-calculation: backlog
   5-3-implement-score-display-with-breakdown: backlog
   5-4-implement-gap-analysis-display: backlog
-  epic-5-retrospective: optional
+  5-5-epic-5-integration-and-verification-testing: backlog
 
   # Epic 6: Content Optimization (V0.1)
   epic-6: backlog
@@ -85,7 +85,7 @@ development_status:
   6-5-implement-suggestion-display-ui: backlog
   6-6-implement-copy-to-clipboard: backlog
   6-7-implement-regenerate-suggestions: backlog
-  epic-6-retrospective: optional
+  6-8-epic-6-integration-and-verification-testing: backlog
 
   # Epic 7: Error Handling & Feedback (V0.1)
   epic-7: backlog
@@ -93,7 +93,7 @@ development_status:
   7-2-implement-retry-functionality: backlog
   7-3-implement-timeout-recovery: backlog
   7-4-implement-suggestion-feedback: backlog
-  epic-7-retrospective: optional
+  7-5-epic-7-integration-and-verification-testing: backlog
 
   # Epic 8: User Authentication (V1.0)
   epic-8: backlog
@@ -102,21 +102,21 @@ development_status:
   8-3-implement-google-oauth: backlog
   8-4-implement-sign-out: backlog
   8-5-implement-onboarding-flow: backlog
-  epic-8-retrospective: optional
+  8-6-epic-8-integration-and-verification-testing: backlog
 
   # Epic 9: Resume Library (V1.0)
   epic-9: backlog
   9-1-implement-save-resume-to-library: backlog
   9-2-implement-resume-selection-from-library: backlog
   9-3-implement-resume-deletion-from-library: backlog
-  epic-9-retrospective: optional
+  9-4-epic-9-integration-and-verification-testing: backlog
 
   # Epic 10: Optimization History (V1.0)
   epic-10: backlog
   10-1-implement-history-list-view: backlog
   10-2-implement-session-reload: backlog
   10-3-implement-history-deletion: backlog
-  epic-10-retrospective: optional
+  10-4-epic-10-integration-and-verification-testing: backlog
 
   # Epic 11: Compare & Enhanced Suggestions (V1.0)
   epic-11: backlog
@@ -124,10 +124,10 @@ development_status:
   11-2-implement-optimization-preferences: backlog
   11-3-implement-score-comparison: backlog
   11-4-implement-before-after-text-comparison: backlog
-  epic-11-retrospective: optional
+  11-5-epic-11-integration-and-verification-testing: backlog
 
   # Epic 12: Quality Assurance (V1.0)
   epic-12: backlog
   12-1-implement-llm-as-judge-pipeline-step: backlog
   12-2-implement-quality-metrics-logging: backlog
-  epic-12-retrospective: optional
+  12-3-epic-12-integration-and-verification-testing: backlog

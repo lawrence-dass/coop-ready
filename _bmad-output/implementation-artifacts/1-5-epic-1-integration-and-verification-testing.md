@@ -1,6 +1,6 @@
 # Story 1.5: Epic 1 Integration and Verification Testing
 
-Status: ready-for-dev
+Status: backlog
 
 ## Story
 
@@ -77,7 +77,7 @@ So that the project is ready for feature development in Epic 2 and beyond.
 
 ### What This Story Verifies
 
-This is NOT a traditional testing story (no Jest tests required). Instead, it's an **integration verification and documentation story** that ensures:
+This is NOT a testing story in the traditional sense (no Jest tests required). Instead, it's a **integration verification and documentation story** that ensures:
 
 1. **Story 1.1 (Next.js Initialization)** actually produces a working dev environment
 2. **Story 1.2 (Supabase Database)** schemas are correctly configured and ready
@@ -168,6 +168,25 @@ No console errors ✅
 Ready for Epic 2 ✅
 ```
 
+### Error Prevention Guardrails
+
+**Common Foundation Issues This Story Prevents:**
+
+1. ❌ "Build fails after I finished all 4 stories"
+   → Verification catches compile errors early
+
+2. ❌ "Supabase can't connect in development"
+   → Verification confirms env vars and migrations
+
+3. ❌ "Types don't export correctly - need to refactor"
+   → Verification confirms exports before moving forward
+
+4. ❌ "Database schema has an error that causes issues in Epic 2"
+   → Verification checks migration syntax
+
+5. ❌ "Started Epic 2, realized ActionResponse pattern doesn't work as expected"
+   → Verification confirms pattern works with real imports
+
 ### Verification Checklist Structure
 
 **Section 1: Environment & Dependencies**
@@ -218,6 +237,32 @@ npx tsc --noEmit /tmp/type-test.ts
 # Document results
 ```
 
+### What's NOT Included in This Story
+
+**These belong in future stories:**
+- ❌ Unit tests with Jest
+- ❌ Component testing with React Testing Library
+- ❌ E2E testing with Playwright
+- ❌ Performance benchmarking
+- ❌ Security penetration testing
+- ❌ Accessibility testing (WCAG)
+
+**Those are important, but they're coverage for FEATURES. Epic 1 is infrastructure.**
+
+### Files Created by This Story
+
+After completion, these files/docs exist:
+
+```
+/docs/
+├── EPIC-1-VERIFICATION.md    ← Complete verification guide
+└── (added to README.md)      ← Reference to verification
+
+/tmp/ (temporary, for verification only)
+├── type-test.ts              ← Type system test (ephemeral)
+└── integration-test.ts       ← Integration test (ephemeral)
+```
+
 ### Success Criteria for This Story
 
 After completing Story 1.5:
@@ -231,6 +276,14 @@ After completing Story 1.5:
 ✅ Verified checklist: All items checked off and documented
 ✅ Ready for Epic 2: Foundation is solid, no regressions expected
 
+### Why This Story Matters for Solo Developer
+
+As a solo developer:
+- You don't have QA to catch integration issues
+- You can't afford to get 5 stories into Epic 2 before realizing Epic 1 has a problem
+- Finding and fixing issues now saves debugging nightmare later
+- Complete verification = confidence to proceed to feature development
+
 ### References
 
 - [Source: Story 1.1] - Project initialization and startup
@@ -238,6 +291,7 @@ After completing Story 1.5:
 - [Source: Story 1.3] - Environment configuration and loading
 - [Source: Story 1.4] - Type definitions and ActionResponse pattern
 - [Source: project-context.md#Critical Implementation Rules] - Architecture requirements
+- [Source: .claude/post-merge-workflow.md] - Workflow automation reference
 
 ## Dev Agent Record
 
@@ -248,6 +302,32 @@ Claude Haiku 4.5 (claude-haiku-4-5-20251001)
 ### Completion Notes List
 
 _To be filled in by developer after verification_
+
+### Verification Checklist Results
+
+- [ ] npm install completes successfully
+- [ ] npm run build compiles without errors
+- [ ] npm run lint passes
+- [ ] npm run dev starts dev server
+- [ ] App loads at http://localhost:3000
+- [ ] Console is clean (no errors/warnings)
+- [ ] .env.example present with all required variables
+- [ ] .env.local properly configured (NOT in git)
+- [ ] Supabase connection verified
+- [ ] Migrations are syntactically correct
+- [ ] RLS policies present in migration
+- [ ] /types/index.ts exports all types
+- [ ] ActionResponse<T> type compiles correctly
+- [ ] All 7 error codes defined and importable
+- [ ] Domain types compile (Resume, JobDescription, etc.)
+- [ ] Store interface importable and usable
+- [ ] Type re-exports work with @/types alias
+- [ ] Integration test passes (minimal app + types + supabase)
+- [ ] No runtime errors during integration
+- [ ] /docs/EPIC-1-VERIFICATION.md complete
+- [ ] README.md updated with verification reference
+- [ ] All troubleshooting scenarios documented
+- [ ] Foundation verified ready for Epic 2
 
 ### File List
 
@@ -263,3 +343,19 @@ _To be filled in by developer after verification_
 ### Change Log
 
 - 2026-01-24: Story 1.5 created - Epic 1 integration and verification testing story replaces retrospective
+
+---
+
+## Why This Story Instead of Retrospective
+
+| Aspect | Retrospective | This Story |
+|--------|-------|---------|
+| **Deliverable** | Meeting notes | Verified system, docs, checklist |
+| **Value for solo dev** | Process notes | Confidence to proceed |
+| **Detects issues** | No | Yes, catches integration problems |
+| **Helps future devs** | Maybe | Yes, verification guide available |
+| **Prevents bugs** | No | Yes, catches foundation issues |
+| **Time investment** | 1-2 hours | 1-2 hours |
+| **ROI** | Learning | Foundation quality |
+
+**Conclusion:** Verification story provides immediate value and risk mitigation.
