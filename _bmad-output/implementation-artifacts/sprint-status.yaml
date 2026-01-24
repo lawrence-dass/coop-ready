@@ -42,7 +42,7 @@ development_status:
   epic-1: in-progress
   1-1-initialize-nextjs-project-with-core-dependencies: done
   1-2-configure-supabase-database-schema: done
-  1-3-set-up-environment-configuration: backlog
+  1-3-set-up-environment-configuration: done
   1-4-implement-core-types-and-actionresponse-pattern: backlog
   epic-1-retrospective: optional
 

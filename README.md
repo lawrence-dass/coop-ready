@@ -23,25 +23,94 @@ Unlike traditional resume builders that produce downloadable documents, SubmitSm
 
 ## Tech Stack
 
-- **Frontend:** Next.js 15, TypeScript, Tailwind CSS, shadcn/ui
+- **Frontend:** Next.js 16, TypeScript 5, Tailwind CSS 4, shadcn/ui
 - **Backend:** Next.js API Routes, Server Actions
-- **Database:** Supabase (PostgreSQL)
+- **Database:** Supabase (PostgreSQL + RLS)
 - **AI:** Claude API via LangChain.js
 - **State:** Zustand
+- **Forms:** React Hook Form + Zod
+- **Parsing:** unpdf (PDF), mammoth (DOCX)
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 18+
+- Docker Desktop (for local Supabase)
+- Supabase account (for cloud database) OR local Supabase via Docker
+- Anthropic API key ([Get one here](https://console.anthropic.com/settings/keys))
+
+### Installation
+
 ```bash
-# Install dependencies
+# 1. Install dependencies
 npm install
 
-# Set up environment variables
+# 2. Set up environment variables
 cp .env.example .env.local
-# Add your ANTHROPIC_API_KEY and Supabase credentials
+```
 
-# Start development server
+### Environment Setup
+
+Edit `.env.local` and configure the following variables:
+
+#### Option A: Local Development (Supabase via Docker)
+
+```bash
+# Start local Supabase
+npx supabase start
+
+# Use the credentials displayed (already in .env.local by default)
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<local-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<local-service-role-key>
+
+# Add your Anthropic API key
+ANTHROPIC_API_KEY=sk-ant-api-xxxxx
+```
+
+#### Option B: Cloud Supabase
+
+```bash
+# Get credentials from: https://supabase.com/dashboard/project/_/settings/api
+
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+
+# Add your Anthropic API key
+ANTHROPIC_API_KEY=sk-ant-api-xxxxx
+```
+
+#### Apply Database Migrations
+
+```bash
+# For local Supabase
+npx supabase db reset
+
+# For cloud Supabase
+npx supabase link --project-ref <your-project-ref>
+npx supabase db push
+```
+
+### Start Development Server
+
+```bash
 npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Environment Variables Reference
+
+| Variable | Required | Description | Where to Get It |
+|----------|----------|-------------|-----------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL | [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Public anonymous key | Supabase Dashboard → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-side admin key | Supabase Dashboard → Settings → API (⚠️ Keep secret!) |
+| `ANTHROPIC_API_KEY` | Yes | Claude API key | [Anthropic Console](https://console.anthropic.com/settings/keys) (⚠️ Keep secret!) |
+
+**Security Warning:** Never commit `.env.local` or expose `SUPABASE_SERVICE_ROLE_KEY` or `ANTHROPIC_API_KEY` to the browser.
 
 ## Project Structure
 
