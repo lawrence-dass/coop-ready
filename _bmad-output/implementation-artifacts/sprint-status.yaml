@@ -44,7 +44,7 @@ development_status:
   1-2-configure-supabase-database-schema: done
   1-3-set-up-environment-configuration: done
   1-4-implement-core-types-and-actionresponse-pattern: backlog
-  epic-1-retrospective: optional
+  1-5-epic-1-integration-and-verification-testing: ready-for-dev
 
   # Epic 2: Anonymous Access & Session (V0.1)
   epic-2: backlog
