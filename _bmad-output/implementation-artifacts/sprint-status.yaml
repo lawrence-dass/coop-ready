@@ -1,0 +1,133 @@
+# generated: 2026-01-24
+# project: submit_smart
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-01-24
+project: submit_smart
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Project Foundation (V0.1)
+  epic-1: backlog
+  1-1-initialize-nextjs-project-with-core-dependencies: backlog
+  1-2-configure-supabase-database-schema: backlog
+  1-3-set-up-environment-configuration: backlog
+  1-4-implement-core-types-and-actionresponse-pattern: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Anonymous Access & Session (V0.1)
+  epic-2: backlog
+  2-1-implement-anonymous-authentication: backlog
+  2-2-implement-session-persistence: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Resume Upload & Parsing (V0.1)
+  epic-3: backlog
+  3-1-implement-resume-upload-ui: backlog
+  3-2-implement-file-validation: backlog
+  3-3-implement-pdf-text-extraction: backlog
+  3-4-implement-docx-text-extraction: backlog
+  3-5-implement-resume-section-parsing: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Job Description Input (V0.1)
+  epic-4: backlog
+  4-1-implement-job-description-input: backlog
+  4-2-implement-job-description-editing: backlog
+  4-3-implement-job-description-clear: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: ATS Analysis & Scoring (V0.1)
+  epic-5: backlog
+  5-1-implement-keyword-analysis: backlog
+  5-2-implement-ats-score-calculation: backlog
+  5-3-implement-score-display-with-breakdown: backlog
+  5-4-implement-gap-analysis-display: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Content Optimization (V0.1)
+  epic-6: backlog
+  6-1-implement-llm-pipeline-api-route: backlog
+  6-2-implement-summary-section-suggestions: backlog
+  6-3-implement-skills-section-suggestions: backlog
+  6-4-implement-experience-section-suggestions: backlog
+  6-5-implement-suggestion-display-ui: backlog
+  6-6-implement-copy-to-clipboard: backlog
+  6-7-implement-regenerate-suggestions: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Error Handling & Feedback (V0.1)
+  epic-7: backlog
+  7-1-implement-error-display-component: backlog
+  7-2-implement-retry-functionality: backlog
+  7-3-implement-timeout-recovery: backlog
+  7-4-implement-suggestion-feedback: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: User Authentication (V1.0)
+  epic-8: backlog
+  8-1-implement-email-password-registration: backlog
+  8-2-implement-email-password-login: backlog
+  8-3-implement-google-oauth: backlog
+  8-4-implement-sign-out: backlog
+  8-5-implement-onboarding-flow: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: Resume Library (V1.0)
+  epic-9: backlog
+  9-1-implement-save-resume-to-library: backlog
+  9-2-implement-resume-selection-from-library: backlog
+  9-3-implement-resume-deletion-from-library: backlog
+  epic-9-retrospective: optional
+
+  # Epic 10: Optimization History (V1.0)
+  epic-10: backlog
+  10-1-implement-history-list-view: backlog
+  10-2-implement-session-reload: backlog
+  10-3-implement-history-deletion: backlog
+  epic-10-retrospective: optional
+
+  # Epic 11: Compare & Enhanced Suggestions (V1.0)
+  epic-11: backlog
+  11-1-implement-point-values-for-suggestions: backlog
+  11-2-implement-optimization-preferences: backlog
+  11-3-implement-score-comparison: backlog
+  11-4-implement-before-after-text-comparison: backlog
+  epic-11-retrospective: optional
+
+  # Epic 12: Quality Assurance (V1.0)
+  epic-12: backlog
+  12-1-implement-llm-as-judge-pipeline-step: backlog
+  12-2-implement-quality-metrics-logging: backlog
+  epic-12-retrospective: optional
