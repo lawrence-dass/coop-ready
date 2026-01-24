@@ -21,7 +21,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 |------------|---------|-------|
 | Next.js | 15.x | App Router, Server Components default |
 | TypeScript | 5.x | Strict mode enabled |
-| Tailwind CSS | 3.x | CSS variables theming |
+| Tailwind CSS | 4.x | CSS variables theming |
 | shadcn/ui | Latest | Copy-paste component model |
 | Supabase | Latest | Postgres + Auth + RLS |
 | @langchain/anthropic | Latest | Claude API integration |
