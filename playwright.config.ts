@@ -12,6 +12,12 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
 
+  /* Only match Playwright test files (*.spec.ts), NOT Vitest files (*.test.ts) */
+  testMatch: /.*\.spec\.ts$/,
+
+  /* Explicitly ignore Vitest test files to prevent conflicts */
+  testIgnore: ['**/*.test.ts', '**/*.test.tsx'],
+
   /* Output directory for test artifacts (traces, screenshots, videos) */
   outputDir: 'playwright-artifacts',
 
