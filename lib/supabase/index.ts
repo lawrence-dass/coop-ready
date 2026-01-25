@@ -23,3 +23,10 @@ export {
 
 // Helper functions
 export { getAnonymousId } from './helpers';
+
+// Session operations
+export {
+  createSession,
+  getSessionByAnonymousId,
+  updateSession,
+} from './sessions';

@@ -7,7 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check-env": "node scripts/check-env.js"
+    "check-env": "node scripts/check-env.js",
+    "test:e2e": "playwright test",
+    "test:e2e:p0": "playwright test --grep '@P0'",
+    "test:e2e:p1": "playwright test --grep '@P0|@P1'",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:unit": "vitest",
+    "test:unit:run": "vitest run",
+    "test:all": "npm run test:unit:run && npm run test:e2e",
+    "test:report": "playwright show-report test-results/html"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -33,6 +42,8 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.3.0",
+    "@playwright/test": "^1.49.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -42,6 +53,7 @@
     "eslint-config-next": "16.1.4",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.0.10"
   }
 }
