@@ -43,8 +43,14 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Current session ID from database (null if no session) */
   sessionId: string | null;
 
+  /** Pending file awaiting parsing (Story 3.1 - not yet parsed) */
+  pendingFile: File | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
+
+  /** Set pending file before parsing */
+  setPendingFile: (file: File | null) => void;
 
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
@@ -76,6 +82,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     loadingStep: null,
     error: null,
     sessionId: null,
+    pendingFile: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -109,6 +116,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     setSessionId: (id) =>
       set({ sessionId: id }),
+
+    setPendingFile: (file) =>
+      set({ pendingFile: file, error: null }),
 
     /**
      * Hydrate store from database session
@@ -147,6 +157,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         loadingStep: null,
         error: null,
         sessionId: null,
+        pendingFile: null,
       }),
   })
 );
@@ -190,3 +201,6 @@ export const selectError = (state: ExtendedOptimizationStore) => state.error;
 
 export const selectSessionId = (state: ExtendedOptimizationStore) =>
   state.sessionId;
+
+export const selectPendingFile = (state: ExtendedOptimizationStore) =>
+  state.pendingFile;
