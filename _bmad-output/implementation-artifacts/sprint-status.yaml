@@ -53,8 +53,8 @@ development_status:
   2-3-epic-2-integration-and-verification-testing: done
 
   # Epic 3: Resume Upload & Parsing (V0.1)
-  epic-3: backlog
-  3-1-implement-resume-upload-ui: backlog
+  epic-3: in-progress
+  3-1-implement-resume-upload-ui: done
   3-2-implement-file-validation: backlog
   3-3-implement-pdf-text-extraction: backlog
   3-4-implement-docx-text-extraction: backlog
