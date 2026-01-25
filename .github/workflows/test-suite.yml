@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Run integration tests
-        run: npm test -- tests/integration --no-coverage --passWithNoTests
+        run: npm run test:unit:run -- tests/integration --passWithNoTests
         env:
           NODE_ENV: test
           CI: true
@@ -71,6 +71,9 @@ jobs:
           CI: true
           BASE_URL: http://localhost:3000
           TEST_ENV: ci
+          # Placeholder Supabase env vars for dev server to start
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           # Uncomment after GitHub secrets are configured:
           # TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           # TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
@@ -83,12 +86,12 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-      - name: Upload test results
+      - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-test-results
-          path: test-results/
+          name: playwright-artifacts
+          path: playwright-artifacts/
           retention-days: 30
 
   # Summary: Report overall test status

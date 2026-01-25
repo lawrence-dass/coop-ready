@@ -36,6 +36,10 @@ jobs:
           # Test environment configuration
           BASE_URL: http://localhost:3000
           TEST_ENV: ci
+          # Placeholder Supabase env vars for dev server to start
+          # These allow the app to start but won't enable real auth
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           # Database seeding: Story 8-3 will implement test-only API endpoints
           # For now, tests use direct Supabase service role access if needed
           #
@@ -60,10 +64,10 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-      - name: Upload test results (on failure)
+      - name: Upload test artifacts (on failure)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: test-results/
+          name: playwright-artifacts
+          path: playwright-artifacts/
           retention-days: 30

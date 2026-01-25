@@ -9,12 +9,26 @@ import { test, expect } from '../support/fixtures';
  * - P0: 2 tests (critical authentication flow)
  * - P1: 1 test (feature usage)
  * - P2: 1 test (performance)
+ *
+ * Note: Supabase-dependent tests are skipped in CI until real credentials are configured.
+ * To enable in CI, configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
+ * as GitHub secrets with real Supabase values.
  */
+
+// Skip Supabase-dependent tests when using placeholder credentials
+const isPlaceholderSupabase =
+  process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') ?? false;
 
 test.describe('Story 2.1: Anonymous Authentication', () => {
   test('[P0] 2.1-E2E-001: should automatically create anonymous session on app visit', async ({
     page,
   }) => {
+    // Skip in CI with placeholder Supabase - no real auth will occur
+    test.skip(
+      isPlaceholderSupabase,
+      'Skipped: Requires real Supabase credentials'
+    );
+
     // GIVEN: User navigates to the app
     await page.goto('/');
 
@@ -36,6 +50,12 @@ test.describe('Story 2.1: Anonymous Authentication', () => {
   test('[P0] 2.1-E2E-004: should isolate sessions between different anonymous users', async ({
     browser,
   }) => {
+    // Skip in CI with placeholder Supabase - no real auth will occur
+    test.skip(
+      isPlaceholderSupabase,
+      'Skipped: Requires real Supabase credentials'
+    );
+
     // GIVEN: Two different browser contexts (simulating two users)
     const context1 = await browser.newContext();
     const context2 = await browser.newContext();

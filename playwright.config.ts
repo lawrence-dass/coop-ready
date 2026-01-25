@@ -12,6 +12,15 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
 
+  /* Only match Playwright test files (*.spec.ts), NOT Vitest files (*.test.ts) */
+  testMatch: /.*\.spec\.ts$/,
+
+  /* Explicitly ignore Vitest test files to prevent conflicts */
+  testIgnore: ['**/*.test.ts', '**/*.test.tsx'],
+
+  /* Output directory for test artifacts (traces, screenshots, videos) */
+  outputDir: 'playwright-artifacts',
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 
@@ -26,8 +35,8 @@ export default defineConfig({
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
-    ['html', { outputFolder: 'test-results/html', open: 'never' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['junit', { outputFile: 'playwright-report/junit.xml' }],
     ['list'],
   ],
 
@@ -59,32 +68,28 @@ export default defineConfig({
   },
 
   /* Configure projects for major browsers */
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-  ],
+  /* In CI, only use chromium for faster runs. Locally, test all browsers. */
+  projects: process.env.CI
+    ? [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+      ]
+    : [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+        {
+          name: 'firefox',
+          use: { ...devices['Desktop Firefox'] },
+        },
+        {
+          name: 'webkit',
+          use: { ...devices['Desktop Safari'] },
+        },
+      ],
 
   /* Run your local dev server before starting the tests */
   webServer: {
