@@ -86,12 +86,12 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-      - name: Upload test results
+      - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-test-results
-          path: test-results/
+          name: playwright-artifacts
+          path: playwright-artifacts/
           retention-days: 30
 
   # Summary: Report overall test status

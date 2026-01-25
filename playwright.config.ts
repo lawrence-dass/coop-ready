@@ -12,6 +12,9 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
 
+  /* Output directory for test artifacts (traces, screenshots, videos) */
+  outputDir: 'playwright-artifacts',
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 
@@ -26,8 +29,8 @@ export default defineConfig({
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
-    ['html', { outputFolder: 'test-results/html', open: 'never' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['junit', { outputFile: 'playwright-report/junit.xml' }],
     ['list'],
   ],
 
