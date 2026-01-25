@@ -6,3 +6,4 @@
 
 export { useSessionSync } from './useSessionSync';
 export { useSessionRestore } from './useSessionRestore';
+export { useResumeExtraction } from './useResumeExtraction';

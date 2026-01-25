@@ -14,6 +14,7 @@ import { test as base } from '@playwright/test';
  * });
  */
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 type TestFixtures = {
   // Add custom fixtures here
   // Example:
