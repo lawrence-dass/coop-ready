@@ -62,11 +62,11 @@ development_status:
   3-6-epic-3-integration-and-verification-testing: done
 
   # Epic 4: Job Description Input (V0.1)
-  epic-4: in-progress
+  epic-4: done
   4-1-implement-job-description-input: done
   4-2-implement-job-description-editing: done
   4-3-implement-job-description-clear: done
-  4-4-epic-4-integration-and-verification-testing: backlog
+  4-4-epic-4-integration-and-verification-testing: done
 
   # Epic 5: ATS Analysis & Scoring (V0.1)
   epic-5: backlog
