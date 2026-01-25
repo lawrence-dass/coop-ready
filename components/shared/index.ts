@@ -10,3 +10,4 @@
  */
 
 export { ResumeUploader } from './ResumeUploader';
+export { FileValidationError } from './FileValidationError';

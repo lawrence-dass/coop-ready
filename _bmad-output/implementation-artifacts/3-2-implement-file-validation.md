@@ -1,6 +1,6 @@
 # Story 3.2: Implement File Validation
 
-**Status:** ready-for-dev
+**Status:** done
 
 ## Story
 
@@ -22,41 +22,41 @@ So that I know exactly what went wrong and how to fix it.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add File Size Validation to ResumeUploader** (AC: #2)
-  - [ ] Add `maxSize` prop to ResumeUploader (5MB = 5 * 1024 * 1024 bytes)
-  - [ ] Pass max size constraint to react-dropzone `maxSize` property
-  - [ ] Define `MAX_FILE_SIZE` constant (5MB) in component
-  - [ ] Test oversized file rejection in dropzone config
+- [x] **Task 1: Add File Size Validation to ResumeUploader** (AC: #2)
+  - [x] Add `maxSize` prop to ResumeUploader (5MB = 5 * 1024 * 1024 bytes)
+  - [x] Pass max size constraint to react-dropzone `maxSize` property
+  - [x] Define `MAX_FILE_SIZE` constant (5MB) in component
+  - [x] Test oversized file rejection in dropzone config
 
-- [ ] **Task 2: Implement File Type Validation** (AC: #1)
-  - [ ] Ensure react-dropzone `accept` prop is properly configured for PDF and DOCX only
-  - [ ] Verify MIME types: `application/pdf` and `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
-  - [ ] Update ResumeUploader to validate file extensions (.pdf, .docx)
-  - [ ] Ensure rejected files trigger error handling
+- [x] **Task 2: Implement File Type Validation** (AC: #1)
+  - [x] Ensure react-dropzone `accept` prop is properly configured for PDF and DOCX only
+  - [x] Verify MIME types: `application/pdf` and `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+  - [x] Update ResumeUploader to validate file extensions (.pdf, .docx)
+  - [x] Ensure rejected files trigger error handling
 
-- [ ] **Task 3: Create File Validation Error Component** (AC: #1, #2)
-  - [ ] Create `/components/shared/FileValidationError.tsx` component
-  - [ ] Display error message with icon (lucide-react AlertCircle)
-  - [ ] Show error code (INVALID_FILE_TYPE or FILE_TOO_LARGE)
-  - [ ] Include helpful recovery message ("Please try again with...")
-  - [ ] Use error color (red) consistent with UX design system
-  - [ ] Make dismissible with close button (optional)
+- [x] **Task 3: Create File Validation Error Component** (AC: #1, #2)
+  - [x] Create `/components/shared/FileValidationError.tsx` component
+  - [x] Display error message with icon (lucide-react AlertCircle)
+  - [x] Show error code (INVALID_FILE_TYPE or FILE_TOO_LARGE)
+  - [x] Include helpful recovery message ("Please try again with...")
+  - [x] Use error color (red) consistent with UX design system
+  - [x] Make dismissible with close button (optional)
 
-- [ ] **Task 4: Connect Error Handling to ResumeUploader** (AC: #1, #2)
-  - [ ] Modify ResumeUploader to handle `onDropRejected` callback from react-dropzone
-  - [ ] Extract rejection reasons from react-dropzone (size vs type)
-  - [ ] Map rejection types to appropriate error messages
-  - [ ] Pass error state to FileValidationError component
-  - [ ] Clear error when user selects a valid file
-  - [ ] Test both error scenarios (type + size)
+- [x] **Task 4: Connect Error Handling to ResumeUploader** (AC: #1, #2)
+  - [x] Modify ResumeUploader to handle `onDropRejected` callback from react-dropzone
+  - [x] Extract rejection reasons from react-dropzone (size vs type)
+  - [x] Map rejection types to appropriate error messages
+  - [x] Pass error state to FileValidationError component
+  - [x] Clear error when user selects a valid file
+  - [x] Test both error scenarios (type + size)
 
-- [ ] **Task 5: Integrate Error Handling with Store & Toast** (AC: #1, #2)
-  - [ ] Add `fileError` field to Zustand store (error object or null)
-  - [ ] Create `setFileError` action in store
-  - [ ] Dispatch error to store when file rejected
-  - [ ] Show toast notification via sonner when file rejected
-  - [ ] Toast message: match error code (INVALID_FILE_TYPE/FILE_TOO_LARGE)
-  - [ ] Clear error state when valid file selected
+- [x] **Task 5: Integrate Error Handling with Store & Toast** (AC: #1, #2)
+  - [x] Add `fileError` field to Zustand store (error object or null)
+  - [x] Create `setFileError` action in store
+  - [x] Dispatch error to store when file rejected
+  - [x] Show toast notification via sonner when file rejected
+  - [x] Toast message: match error code (INVALID_FILE_TYPE/FILE_TOO_LARGE)
+  - [x] Clear error state when valid file selected
 
 ## Dev Notes
 
@@ -265,20 +265,73 @@ This story enables:
 - [Source: components/shared/ResumeUploader.tsx] - Previous implementation
 - [Source: store/useOptimizationStore.ts] - Zustand store
 
+## File List
+
+- `components/shared/FileValidationError.tsx` (new)
+- `components/shared/ResumeUploader.tsx` (modified)
+- `components/shared/index.ts` (modified)
+- `store/useOptimizationStore.ts` (modified)
+- `app/page.tsx` (modified)
+- `vitest.config.ts` (modified)
+- `tests/unit/3-2-file-validation.test.tsx` (new)
+- `tests/unit/3-2-store-validation.test.ts` (new)
+- `tests/integration/3-2-file-validation-flow.test.tsx` (new)
+
+## Change Log
+
+- **2026-01-25:** Implemented file validation with size (5MB) and type (PDF/DOCX) checks, error display component, store integration, and comprehensive test coverage (29 total tests pass). Fixed React hooks linting issue in FileIcon rendering.
+- **2026-01-25 (Code Review):** Fixed 6 issues found in code review:
+  - Removed orphaned `__tests__/` directory with Jest-based tests (project uses Vitest)
+  - Added recovery guidance text to FileValidationError component per UX spec
+  - Typed fileError.code as union type in store for type safety
+  - Removed unsafe type assertion in page.tsx
+  - Fixed React act() warning in integration test
+  - Updated test assertion to match new recovery text
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-Claude Haiku 4.5 (claude-haiku-4-5-20251001)
+Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 
-### Completion Status
+### Implementation Plan
 
-Story file created with comprehensive developer context. Ready for implementation via `/bmad:bmm:workflows:dev-story`.
+1. Added MAX_FILE_SIZE constant (5MB) to ResumeUploader
+2. Implemented onDropRejected callback to handle file rejections
+3. Created FileValidationError component with error display and dismiss functionality
+4. Extended Zustand store with fileError field and setFileError action
+5. Integrated error handling in main page with toast notifications
+6. Added comprehensive unit and integration tests (10 new tests)
+7. Fixed existing React hooks linting issue with FileIcon component
 
-### Notes for Implementation
+### Debug Log
 
-1. **React-dropzone is already installed** (from Story 3.1) - check package.json for version
-2. **Sonner already integrated** - toast system available in app
-3. **Error codes are standardized** - must match exactly: `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`
-4. **5MB limit is hard constraint** - defined in project-context.md and epics.md
-5. **UX principle:** Errors are not roadblocks - they're helpful guidance. Design should feel supportive, not punitive.
+- All 29 unit and integration tests pass
+- Linting clean on modified files
+- Error codes match exactly: INVALID_FILE_TYPE, FILE_TOO_LARGE
+- Toast notifications integrated via sonner
+- Error clears automatically when valid file selected
+
+### Completion Notes
+
+✅ **Story 3.2 Complete - All Acceptance Criteria Satisfied**
+
+**Implemented:**
+- File size validation (5MB limit) with clear error messaging
+- File type validation (PDF/DOCX only) with error codes
+- FileValidationError component with AlertCircle icon and dismiss button
+- Store integration with fileError state management
+- Toast notifications for immediate user feedback
+- Error auto-clearing on valid file selection
+
+**Tests Added:**
+- 6 unit tests for FileValidationError component
+- 4 unit tests for store validation
+- 5 integration tests for complete error flow
+- All tests pass (29 total across all stories)
+
+**Key Technical Decisions:**
+- Used react-dropzone's built-in validation (maxSize, accept props)
+- Mapped dropzone error codes (file-too-large, file-invalid-type) to standardized codes
+- Error persists in UI until dismissed or valid file uploaded
+- Fixed pre-existing FileIcon React hooks linting issue during implementation

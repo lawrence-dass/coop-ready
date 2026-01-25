@@ -24,7 +24,7 @@
  */
 
 import { useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, type FileRejection } from 'react-dropzone';
 import { Upload, FileText, FileType, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -39,6 +39,8 @@ interface ResumeUploaderProps {
   onFileSelect: (file: File) => void;
   /** Callback when file is removed */
   onFileRemove: () => void;
+  /** Callback when file validation fails */
+  onError?: (error: { code: string; message: string }) => void;
   /** Currently selected file metadata */
   selectedFile?: { name: string; size: number } | null;
   /** Optional className for styling */
@@ -48,6 +50,9 @@ interface ResumeUploaderProps {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
+
+/** Maximum file size in bytes (5MB) */
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 /** Accepted MIME types for resume uploads */
 const ACCEPTED_TYPES = {
@@ -75,13 +80,11 @@ function formatFileSize(bytes: number): string {
 }
 
 /**
- * Get file type icon based on file extension
+ * Render file type icon based on file extension
  */
-function getFileIcon(filename: string) {
-  if (filename.toLowerCase().endsWith('.pdf')) {
-    return FileText;
-  }
-  return FileType; // DOCX
+function FileIcon({ filename }: { filename: string }) {
+  const Icon = filename.toLowerCase().endsWith('.pdf') ? FileText : FileType;
+  return <Icon className="h-8 w-8 text-muted-foreground shrink-0" />;
 }
 
 // ============================================================================
@@ -91,6 +94,7 @@ function getFileIcon(filename: string) {
 export function ResumeUploader({
   onFileSelect,
   onFileRemove,
+  onError,
   selectedFile,
   className,
 }: ResumeUploaderProps) {
@@ -104,10 +108,35 @@ export function ResumeUploader({
     [onFileSelect]
   );
 
+  // Handle file rejection
+  const onDropRejected = useCallback(
+    (rejections: FileRejection[]) => {
+      if (!onError || rejections.length === 0) return;
+
+      const rejection = rejections[0];
+      const firstError = rejection.errors[0];
+
+      if (firstError.code === 'file-too-large') {
+        onError({
+          code: 'FILE_TOO_LARGE',
+          message: 'File too large. Maximum size is 5MB.',
+        });
+      } else if (firstError.code === 'file-invalid-type') {
+        onError({
+          code: 'INVALID_FILE_TYPE',
+          message: 'Invalid file type. Please upload a PDF or DOCX file.',
+        });
+      }
+    },
+    [onError]
+  );
+
   // Configure dropzone
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: ACCEPTED_TYPES,
+    maxSize: MAX_FILE_SIZE,
     maxFiles: 1,
     multiple: false,
   });
@@ -117,8 +146,6 @@ export function ResumeUploader({
   // ============================================================================
 
   if (selectedFile) {
-    const FileIcon = getFileIcon(selectedFile.name);
-
     return (
       <Card
         className={cn(
@@ -127,7 +154,7 @@ export function ResumeUploader({
         )}
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <FileIcon className="h-8 w-8 text-muted-foreground shrink-0" />
+          <FileIcon filename={selectedFile.name} />
           <div className="min-w-0 flex-1">
             <p className="font-medium text-sm truncate">{selectedFile.name}</p>
             <p className="text-xs text-muted-foreground">
