@@ -137,6 +137,12 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`:
 - `architecture.md` - Technical Architecture
 - `ux-design-specification.md` - UX Design Spec
 
+### Verification
+
+See [docs/EPIC-1-VERIFICATION.md](docs/EPIC-1-VERIFICATION.md) for complete foundation verification checklist.
+
+This document verifies that Epic 1 (Project Foundation) is complete and ready for feature development.
+
 ## License
 
 MIT

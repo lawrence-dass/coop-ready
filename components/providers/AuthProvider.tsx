@@ -76,7 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Memoize the Supabase client to prevent recreation on every render
   const supabaseRef = useRef<SupabaseClient | null>(null);
-  if (!supabaseRef.current) {
+  if (supabaseRef.current == null) {
     supabaseRef.current = createClient();
   }
 
