@@ -6,8 +6,8 @@
  * Main page where users upload resumes and get optimization suggestions.
  */
 
-import { ResumeUploader, FileValidationError } from '@/components/shared';
-import { useOptimizationStore, selectPendingFile, selectFileError } from '@/store';
+import { ResumeUploader, FileValidationError, JobDescriptionInput } from '@/components/shared';
+import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription } from '@/store';
 import { toast } from 'sonner';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -18,6 +18,9 @@ export default function Home() {
   const isExtracting = useOptimizationStore((state) => state.isExtracting);
   const setPendingFile = useOptimizationStore((state) => state.setPendingFile);
   const setFileError = useOptimizationStore((state) => state.setFileError);
+  const jobDescription = useOptimizationStore(selectJobDescription);
+  const setJobDescription = useOptimizationStore((state) => state.setJobDescription);
+  const clearJobDescription = useOptimizationStore((state) => state.clearJobDescription);
 
   const handleFileError = (error: { code: string; message: string }) => {
     // Only set file error for known error codes
@@ -71,6 +74,17 @@ export default function Home() {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Job Description Input Section */}
+        <div className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold">Job Description</h2>
+          <JobDescriptionInput
+            value={jobDescription || ''}
+            onChange={setJobDescription}
+            onClear={clearJobDescription}
+            isDisabled={isExtracting}
+          />
         </div>
       </main>
     </div>
