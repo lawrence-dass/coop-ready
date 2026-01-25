@@ -49,7 +49,7 @@ development_status:
   # Epic 2: Anonymous Access & Session (V0.1)
   epic-2: in-progress
   2-1-implement-anonymous-authentication: done
-  2-2-implement-session-persistence: backlog
+  2-2-implement-session-persistence: done
   2-3-epic-2-integration-and-verification-testing: backlog
 
   # Epic 3: Resume Upload & Parsing (V0.1)
