@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useOptimizationStore } from '@/store';
-import { useResumeExtraction } from '@/hooks';
+import { useResumeExtraction, MIME_TYPE_PDF, MIME_TYPE_DOCX } from '@/hooks';
 
 // ============================================================================
 // TYPES
@@ -109,11 +109,11 @@ export function ResumeUploader({
   // Track which file we've already attempted to extract (H3 fix: prevent re-extraction loops)
   const lastExtractedFileRef = useRef<string | null>(null);
 
-  // Auto-trigger extraction when PDF file is selected (only once per file)
+  // Auto-trigger extraction when PDF or DOCX file is selected (only once per file)
   useEffect(() => {
     if (
       pendingFile &&
-      pendingFile.type === 'application/pdf' &&
+      (pendingFile.type === MIME_TYPE_PDF || pendingFile.type === MIME_TYPE_DOCX) &&
       !resumeContent && // Don't re-extract if content already exists
       lastExtractedFileRef.current !== pendingFile.name // Don't re-extract same file
     ) {

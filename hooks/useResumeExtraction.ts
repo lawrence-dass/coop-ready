@@ -1,13 +1,19 @@
 import { useCallback, useTransition, useRef, useEffect } from 'react';
 import { useOptimizationStore } from '@/store';
 import { extractPdfText } from '@/actions/extractPdfText';
+import { extractDocxText } from '@/actions/extractDocxText';
 import { toast } from 'sonner';
 
 /** Maximum extraction time before showing slow warning (AC: 3 seconds) */
 const EXTRACTION_TIMEOUT_MS = 3000;
 
+/** MIME type constants for supported file types */
+export const MIME_TYPE_PDF = 'application/pdf';
+export const MIME_TYPE_DOCX =
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
 interface UseResumeExtractionOptions {
-  onSuccess?: (text: string, pageCount: number) => void;
+  onSuccess?: (text: string, itemCount: number) => void;
   onError?: (error: { code: string; message: string }) => void;
 }
 
@@ -27,6 +33,16 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
 
   const extract = useCallback(
     (file: File) => {
+      // Detect file type using constants
+      const isPdf = file.type === MIME_TYPE_PDF;
+      const isDocx = file.type === MIME_TYPE_DOCX;
+
+      // Validate supported file types
+      if (!isPdf && !isDocx) {
+        toast.error('Please upload a PDF or DOCX file');
+        return;
+      }
+
       // Server action validates file type, so we just start extraction
       store.setIsExtracting(true);
 
@@ -36,23 +52,45 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
       }, EXTRACTION_TIMEOUT_MS);
 
       startTransition(async () => {
-        const { data, error } = await extractPdfText(file);
+        // Route to appropriate extraction function based on file type
+        // Handle PDF extraction
+        if (isPdf) {
+          const { data, error } = await extractPdfText(file);
 
-        clearTimeout(timeoutId);
-        store.setIsExtracting(false);
+          clearTimeout(timeoutId);
+          store.setIsExtracting(false);
 
-        if (error) {
-          toast.error(error.message);
-          onErrorRef.current?.(error);
-          return;
-        }
+          if (error) {
+            toast.error(error.message);
+            onErrorRef.current?.(error);
+            return;
+          }
 
-        if (data) {
-          // Store extracted text
-          store.setResumeContent(data.text);
-          store.setPendingFile(null); // Clear pending file
-          toast.success(`Extracted ${data.pageCount} page(s) from PDF`);
-          onSuccessRef.current?.(data.text, data.pageCount);
+          if (data) {
+            store.setResumeContent(data.text);
+            store.setPendingFile(null);
+            toast.success(`Extracted ${data.pageCount} page(s) from PDF`);
+            onSuccessRef.current?.(data.text, data.pageCount);
+          }
+        } else {
+          // Handle DOCX extraction
+          const { data, error } = await extractDocxText(file);
+
+          clearTimeout(timeoutId);
+          store.setIsExtracting(false);
+
+          if (error) {
+            toast.error(error.message);
+            onErrorRef.current?.(error);
+            return;
+          }
+
+          if (data) {
+            store.setResumeContent(data.text);
+            store.setPendingFile(null);
+            toast.success(`Extracted ${data.paragraphCount} paragraph(s) from DOCX`);
+            onSuccessRef.current?.(data.text, data.paragraphCount);
+          }
         }
       });
     },
