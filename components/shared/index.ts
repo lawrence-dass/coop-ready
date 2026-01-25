@@ -11,3 +11,4 @@
 
 export { ResumeUploader } from './ResumeUploader';
 export { FileValidationError } from './FileValidationError';
+export { JobDescriptionInput } from './JobDescriptionInput';

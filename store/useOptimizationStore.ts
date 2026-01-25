@@ -115,6 +115,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     setJobDescription: (jd) =>
       set({ jobDescription: jd, error: null }),
 
+    clearJobDescription: () =>
+      set({ jobDescription: null, error: null }),
+
     setAnalysisResult: (result) =>
       set({ analysisResult: result, error: null }),
 

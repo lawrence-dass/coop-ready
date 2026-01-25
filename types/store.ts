@@ -112,6 +112,12 @@ export interface OptimizationStore {
   setJobDescription: (jd: JobDescription | null) => void;
 
   /**
+   * Clear the job description content
+   * Call when user wants to reset the JD field
+   */
+  clearJobDescription: () => void;
+
+  /**
    * Set the analysis result
    * Call after keyword analysis completes
    */
