@@ -10,7 +10,7 @@ git branch --show-current            # Current branch
 
 **Source of truth:** `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
-**Progress:** 3 epics done (Epic 1-3), Epic 4 next in backlog
+**Progress:** Check `/bmad:bmm:workflows:sprint-status` for current epic status
 
 ---
 
@@ -42,7 +42,7 @@ npm run test:report                  # View Playwright HTML report
 
 ## Tech Stack
 
-**Framework:** Next.js 15 (App Router) + TypeScript + React 19
+**Framework:** Next.js 16 (App Router) + TypeScript + React 19
 **Styling:** Tailwind CSS 4 + shadcn/ui components
 **Database:** Supabase (PostgreSQL) with Row-Level Security
 **AI/LLM:** LangChain.js + Anthropic Claude (Sonnet 4)
@@ -78,10 +78,10 @@ npm run test:report                  # View Playwright HTML report
 export async function myAction(): Promise<ActionResponse<Data>> {
   try {
     const result = await doSomething();
-    return { success: true, data: result };
+    return { data: result, error: null };
   } catch (error) {
     return {
-      success: false,
+      data: null,
       error: { code: 'ERROR_CODE', message: 'User-friendly message' }
     };
   }
@@ -182,6 +182,7 @@ npm run test:unit:run     # CI mode (run once)
 # E2E Tests (Playwright)
 npm run test:e2e          # All e2e tests
 npm run test:e2e:p0       # Only @P0 tests
+npm run test:e2e:p1       # Run @P0 and @P1 tests
 npm run test:e2e:headed   # Show browser
 npm run test:e2e:ui       # Interactive UI mode
 

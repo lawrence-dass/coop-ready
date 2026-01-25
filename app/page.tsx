@@ -6,8 +6,8 @@
  * Main page where users upload resumes and get optimization suggestions.
  */
 
-import { ResumeUploader, FileValidationError, JobDescriptionInput } from '@/components/shared';
-import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription } from '@/store';
+import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay } from '@/components/shared';
+import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis } from '@/store';
 import { toast } from 'sonner';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -21,6 +21,8 @@ export default function Home() {
   const jobDescription = useOptimizationStore(selectJobDescription);
   const setJobDescription = useOptimizationStore((state) => state.setJobDescription);
   const clearJobDescription = useOptimizationStore((state) => state.clearJobDescription);
+  const sessionId = useOptimizationStore((state) => state.sessionId);
+  const keywordAnalysis = useOptimizationStore(selectKeywordAnalysis);
 
   const handleFileError = (error: { code: string; message: string }) => {
     // Only set file error for known error codes
@@ -86,6 +88,20 @@ export default function Home() {
             isDisabled={isExtracting}
           />
         </div>
+
+        {/* Analysis Section */}
+        <div className="flex flex-col gap-4">
+          <AnalyzeButton
+            sessionId={sessionId}
+            hasResume={!!resumeContent}
+            hasJobDescription={!!jobDescription && jobDescription.trim().length > 0}
+          />
+        </div>
+
+        {/* Keyword Analysis Results */}
+        {keywordAnalysis && (
+          <KeywordAnalysisDisplay analysis={keywordAnalysis} />
+        )}
       </main>
     </div>
   );

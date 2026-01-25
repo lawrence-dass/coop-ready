@@ -31,6 +31,7 @@
 import { create } from 'zustand';
 import type { OptimizationStore } from '@/types/store';
 import type { OptimizationSession } from '@/types/optimization';
+import type { KeywordAnalysisResult } from '@/types/analysis';
 
 // ============================================================================
 // EXTENDED STORE INTERFACE
@@ -55,6 +56,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Parsing state for resume section parsing (Story 3.5) */
   isParsing: boolean;
 
+  /** Keyword analysis results (Story 5.1) */
+  keywordAnalysis: KeywordAnalysisResult | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -69,6 +73,12 @@ interface ExtendedOptimizationStore extends OptimizationStore {
 
   /** Set parsing state */
   setIsParsing: (parsing: boolean) => void;
+
+  /** Set keyword analysis results (Story 5.1) */
+  setKeywordAnalysis: (analysis: KeywordAnalysisResult | null) => void;
+
+  /** Clear keyword analysis results (Story 5.1) */
+  clearKeywordAnalysis: () => void;
 
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
@@ -104,6 +114,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     fileError: null,
     isExtracting: false,
     isParsing: false,
+    keywordAnalysis: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -153,6 +164,12 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     setIsParsing: (parsing) =>
       set({ isParsing: parsing }),
 
+    setKeywordAnalysis: (analysis) =>
+      set({ keywordAnalysis: analysis, error: null }),
+
+    clearKeywordAnalysis: () =>
+      set({ keywordAnalysis: null }),
+
     /**
      * Hydrate store from database session
      *
@@ -165,6 +182,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         jobDescription: session.jobDescription ?? null,
         analysisResult: session.analysisResult ?? null,
         suggestions: session.suggestions ?? null,
+        keywordAnalysis: session.keywordAnalysis ?? null,
         error: null,
       }),
 
@@ -194,6 +212,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         fileError: null,
         isExtracting: false,
         isParsing: false,
+        keywordAnalysis: null,
       }),
   })
 );
@@ -249,3 +268,6 @@ export const selectIsExtracting = (state: ExtendedOptimizationStore) =>
 
 export const selectIsParsing = (state: ExtendedOptimizationStore) =>
   state.isParsing;
+
+export const selectKeywordAnalysis = (state: ExtendedOptimizationStore) =>
+  state.keywordAnalysis;
