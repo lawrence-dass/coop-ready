@@ -20,7 +20,10 @@ export default function Home() {
   const setFileError = useOptimizationStore((state) => state.setFileError);
 
   const handleFileError = (error: { code: string; message: string }) => {
-    setFileError(error);
+    // Only set file error for known error codes
+    if (error.code === 'INVALID_FILE_TYPE' || error.code === 'FILE_TOO_LARGE') {
+      setFileError({ code: error.code, message: error.message });
+    }
     toast.error(error.message);
   };
 
@@ -64,7 +67,7 @@ export default function Home() {
             <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               <p>
-                Resume extracted successfully ({resumeContent.length.toLocaleString()} characters)
+                Resume extracted successfully ({resumeContent.rawText.length.toLocaleString()} characters)
               </p>
             </div>
           )}

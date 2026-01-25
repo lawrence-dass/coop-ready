@@ -58,7 +58,7 @@ development_status:
   3-2-implement-file-validation: done
   3-3-implement-pdf-text-extraction: done
   3-4-implement-docx-text-extraction: done
-  3-5-implement-resume-section-parsing: backlog
+  3-5-implement-resume-section-parsing: done
   3-6-epic-3-integration-and-verification-testing: backlog
 
   # Epic 4: Job Description Input (V0.1)

@@ -49,8 +49,11 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** File validation error (Story 3.2) */
   fileError: { code: 'INVALID_FILE_TYPE' | 'FILE_TOO_LARGE'; message: string } | null;
 
-  /** Extracting state for PDF/DOCX parsing (Story 3.3) */
+  /** Extracting state for PDF/DOCX parsing (Story 3.3/3.4) */
   isExtracting: boolean;
+
+  /** Parsing state for resume section parsing (Story 3.5) */
+  isParsing: boolean;
 
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
@@ -63,6 +66,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
 
   /** Set extracting state */
   setIsExtracting: (extracting: boolean) => void;
+
+  /** Set parsing state */
+  setIsParsing: (parsing: boolean) => void;
 
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
@@ -97,6 +103,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     pendingFile: null,
     fileError: null,
     isExtracting: false,
+    isParsing: false,
 
     // ============================================================================
     // DATA ACTIONS
@@ -140,6 +147,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     setIsExtracting: (extracting) =>
       set({ isExtracting: extracting }),
 
+    setIsParsing: (parsing) =>
+      set({ isParsing: parsing }),
+
     /**
      * Hydrate store from database session
      *
@@ -180,6 +190,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         pendingFile: null,
         fileError: null,
         isExtracting: false,
+        isParsing: false,
       }),
   })
 );
@@ -232,3 +243,6 @@ export const selectFileError = (state: ExtendedOptimizationStore) =>
 
 export const selectIsExtracting = (state: ExtendedOptimizationStore) =>
   state.isExtracting;
+
+export const selectIsParsing = (state: ExtendedOptimizationStore) =>
+  state.isParsing;

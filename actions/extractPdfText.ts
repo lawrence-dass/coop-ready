@@ -21,8 +21,8 @@ export async function extractPdfText(
     // Convert to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
 
-    // Extract text using unpdf
-    const result = await extractText(new Uint8Array(arrayBuffer));
+    // Extract text using unpdf with mergePages: true to get a single string
+    const result = await extractText(new Uint8Array(arrayBuffer), { mergePages: true });
 
     // Check if extraction returned any text
     if (!result || !result.text || result.text.trim().length === 0) {

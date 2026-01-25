@@ -2,13 +2,17 @@ import { useCallback, useTransition, useRef, useEffect } from 'react';
 import { useOptimizationStore } from '@/store';
 import { extractPdfText } from '@/actions/extractPdfText';
 import { extractDocxText } from '@/actions/extractDocxText';
+import { parseResumeText } from '@/actions/parseResumeText';
 import { toast } from 'sonner';
+import type { Resume } from '@/types/optimization';
 
 /** Maximum extraction time before showing slow warning (AC: 3 seconds) */
 const EXTRACTION_TIMEOUT_MS = 3000;
 
-/** MIME type constants for supported file types */
+/** MIME type for PDF files */
 export const MIME_TYPE_PDF = 'application/pdf';
+
+/** MIME type for DOCX (Office Open XML) files */
 export const MIME_TYPE_DOCX =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -17,11 +21,27 @@ interface UseResumeExtractionOptions {
   onError?: (error: { code: string; message: string }) => void;
 }
 
+/**
+ * Build a human-readable list of parsed resume sections
+ */
+function formatParsedSections(resume: Resume): string {
+  const sections = [
+    resume.summary ? 'Summary' : null,
+    resume.skills ? 'Skills' : null,
+    resume.experience ? 'Experience' : null,
+    resume.education ? 'Education' : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  return sections || 'No sections found';
+}
+
 export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
   const [isPending, startTransition] = useTransition();
   const store = useOptimizationStore();
 
-  // Use refs for callbacks to avoid stale closure issues (H2 fix)
+  // Use refs for callbacks to avoid stale closure issues
   const onSuccessRef = useRef(options.onSuccess);
   const onErrorRef = useRef(options.onError);
 
@@ -30,6 +50,42 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
     onSuccessRef.current = options.onSuccess;
     onErrorRef.current = options.onError;
   }, [options.onSuccess, options.onError]);
+
+  /**
+   * Parse extracted text into structured Resume sections
+   * Shared logic for both PDF and DOCX extraction flows
+   */
+  const parseAndStoreResume = async (
+    text: string,
+    file: File,
+    itemCount: number
+  ): Promise<boolean> => {
+    store.setIsParsing(true);
+    toast.info('Parsing resume sections...');
+
+    const parseResult = await parseResumeText(text, {
+      filename: file.name,
+      fileSize: file.size,
+    });
+
+    store.setIsParsing(false);
+
+    if (parseResult.error) {
+      toast.error(parseResult.error.message);
+      onErrorRef.current?.(parseResult.error);
+      return false;
+    }
+
+    // Store parsed Resume object with metadata
+    const parsedResume = parseResult.data!;
+    store.setResumeContent(parsedResume);
+    store.setPendingFile(null);
+
+    // Show success message with parsed sections
+    toast.success(`Parsed resume sections: ${formatParsedSections(parsedResume)}`);
+    onSuccessRef.current?.(text, itemCount);
+    return true;
+  };
 
   const extract = useCallback(
     (file: File) => {
@@ -53,7 +109,6 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
 
       startTransition(async () => {
         // Route to appropriate extraction function based on file type
-        // Handle PDF extraction
         if (isPdf) {
           const { data, error } = await extractPdfText(file);
 
@@ -67,10 +122,8 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
           }
 
           if (data) {
-            store.setResumeContent(data.text);
-            store.setPendingFile(null);
             toast.success(`Extracted ${data.pageCount} page(s) from PDF`);
-            onSuccessRef.current?.(data.text, data.pageCount);
+            await parseAndStoreResume(data.text, file, data.pageCount);
           }
         } else {
           // Handle DOCX extraction
@@ -86,10 +139,8 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
           }
 
           if (data) {
-            store.setResumeContent(data.text);
-            store.setPendingFile(null);
             toast.success(`Extracted ${data.paragraphCount} paragraph(s) from DOCX`);
-            onSuccessRef.current?.(data.text, data.paragraphCount);
+            await parseAndStoreResume(data.text, file, data.paragraphCount);
           }
         }
       });
