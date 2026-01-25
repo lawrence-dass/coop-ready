@@ -31,6 +31,7 @@ Key dirs: `/lib/ai/` (LLM), `/lib/supabase/` (DB), `/actions/` (server), `/store
 3. **Naming** - DB: snake_case, TS: camelCase, Components: PascalCase, Routes: kebab-case
 4. **LLM Security** - Server-side only, wrap user content in XML tags
 5. **Constraints** - 60s timeout, 5MB files, $0.10/optimization
+6. **Epic Final Story** - Integration-and-verification-testing stories use `/bmad:bmm:workflows:epic-integration` (includes TEA + TR + TA)
 
 ## Next Action
 

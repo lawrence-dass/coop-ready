@@ -232,8 +232,36 @@ flowchart TB
 | "Start implementing" | `/bmad:bmm:workflows:dev-story` |
 | "Need to create story file" | `/bmad:bmm:workflows:create-story` |
 | "Story is ready for review" | `/bmad:bmm:workflows:code-review` |
+| "Epic final story (integration testing)" | `/bmad:bmm:workflows:epic-integration` |
 | "Epic is complete" | `/bmad:bmm:workflows:retrospective` |
 | "Optimize context" | `/context-optimize` |
+
+### Epic Final Story Protocol
+
+**CRITICAL:** The last story of each epic (`*-integration-and-verification-testing`) uses a dedicated workflow.
+
+**Single Command:**
+```bash
+/bmad:bmm:workflows:epic-integration
+```
+
+**What It Does (automatically):**
+1. **Git Setup** - Checkout main, pull latest, create feature branch
+2. **TEA Agent** - Load Test Engineering Architect persona
+3. **TR Workflow** - Run `testarch-trace` for traceability matrix
+4. **TA Workflow** - Run `testarch-automate` for test coverage
+5. **Dev-Story** - Implement all story tasks
+6. **Validation** - Run lint, build, tests
+7. **Git Finish** - Commit and push to remote branch
+
+**Model:** Sonnet
+
+**Why This Workflow?**
+- Complete git workflow (branch → implement → push)
+- TEA specializes in test architecture and quality assurance
+- TR validates all requirements have test coverage
+- TA generates comprehensive test suites
+- Ensures epic is production-ready before moving forward
 
 ### Model Selection Strategy
 
@@ -258,11 +286,12 @@ flowchart LR
     T4 --> O
 ```
 
-| Workflow | Model | Rationale |
-|----------|-------|-----------|
+| Workflow | Model/Agent | Rationale |
+|----------|-------------|-----------|
 | create-story | haiku | Template filling, cost savings |
 | sprint-planning | haiku | Simple extraction |
 | dev-story | sonnet | Balanced reasoning (default) |
+| **epic-integration** | **sonnet** | TEA + TR + TA + dev-story |
 | code-review | opus | Comprehensive analysis |
 
 ---
@@ -498,6 +527,10 @@ DAILY DEVELOPMENT
 /bmad:bmm:workflows:dev-story        → Implement story
 /bmad:bmm:workflows:code-review      → Review code (use opus)
 
+EPIC FINAL STORY (Integration Testing)
+──────────────────────────────────────
+/bmad:bmm:workflows:epic-integration → TEA + TR + TA + dev-story (all-in-one)
+
 CONTEXT MANAGEMENT
 ──────────────────
 /context-optimize                    → Analyze context health
@@ -531,16 +564,20 @@ flowchart TB
     Q2 -->|Yes| Q3{Story file exists?}
 
     Q3 -->|No| A3[/bmad:bmm:workflows:create-story]
-    Q3 -->|Yes| Q4{Story implemented?}
+    Q3 -->|Yes| Q4{Integration story?}
 
-    Q4 -->|No| A4[/bmad:bmm:workflows:dev-story]
-    Q4 -->|Yes| Q5{Code reviewed?}
+    Q4 -->|Yes| TEA[/epic-integration<br/>TEA + TR + TA + dev-story]
+    Q4 -->|No| Q5{Story implemented?}
 
-    Q5 -->|No| A5[/bmad:bmm:workflows:code-review]
-    Q5 -->|Yes| Q6{Epic complete?}
+    Q5 -->|No| A4[/bmad:bmm:workflows:dev-story]
+    Q5 -->|Yes| Q6{Code reviewed?}
 
-    Q6 -->|No| A2
-    Q6 -->|Yes| A6[/bmad:bmm:workflows:retrospective]
+    TEA --> Q6
+    Q6 -->|No| A5[/bmad:bmm:workflows:code-review]
+    Q6 -->|Yes| Q7{Epic complete?}
+
+    Q7 -->|No| A2
+    Q7 -->|Yes| A6[/bmad:bmm:workflows:retrospective]
 
     A6 --> A7[/context-optimize archive]
 ```

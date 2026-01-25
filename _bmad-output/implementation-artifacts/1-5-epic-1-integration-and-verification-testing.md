@@ -2,6 +2,10 @@
 
 Status: backlog
 
+> ⚠️ **USE EPIC-INTEGRATION WORKFLOW** - This is an integration-and-verification-testing story.
+> Run: `/bmad:bmm:workflows:epic-integration`
+> Handles: git setup → TEA → TR → TA → dev-story → commit → push
+
 ## Story
 
 As a developer,
@@ -74,6 +78,33 @@ So that the project is ready for feature development in Epic 2 and beyond.
   - [ ] Add this to README.md as reference for new developers
 
 ## Dev Notes
+
+### Required Workflow
+
+**Use the dedicated epic-integration workflow:**
+
+```bash
+/bmad:bmm:workflows:epic-integration
+```
+
+**This single command automatically:**
+1. **Git Setup** - Checkout main, pull latest, create feature branch
+2. **TEA Agent** - Load Test Engineering Architect persona
+3. **TR Workflow** - Run `testarch-trace` for traceability matrix
+4. **TA Workflow** - Run `testarch-automate` for test coverage
+5. **Dev-Story** - Implement all story tasks
+6. **Validation** - Run lint, build, tests
+7. **Git Finish** - Commit and push to remote branch
+
+**Model:** Sonnet
+
+**Why This Workflow?**
+- Complete git workflow (no manual branch creation needed)
+- TR validates all acceptance criteria have test coverage
+- TA generates comprehensive test suites for the epic
+- TEA specializes in test architecture and quality gates
+- Auto-commits and pushes when complete
+- Ensures epic is production-ready before proceeding
 
 ### What This Story Verifies
 

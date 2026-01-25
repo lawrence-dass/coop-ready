@@ -57,3 +57,8 @@ next-env.d.ts
 
 
 initial_docs/
+# MCP Server Configuration (local)
+.mcp.json
+
+# BMAD Backups
+_bmad-backup-*/
