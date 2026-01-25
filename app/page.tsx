@@ -9,10 +9,13 @@
 import { ResumeUploader, FileValidationError } from '@/components/shared';
 import { useOptimizationStore, selectPendingFile, selectFileError } from '@/store';
 import { toast } from 'sonner';
+import { CheckCircle2 } from 'lucide-react';
 
 export default function Home() {
   const pendingFile = useOptimizationStore(selectPendingFile);
   const fileError = useOptimizationStore(selectFileError);
+  const resumeContent = useOptimizationStore((state) => state.resumeContent);
+  const isExtracting = useOptimizationStore((state) => state.isExtracting);
   const setPendingFile = useOptimizationStore((state) => state.setPendingFile);
   const setFileError = useOptimizationStore((state) => state.setFileError);
 
@@ -56,6 +59,14 @@ export default function Home() {
               message={fileError.message}
               onDismiss={() => setFileError(null)}
             />
+          )}
+          {resumeContent && !isExtracting && (
+            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <p>
+                Resume extracted successfully ({resumeContent.length.toLocaleString()} characters)
+              </p>
+            </div>
           )}
         </div>
       </main>

@@ -23,12 +23,14 @@
  * ```
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
-import { Upload, FileText, FileType, X } from 'lucide-react';
+import { Upload, FileText, FileType, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useOptimizationStore } from '@/store';
+import { useResumeExtraction } from '@/hooks';
 
 // ============================================================================
 // TYPES
@@ -98,6 +100,28 @@ export function ResumeUploader({
   selectedFile,
   className,
 }: ResumeUploaderProps) {
+  // Get extraction state and hook
+  const pendingFile = useOptimizationStore((state) => state.pendingFile);
+  const isExtracting = useOptimizationStore((state) => state.isExtracting);
+  const resumeContent = useOptimizationStore((state) => state.resumeContent);
+  const { extract, isPending } = useResumeExtraction();
+
+  // Track which file we've already attempted to extract (H3 fix: prevent re-extraction loops)
+  const lastExtractedFileRef = useRef<string | null>(null);
+
+  // Auto-trigger extraction when PDF file is selected (only once per file)
+  useEffect(() => {
+    if (
+      pendingFile &&
+      pendingFile.type === 'application/pdf' &&
+      !resumeContent && // Don't re-extract if content already exists
+      lastExtractedFileRef.current !== pendingFile.name // Don't re-extract same file
+    ) {
+      lastExtractedFileRef.current = pendingFile.name;
+      extract(pendingFile);
+    }
+  }, [pendingFile, extract, resumeContent]);
+
   // Handle file drop
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -140,6 +164,24 @@ export function ResumeUploader({
     maxFiles: 1,
     multiple: false,
   });
+
+  // ============================================================================
+  // RENDER: Extracting State
+  // ============================================================================
+
+  if (isExtracting || isPending) {
+    return (
+      <Card
+        className={cn(
+          'flex items-center justify-center gap-3 border-2 border-dashed border-primary/50 bg-primary/5 p-8',
+          className
+        )}
+      >
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <p className="text-sm font-medium text-primary">Parsing document...</p>
+      </Card>
+    );
+  }
 
   // ============================================================================
   // RENDER: File Selected State
