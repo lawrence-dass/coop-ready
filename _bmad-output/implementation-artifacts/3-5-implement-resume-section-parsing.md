@@ -1,6 +1,6 @@
 # Story 3.5: Implement Resume Section Parsing
 
-**Status:** ready-for-dev
+**Status:** done
 
 ## Story
 
@@ -19,44 +19,44 @@ So that the system can provide section-specific suggestions.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create Resume Section Parser Server Action** (AC: #1, #2)
-  - [ ] Create `/actions/parseResumeText.ts` server action
-  - [ ] Accept `rawText: string` parameter (extracted from PDF/DOCX)
-  - [ ] Use LLM to identify and extract 4 sections: Summary, Skills, Experience, Education
-  - [ ] Return ActionResponse<Resume> with parsed sections
-  - [ ] Handle parsing errors with PARSE_ERROR code
-  - [ ] Add reasonable timeout (10 seconds max for LLM call)
+- [x] **Task 1: Create Resume Section Parser Server Action** (AC: #1, #2)
+  - [x] Create `/actions/parseResumeText.ts` server action
+  - [x] Accept `rawText: string` parameter (extracted from PDF/DOCX)
+  - [x] Use LLM to identify and extract 4 sections: Summary, Skills, Experience, Education
+  - [x] Return ActionResponse<Resume> with parsed sections
+  - [x] Handle parsing errors with PARSE_ERROR code
+  - [x] Add reasonable timeout (10 seconds max for LLM call)
 
-- [ ] **Task 2: Implement LLM Prompt for Resume Parsing** (AC: #1, #2)
-  - [ ] Create structured prompt that instructs Claude to identify sections
-  - [ ] Prompt should extract: summary, skills, experience, education
-  - [ ] Wrap raw text in XML tags for prompt injection defense
-  - [ ] Return JSON with all sections
-  - [ ] Handle cases where sections don't exist (optional fields)
-  - [ ] Ensure prompt is deterministic and consistent
+- [x] **Task 2: Implement LLM Prompt for Resume Parsing** (AC: #1, #2)
+  - [x] Create structured prompt that instructs Claude to identify sections
+  - [x] Prompt should extract: summary, skills, experience, education
+  - [x] Wrap raw text in XML tags for prompt injection defense
+  - [x] Return JSON with all sections
+  - [x] Handle cases where sections don't exist (optional fields)
+  - [x] Ensure prompt is deterministic and consistent
 
-- [ ] **Task 3: Create useResumeParser Hook** (AC: #1)
-  - [ ] Create hook `/hooks/useResumeParser.ts` for parsing orchestration
-  - [ ] Hook accepts `rawText: string` and callbacks
-  - [ ] Show loading state while parsing ("Parsing resume sections...")
-  - [ ] Call `parseResumeText` server action with extracted text
-  - [ ] Handle parsing errors gracefully with toast notification
-  - [ ] Store parsed Resume object in Zustand
+- [x] **Task 3: Create useResumeParser Hook** (AC: #1)
+  - [x] Create hook `/hooks/useResumeParser.ts` for parsing orchestration
+  - [x] Hook accepts `rawText: string` and callbacks
+  - [x] Show loading state while parsing ("Parsing resume sections...")
+  - [x] Call `parseResumeText` server action with extracted text
+  - [x] Handle parsing errors gracefully with toast notification
+  - [x] Store parsed Resume object in Zustand
 
-- [ ] **Task 4: Integrate Parsing into Extraction Flow** (AC: #1)
-  - [ ] Modify extraction success flow to trigger parsing automatically
-  - [ ] After PDF/DOCX extraction succeeds, automatically parse sections
-  - [ ] Show cascading loading states: "Parsing PDF..." → "Parsing resume sections..."
-  - [ ] Handle errors at each step (extraction vs parsing)
-  - [ ] Allow user to retry at either step independently
+- [x] **Task 4: Integrate Parsing into Extraction Flow** (AC: #1)
+  - [x] Modify extraction success flow to trigger parsing automatically
+  - [x] After PDF/DOCX extraction succeeds, automatically parse sections
+  - [x] Show cascading loading states: "Parsing PDF..." → "Parsing resume sections..."
+  - [x] Handle errors at each step (extraction vs parsing)
+  - [x] Allow user to retry at either step independently
 
-- [ ] **Task 5: Update Store with Parsed Resume Data** (AC: #1, #3)
-  - [ ] Modify Zustand store to store full Resume object (not just raw text)
-  - [ ] Add `resumeContent: Resume | null` to store (typed Resume)
-  - [ ] Add `isParsing: boolean` to track parsing state
-  - [ ] Add `setResumeContent` to store parsed Resume
-  - [ ] Add `setIsParsing` action for loading state
-  - [ ] Update store type to match Resume interface
+- [x] **Task 5: Update Store with Parsed Resume Data** (AC: #1, #3)
+  - [x] Modify Zustand store to store full Resume object (not just raw text)
+  - [x] Add `resumeContent: Resume | null` to store (typed Resume)
+  - [x] Add `isParsing: boolean` to track parsing state
+  - [x] Add `setResumeContent` to store parsed Resume
+  - [x] Add `setIsParsing` action for loading state
+  - [x] Update store type to match Resume interface
 
 ## Dev Notes
 
@@ -453,33 +453,107 @@ This story enables:
 - [Anthropic SDK Docs](https://github.com/anthropics/anthropic-sdk-python)
 - [Claude 3.5 Sonnet Guide](https://docs.anthropic.com/en/docs/models/claude-3-5-sonnet)
 
+## File List
+
+- `actions/parseResumeText.ts` (NEW)
+- `tests/unit/actions/parseResumeText.test.ts` (NEW)
+- `hooks/useResumeParser.ts` (NEW)
+- `hooks/useResumeExtraction.ts` (MODIFIED - auto-triggers parsing after extraction, DRY refactor)
+- `hooks/index.ts` (MODIFIED - exported useResumeParser)
+- `tests/unit/hooks/useResumeParser.test.ts` (NEW)
+- `store/useOptimizationStore.ts` (MODIFIED - added isParsing state, setIsParsing action)
+- `tests/setup.ts` (MODIFIED - added global Anthropic SDK mock)
+- `actions/extractPdfText.ts` (MODIFIED - fixed unpdf mergePages option)
+- `tests/unit/actions/extractPdfText.test.ts` (MODIFIED - updated test for mergePages)
+- `app/page.tsx` (MODIFIED - fixed Resume type usage)
+
+## Change Log
+
+- 2026-01-25: Completed Task 1 - Created parseResumeText server action with full test coverage (8/8 tests passing)
+- 2026-01-25: Completed Task 2 - LLM prompt implemented as part of Task 1
+- 2026-01-25: Completed Task 3 - Created useResumeParser hook with full test coverage (10/10 tests passing)
+- 2026-01-25: Completed Task 4 - Integrated parsing into extraction flow (auto-triggers after PDF/DOCX extraction)
+- 2026-01-25: Completed Task 5 - Updated store to handle Resume objects and isParsing state
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-Claude Haiku 4.5 (claude-haiku-4-5-20251001)
+Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 
-### Completion Status
+### Implementation Plan
 
-Story file created with comprehensive developer context. Ready for implementation via `/bmad:bmm:workflows:dev-story`.
+**Task 1: Create Resume Section Parser Server Action**
+- Created server action `/actions/parseResumeText.ts` using Anthropic SDK
+- Implemented LLM prompt with XML tags for prompt injection defense
+- Added robust JSON parsing (handles markdown code blocks)
+- Returns ActionResponse<Resume> with all 4 sections
+- 10-second timeout for LLM call
+- Full error handling with PARSE_ERROR code
 
-### Notes for Implementation
+### Debug Log
 
-1. **Resume type is already defined** - `/types/optimization.ts` has full Resume interface with all 4 sections
-2. **LLM is already accessible** - Anthropic API configured in project
-3. **Timeout is generous** - 10 seconds for parsing should be plenty (typical parse: 1-2s)
-4. **Extraction already provides rawText** - Stories 3.3/3.4 create the string that flows into this story
-5. **JSON parsing must be robust** - Handle markdown code blocks in Claude response
-6. **Sections are optional** - Not all resumes have all sections, use null for missing
-7. **Session persistence handles Resume objects** - Store already configured to persist complex types
+- Tests initially failed due to incorrect mock setup
+- Fixed mock implementation to use vi.mocked() pattern
+- Updated test assertions to properly verify XML tag wrapping
+- All 8 unit tests passing ✅
 
-### Implementation Highlights
+### Completion Notes
 
-- **Simple data flow:** rawText → Claude → Resume object → Store
-- **Auto-triggering:** Parsing starts automatically after extraction completes
-- **Type-safe:** Full Resume interface with optional sections
-- **Error-resilient:** Clear error handling at each step
-- **Cost-effective:** Simple extraction task, ~$0.001-0.002 per resume
-- **Fast:** Typical parse time 1-2 seconds, 10s timeout is comfortable
+✅ **Task 1 Complete** - parseResumeText server action fully implemented
+- Server action uses Claude 3.5 Sonnet for structured parsing
+- Handles all edge cases: empty text, missing sections, invalid JSON, API errors
+- Wraps user content in XML tags for security
+- Returns Resume object with optional section fields
+- 8/8 unit tests passing
 
-This is a pivotal story: transforms raw text into structured data that enables all downstream features (ATS analysis, content optimization, section-specific suggestions).
+✅ **Task 2 Complete** - LLM prompt implemented (was part of Task 1)
+- Structured prompt with clear section extraction instructions
+- XML tags wrap user content for prompt injection defense
+- Returns JSON with 4 fields (summary, skills, experience, education)
+- Handles missing sections gracefully (sets to null → undefined in Resume object)
+- Deterministic output format requested in prompt
+
+✅ **Task 3 Complete** - useResumeParser hook fully implemented
+- Created hook with parse function and isPending state
+- Validates input (rejects empty/whitespace-only text)
+- Calls parseResumeText server action
+- Stores Resume object in Zustand via setResumeContent
+- Shows success toast with list of found sections
+- Handles errors with toast notifications
+- Supports onSuccess and onError callbacks
+- 10/10 unit tests passing
+
+✅ **Task 4 Complete** - Parsing integrated into extraction flow
+- Modified useResumeExtraction hook to auto-trigger parsing
+- After PDF/DOCX extraction succeeds, parseResumeText is called automatically
+- Shows cascading toasts: "Extracted X pages" → "Parsing sections..." → "Parsed: Summary, Skills..."
+- Handles errors at each step independently
+- Sets isParsing state during parsing operation
+- Full Resume object (not just rawText) stored in Zustand
+
+✅ **Task 5 Complete** - Store updated for Resume objects
+- Added isParsing: boolean state to store
+- Added setIsParsing action
+- resumeContent already typed as Resume | null (from OptimizationStore interface)
+- Store now properly handles full Resume objects with 4 optional sections
+- Global Anthropic SDK mock added to tests/setup.ts for test compatibility
+- All 70 unit/integration tests passing ✅
+
+### Code Review Fixes (2026-01-25)
+
+**HIGH severity fixes:**
+- H2: Added `filename` and `fileSize` parameters to `parseResumeText` action to preserve file metadata
+- H3: Refactored `useResumeExtraction` to extract shared parsing logic into `parseAndStoreResume()` helper (DRY fix)
+
+**MEDIUM severity fixes:**
+- M1: Fixed unstable options reference in `useResumeParser` by using refs pattern (consistent with extraction hook)
+- M3: Added proper destructuring (`const parsedResume = parseResult.data!`) to avoid multiple non-null assertions
+
+**Pre-existing bugs fixed during review:**
+- Fixed `unpdf` extractText call to use `{ mergePages: true }` option (returns string instead of string[])
+- Fixed `app/page.tsx` to use `resumeContent.rawText.length` instead of `resumeContent.length`
+- Fixed type narrowing in `handleFileError` callback
+
+**Test coverage:** 72 tests passing (10 parseResumeText, 10 useResumeParser, 52 others)
+**Build:** ✅ Passes TypeScript check and production build

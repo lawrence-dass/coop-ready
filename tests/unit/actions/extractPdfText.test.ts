@@ -49,7 +49,7 @@ describe('Story 3.3: extractPdfText Server Action', () => {
       pageCount: 2
     });
     expect(result.error).toBeNull();
-    expect(mockExtractText).toHaveBeenCalledWith(expect.any(Uint8Array));
+    expect(mockExtractText).toHaveBeenCalledWith(expect.any(Uint8Array), { mergePages: true });
   });
 
   test('[P0] 3.3-UNIT-002: should return INVALID_FILE_TYPE error for non-PDF files', async () => {
