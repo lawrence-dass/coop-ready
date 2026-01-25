@@ -5,6 +5,8 @@
  * All types use camelCase to match TypeScript conventions (DB uses snake_case).
  */
 
+import type { KeywordAnalysisResult } from './analysis';
+
 // ============================================================================
 // RESUME TYPES
 // ============================================================================
@@ -177,11 +179,14 @@ export interface OptimizationSession {
   /** Parsed resume content */
   resumeContent?: Resume | null;
 
-  /** Job description content */
-  jobDescription?: JobDescription | null;
+  /** Job description content (Epic 4 uses string) */
+  jobDescription?: string | null;
 
   /** Keyword analysis results */
   analysisResult?: AnalysisResult | null;
+
+  /** Keyword analysis results (Story 5.1 - new structured format) */
+  keywordAnalysis?: KeywordAnalysisResult | null;
 
   /** Generated optimization suggestions */
   suggestions?: SuggestionSet | null;

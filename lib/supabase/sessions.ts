@@ -26,7 +26,6 @@ import type { ActionResponse } from '@/types';
 import type {
   OptimizationSession,
   Resume,
-  JobDescription,
   AnalysisResult,
   SuggestionSet,
 } from '@/types/optimization';
@@ -198,7 +197,7 @@ export async function updateSession(
   sessionId: string,
   updates: {
     resumeContent?: Resume | null;
-    jobDescription?: JobDescription | null;
+    jobDescription?: string | null; // Epic 4 uses string, not JobDescription object
     analysisResult?: AnalysisResult | null;
     suggestions?: SuggestionSet | null;
     feedback?: Record<string, 'helpful' | 'not-helpful'> | null;
