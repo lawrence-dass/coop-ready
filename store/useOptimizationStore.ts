@@ -46,11 +46,17 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Pending file awaiting parsing (Story 3.1 - not yet parsed) */
   pendingFile: File | null;
 
+  /** File validation error (Story 3.2) */
+  fileError: { code: 'INVALID_FILE_TYPE' | 'FILE_TOO_LARGE'; message: string } | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
   /** Set pending file before parsing */
   setPendingFile: (file: File | null) => void;
+
+  /** Set file validation error */
+  setFileError: (error: { code: 'INVALID_FILE_TYPE' | 'FILE_TOO_LARGE'; message: string } | null) => void;
 
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
@@ -83,6 +89,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     error: null,
     sessionId: null,
     pendingFile: null,
+    fileError: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -118,7 +125,10 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
       set({ sessionId: id }),
 
     setPendingFile: (file) =>
-      set({ pendingFile: file, error: null }),
+      set({ pendingFile: file, error: null, fileError: null }),
+
+    setFileError: (error) =>
+      set({ fileError: error }),
 
     /**
      * Hydrate store from database session
@@ -158,6 +168,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         error: null,
         sessionId: null,
         pendingFile: null,
+        fileError: null,
       }),
   })
 );
@@ -204,3 +215,6 @@ export const selectSessionId = (state: ExtendedOptimizationStore) =>
 
 export const selectPendingFile = (state: ExtendedOptimizationStore) =>
   state.pendingFile;
+
+export const selectFileError = (state: ExtendedOptimizationStore) =>
+  state.fileError;
