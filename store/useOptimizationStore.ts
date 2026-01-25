@@ -190,15 +190,3 @@ export const selectError = (state: ExtendedOptimizationStore) => state.error;
 
 export const selectSessionId = (state: ExtendedOptimizationStore) =>
   state.sessionId;
-
-/**
- * Selector to extract data for saving to database
- *
- * Returns only the fields that should be persisted
- */
-export const selectSessionData = (state: ExtendedOptimizationStore) => ({
-  resumeContent: state.resumeContent,
-  jobDescription: state.jobDescription,
-  analysisResult: state.analysisResult,
-  suggestions: state.suggestions,
-});

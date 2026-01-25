@@ -26,7 +26,14 @@
 
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { useOptimizationStore, selectSessionData, selectSessionId } from '@/store';
+import {
+  useOptimizationStore,
+  selectSessionId,
+  selectResume,
+  selectJobDescription,
+  selectAnalysisResult,
+  selectSuggestions,
+} from '@/store';
 import { updateSession } from '@/lib/supabase/sessions';
 
 /**
@@ -41,7 +48,12 @@ import { updateSession } from '@/lib/supabase/sessions';
  */
 export function useSessionSync() {
   const sessionId = useOptimizationStore(selectSessionId);
-  const sessionData = useOptimizationStore(selectSessionData);
+
+  // Select individual fields to avoid object reference issues
+  const resumeContent = useOptimizationStore(selectResume);
+  const jobDescription = useOptimizationStore(selectJobDescription);
+  const analysisResult = useOptimizationStore(selectAnalysisResult);
+  const suggestions = useOptimizationStore(selectSuggestions);
 
   // Track last saved state to avoid duplicate saves
   const lastSavedHashRef = useRef<string | null>(null);
@@ -65,6 +77,14 @@ export function useSessionSync() {
     if (!sessionId) {
       return;
     }
+
+    // Create session data object from individual fields
+    const sessionData = {
+      resumeContent,
+      jobDescription,
+      analysisResult,
+      suggestions,
+    };
 
     // Create hash of current state for comparison
     const currentHash = JSON.stringify(sessionData);
@@ -117,5 +137,5 @@ export function useSessionSync() {
         clearTimeout(saveTimerRef.current);
       }
     };
-  }, [sessionId, sessionData]);
+  }, [sessionId, resumeContent, jobDescription, analysisResult, suggestions]);
 }
