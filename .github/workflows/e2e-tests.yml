@@ -36,6 +36,10 @@ jobs:
           # Test environment configuration
           BASE_URL: http://localhost:3000
           TEST_ENV: ci
+          # Placeholder Supabase env vars for dev server to start
+          # These allow the app to start but won't enable real auth
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           # Database seeding: Story 8-3 will implement test-only API endpoints
           # For now, tests use direct Supabase service role access if needed
           #
