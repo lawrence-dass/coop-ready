@@ -1,10 +1,16 @@
 'use client';
 
 // Story 5.1: Keyword Analysis Display Component
+// Story 5.4: Enhanced with Gap Analysis Display
+import { useState } from 'react';
 import { KeywordAnalysisResult, KeywordCategory } from '@/types/analysis';
-import { CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
+import { CheckCircle2, AlertCircle, TrendingUp, PartyPopper } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { GapSummaryCard } from './GapSummaryCard';
+import { PriorityFilterChips, PriorityFilter } from './PriorityFilterChips';
+import { MissingKeywordItem } from './MissingKeywordItem';
+import { getCategoryIcon } from '@/lib/utils/categoryIcons';
 
 interface KeywordAnalysisDisplayProps {
   analysis: KeywordAnalysisResult;
@@ -20,6 +26,11 @@ interface KeywordAnalysisDisplayProps {
  */
 export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps) {
   const { matched, missing, matchRate } = analysis;
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+
+  // Filter missing keywords by priority
+  const filteredMissing =
+    priorityFilter === 'all' ? missing : missing.filter((k) => k.importance === priorityFilter);
 
   // Group matched keywords by category
   const matchedByCategory = matched.reduce((acc, keyword) => {
@@ -29,15 +40,6 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
     acc[keyword.category].push(keyword);
     return acc;
   }, {} as Record<KeywordCategory, typeof matched>);
-
-  // Group missing keywords by category
-  const missingByCategory = missing.reduce((acc, keyword) => {
-    if (!acc[keyword.category]) {
-      acc[keyword.category] = [];
-    }
-    acc[keyword.category].push(keyword);
-    return acc;
-  }, {} as Record<KeywordCategory, typeof missing>);
 
   // Get match rate color
   const getMatchRateColor = (rate: number) => {
@@ -115,6 +117,9 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
         </CardContent>
       </Card>
 
+      {/* NEW: Gap Summary Dashboard */}
+      {missing.length > 0 && <GapSummaryCard missing={missing} />}
+
       {/* Matched Keywords */}
       {matched.length > 0 && (
         <Card>
@@ -164,7 +169,7 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
         </Card>
       )}
 
-      {/* Missing Keywords */}
+      {/* ENHANCED: Missing Keywords with Priority Filter */}
       {missing.length > 0 && (
         <Card>
           <CardHeader>
@@ -177,55 +182,49 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {Object.entries(missingByCategory).map(([category, keywords]) => (
+            {/* NEW: Priority Filter */}
+            <PriorityFilterChips
+              missing={missing}
+              activeFilter={priorityFilter}
+              onFilterChange={setPriorityFilter}
+            />
+
+            {/* ENHANCED: Missing keywords with expandable guidance and category icons */}
+            {Object.entries(
+              filteredMissing.reduce((acc, keyword) => {
+                if (!acc[keyword.category]) {
+                  acc[keyword.category] = [];
+                }
+                acc[keyword.category].push(keyword);
+                return acc;
+              }, {} as Record<KeywordCategory, typeof filteredMissing>)
+            ).map(([category, keywords]) => (
               <div key={category} className="space-y-2">
-                <h4 className="font-semibold text-sm text-muted-foreground">
+                <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                  {getCategoryIcon(category as KeywordCategory)}
                   {formatCategory(category as KeywordCategory)} ({keywords.length})
                 </h4>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {keywords.map((kw, idx) => (
-                    <div
-                      key={idx}
-                      className={`rounded-lg border p-3 ${
-                        kw.importance === 'high'
-                          ? 'border-red-200 bg-red-50'
-                          : kw.importance === 'medium'
-                          ? 'border-amber-200 bg-amber-50'
-                          : 'border-yellow-200 bg-yellow-50'
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <AlertCircle
-                          className={`h-4 w-4 shrink-0 mt-0.5 ${
-                            kw.importance === 'high'
-                              ? 'text-red-600'
-                              : kw.importance === 'medium'
-                              ? 'text-amber-600'
-                              : 'text-yellow-600'
-                          }`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`font-medium ${
-                              kw.importance === 'high'
-                                ? 'text-red-900'
-                                : kw.importance === 'medium'
-                                ? 'text-amber-900'
-                                : 'text-yellow-900'
-                            }`}
-                          >
-                            {kw.keyword}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {kw.importance} priority
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    <MissingKeywordItem key={idx} keyword={kw} />
                   ))}
                 </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* NEW: Perfect Match Empty State */}
+      {missing.length === 0 && matched.length > 0 && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="py-8 text-center">
+            <PartyPopper className="h-12 w-12 mx-auto mb-4 text-green-600" />
+            <h3 className="text-xl font-bold text-green-900 mb-2">Perfect! All key terms are present.</h3>
+            <p className="text-green-700">
+              Your resume includes all important keywords from the job description. Ready for content optimization
+              suggestions!
+            </p>
           </CardContent>
         </Card>
       )}
