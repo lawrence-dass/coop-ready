@@ -145,7 +145,7 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
         }
       });
     },
-    [store]
+    [store, parseAndStoreResume]
   );
 
   return { extract, isPending };
