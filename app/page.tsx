@@ -6,7 +6,7 @@
  * Main page where users upload resumes and get optimization suggestions.
  */
 
-import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay } from '@/components/shared';
+import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay, SuggestionDisplay } from '@/components/shared';
 import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
 import { toast } from 'sonner';
 import { CheckCircle2, Loader2 } from 'lucide-react';
@@ -29,6 +29,11 @@ export default function Home() {
   const retryCount = useOptimizationStore(selectRetryCount);
   const isRetrying = useOptimizationStore(selectIsRetrying);
   const retryOptimization = useOptimizationStore((state) => state.retryOptimization);
+  const summarySuggestion = useOptimizationStore((state) => state.summarySuggestion);
+  const skillsSuggestion = useOptimizationStore((state) => state.skillsSuggestion);
+  const experienceSuggestion = useOptimizationStore((state) => state.experienceSuggestion);
+  const isLoading = useOptimizationStore((state) => state.isLoading);
+  const loadingStep = useOptimizationStore((state) => state.loadingStep);
 
   const handleFileError = (error: { code: string; message: string }) => {
     // Only set file error for known error codes
@@ -132,6 +137,12 @@ export default function Home() {
         {/* ATS Score Display */}
         {atsScore && (
           <ATSScoreDisplay score={atsScore} />
+        )}
+
+        {/* Suggestion Display (Story 6.9) */}
+        {(summarySuggestion || skillsSuggestion || experienceSuggestion ||
+          (isLoading && loadingStep === 'generating-suggestions')) && (
+          <SuggestionDisplay />
         )}
       </main>
     </div>

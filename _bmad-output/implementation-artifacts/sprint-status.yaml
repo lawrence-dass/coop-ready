@@ -86,7 +86,7 @@ development_status:
   6-6-implement-copy-to-clipboard: done
   6-7-implement-regenerate-suggestions: done
   6-8-epic-6-integration-and-verification-testing: done
-  6-9-wire-suggestion-pipeline: ready-for-dev
+  6-9-wire-suggestion-pipeline: review
 
   # Epic 7: Error Handling & Feedback (V0.1)
   epic-7: in-progress

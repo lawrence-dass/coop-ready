@@ -2,10 +2,12 @@
 
 // Story 5.1 + 5.2: Analyze Button Component (Keywords + ATS Score)
 // Story 7.3: Added client-side timeout handling
+// Story 6.9: Added suggestion generation after analysis
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
 import { analyzeResume } from '@/actions/analyzeResume';
+import { generateAllSuggestions } from '@/actions/generateAllSuggestions';
 import { useOptimizationStore } from '@/store';
 import { toast } from 'sonner';
 import { fetchWithTimeout, TIMEOUT_MS } from '@/lib/timeoutUtils';
@@ -37,6 +39,13 @@ export function AnalyzeButton({
   const setKeywordAnalysis = useOptimizationStore((state) => state.setKeywordAnalysis);
   const setATSScore = useOptimizationStore((state) => state.setATSScore);
   const setGeneralError = useOptimizationStore((state) => state.setGeneralError);
+  const setSummarySuggestion = useOptimizationStore((state) => state.setSummarySuggestion);
+  const setSkillsSuggestion = useOptimizationStore((state) => state.setSkillsSuggestion);
+  const setExperienceSuggestion = useOptimizationStore((state) => state.setExperienceSuggestion);
+  const setLoading = useOptimizationStore((state) => state.setLoading);
+  const resumeContent = useOptimizationStore((state) => state.resumeContent);
+  const jobDescription = useOptimizationStore((state) => state.jobDescription);
+  const keywordAnalysis = useOptimizationStore((state) => state.keywordAnalysis);
 
   // Don't show button if resume or JD is missing
   if (!hasResume || !hasJobDescription) {
@@ -76,8 +85,57 @@ export function AnalyzeButton({
         setKeywordAnalysis(data.keywordAnalysis);
         setATSScore(data.atsScore);
 
-        setLoadingStep('');
         toast.success(`Analysis complete! Your ATS score is ${data.atsScore.overall}`);
+
+        // Story 6.9: Trigger suggestion generation after analysis
+        if (resumeContent) {
+          setLoadingStep('Generating suggestions...');
+          setLoading(true, 'generating-suggestions');
+
+          try {
+            const suggestionsResult = await generateAllSuggestions({
+              sessionId,
+              resumeSummary: resumeContent.summary || '',
+              resumeSkills: resumeContent.skills || '',
+              resumeExperience: resumeContent.experience || '',
+              resumeContent: resumeContent.rawText,
+              jobDescription: jobDescription || '',
+              keywords: data.keywordAnalysis?.matched?.map((k: { keyword: string }) => k.keyword),
+            });
+
+            if (suggestionsResult.data) {
+              if (suggestionsResult.data.summary) {
+                setSummarySuggestion(suggestionsResult.data.summary);
+              }
+              if (suggestionsResult.data.skills) {
+                setSkillsSuggestion(suggestionsResult.data.skills);
+              }
+              if (suggestionsResult.data.experience) {
+                setExperienceSuggestion(suggestionsResult.data.experience);
+              }
+
+              // Toast for partial failures
+              const { sectionErrors } = suggestionsResult.data;
+              const failedSections = Object.keys(sectionErrors).filter(
+                (key) => sectionErrors[key as keyof typeof sectionErrors]
+              );
+              if (failedSections.length > 0) {
+                toast.error(`Some suggestions failed: ${failedSections.join(', ')}`);
+              }
+            } else if (suggestionsResult.error) {
+              console.error('[SS:ui] Suggestion generation failed:', suggestionsResult.error);
+              toast.error(suggestionsResult.error.message);
+            }
+          } catch (sugErr) {
+            console.error('[SS:ui] Suggestion generation error:', sugErr);
+            toast.error('Failed to generate suggestions');
+          } finally {
+            setLoading(false);
+            setLoadingStep('');
+          }
+        } else {
+          setLoadingStep('');
+        }
 
       } catch (err) {
         setLoadingStep('');
