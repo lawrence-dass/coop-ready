@@ -81,7 +81,7 @@ development_status:
   6-1-implement-llm-pipeline-api-route: done
   6-2-implement-summary-section-suggestions: done
   6-3-implement-skills-section-suggestions: done
-  6-4-implement-experience-section-suggestions: ready-for-dev
+  6-4-implement-experience-section-suggestions: review
   6-5-implement-suggestion-display-ui: backlog
   6-6-implement-copy-to-clipboard: backlog
   6-7-implement-regenerate-suggestions: backlog

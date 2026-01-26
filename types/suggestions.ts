@@ -2,6 +2,7 @@
  * Suggestion Types for Content Optimization
  * Story 6.2: Implement Summary Section Suggestions
  * Story 6.3: Implement Skills Section Suggestions
+ * Story 6.4: Implement Experience Section Suggestions
  */
 
 // ============================================================================
@@ -64,5 +65,61 @@ export interface SkillsSuggestion {
   skill_removals: SkillItem[];
 
   /** Summary of the analysis */
+  summary: string;
+}
+
+// ============================================================================
+// EXPERIENCE SUGGESTION TYPES (Story 6.4)
+// ============================================================================
+
+/**
+ * Individual bullet point with optimization details
+ */
+export interface BulletSuggestion {
+  /** Original bullet text */
+  original: string;
+
+  /** Optimized bullet with keywords and metrics */
+  suggested: string;
+
+  /** Metrics or quantification added (e.g., ["30%", "5 engineers"]) */
+  metrics_added: string[];
+
+  /** Keywords from JD incorporated into this bullet */
+  keywords_incorporated: string[];
+}
+
+/**
+ * Individual work experience entry
+ */
+export interface ExperienceEntry {
+  /** Company name */
+  company: string;
+
+  /** Job title/role */
+  role: string;
+
+  /** Employment dates (e.g., "2020 - 2023") */
+  dates: string;
+
+  /** Original bullet points */
+  original_bullets: string[];
+
+  /** Suggested optimized bullets */
+  suggested_bullets: BulletSuggestion[];
+}
+
+/**
+ * Experience optimization suggestion
+ * Contains reframed bullets with keywords and quantification
+ */
+export interface ExperienceSuggestion {
+  /** User's original experience section text */
+  original: string;
+
+  /** Array of work experience entries with suggestions */
+  experience_entries: ExperienceEntry[];
+
+  /** Summary of the optimization */
   summary: string;
 }
