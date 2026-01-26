@@ -76,7 +76,8 @@ export async function generateExperienceSuggestion(
     }
 
     // Truncate very long inputs to avoid timeout
-    const MAX_EXPERIENCE_LENGTH = 3000;
+    // Experience sections are longer than Skills/Summary due to multiple jobs
+    const MAX_EXPERIENCE_LENGTH = 6000;
     const MAX_JD_LENGTH = 3000;
     const MAX_RESUME_LENGTH = 4000;
 
@@ -164,7 +165,15 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 
     // Invoke LLM (timeout enforced at the route level)
     const response = await model.invoke(prompt);
-    const content = response.content as string;
+    const content =
+      typeof response.content === 'string'
+        ? response.content
+        : Array.isArray(response.content)
+          ? response.content
+              .filter((block): block is { type: 'text'; text: string } => typeof block === 'object' && block !== null && 'type' in block && block.type === 'text')
+              .map((block) => block.text)
+              .join('')
+          : String(response.content);
 
     // Parse JSON response
     let parsed: {
@@ -185,7 +194,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 
     try {
       parsed = JSON.parse(content);
-    } catch (parseError) {
+    } catch {
       return {
         data: null,
         error: {
@@ -239,11 +248,23 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       }
     }
 
+    // Normalize suggested_bullets to ensure all fields exist
+    const normalizedEntries = parsed.experience_entries.map((entry) => ({
+      ...entry,
+      original_bullets: entry.original_bullets || [],
+      suggested_bullets: (entry.suggested_bullets || []).map((bullet) => ({
+        original: String(bullet.original || ''),
+        suggested: String(bullet.suggested || ''),
+        metrics_added: Array.isArray(bullet.metrics_added) ? bullet.metrics_added : [],
+        keywords_incorporated: Array.isArray(bullet.keywords_incorporated) ? bullet.keywords_incorporated : [],
+      })),
+    }));
+
     // Return suggestion
     return {
       data: {
         original: resumeExperience, // Return full original, not truncated
-        experience_entries: parsed.experience_entries,
+        experience_entries: normalizedEntries,
         summary: parsed.summary,
       },
       error: null,

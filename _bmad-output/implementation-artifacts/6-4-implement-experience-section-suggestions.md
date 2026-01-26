@@ -1,6 +1,6 @@
 # Story 6.4: Implement Experience Section Suggestions
 
-Status: review
+Status: done
 
 ---
 
@@ -359,11 +359,23 @@ Return ExperienceSuggestion
 - `supabase/migrations/20260125040000_add_experience_suggestion_column.sql` - Database migration
 - `tests/integration/api-suggestions-experience.test.ts` - Integration tests (new)
 - `tests/unit/ai/experience-generation.test.ts` - Unit tests (new)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` - Sprint status updated
 - `components/shared/ExperienceOptimization.tsx` - UI component [deferred to Story 6.5]
 
 ---
 
 ## Change Log
+
+- 2026-01-25: Code Review (Adversarial) - 3 HIGH, 4 MEDIUM, 2 LOW issues found
+  - **Fixed H2:** Unsafe `response.content as string` cast - now safely extracts string from multipart content
+  - **Fixed H3:** Removed dead code duplicate timeout/error handling in route.ts `runSuggestionGeneration`
+  - **Fixed M1:** Increased MAX_EXPERIENCE_LENGTH from 3000 to 6000 for multi-job resumes
+  - **Fixed M2:** Added normalization for suggested_bullets inner objects (prevents undefined field propagation)
+  - **Fixed M3:** Added sprint-status.yaml to File List
+  - **Fixed L2:** Removed unused `parseError` variable
+  - **Noted H1:** `anonymous_id` validated but unused in session updates - pre-existing cross-cutting concern across all suggestion routes (6-2, 6-3, 6-4). Requires separate fix.
+  - **Noted M4:** Integration tests don't test real `withTimeout` wrapper - consistent with 6-3 pattern
+  - All tests passing, build successful
 
 - 2026-01-25: Story 6-4 implementation completed (backend)
   - Implemented `generateExperienceSuggestion()` LLM function with:

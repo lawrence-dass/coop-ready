@@ -117,57 +117,32 @@ function validateRequest(
 async function runSuggestionGeneration(
   request: ExperienceSuggestionRequest
 ): Promise<ActionResponse<ExperienceSuggestion>> {
-  try {
-    // Generate suggestion using LLM
-    const suggestionResult = await generateExperienceSuggestion(
-      request.current_experience,
-      request.jd_content,
-      request.resume_content
-    );
+  // Generate suggestion using LLM
+  // Note: generateExperienceSuggestion never throws - it returns ActionResponse
+  const suggestionResult = await generateExperienceSuggestion(
+    request.current_experience,
+    request.jd_content,
+    request.resume_content
+  );
 
-    if (suggestionResult.error) {
-      return suggestionResult;
-    }
-
-    // Save to session (graceful degradation - don't fail if session update fails)
-    const sessionUpdateResult = await updateSession(request.session_id, {
-      experienceSuggestion: suggestionResult.data,
-    });
-
-    if (sessionUpdateResult.error) {
-      console.error(
-        '[experience-suggestion] Session update failed:',
-        sessionUpdateResult.error
-      );
-      // Continue anyway - user still gets the suggestion
-    }
-
+  if (suggestionResult.error) {
     return suggestionResult;
-  } catch (error) {
-    console.error('[experience-suggestion] Generation error:', error);
-
-    // Check if error is timeout-related
-    if (error instanceof Error && error.message.includes('TIMEOUT')) {
-      return {
-        data: null,
-        error: {
-          code: 'LLM_TIMEOUT',
-          message: 'Experience generation timed out. Please try again.',
-        },
-      };
-    }
-
-    return {
-      data: null,
-      error: {
-        code: 'LLM_ERROR',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to generate experience suggestion',
-      },
-    };
   }
+
+  // Save to session (graceful degradation - don't fail if session update fails)
+  const sessionUpdateResult = await updateSession(request.session_id, {
+    experienceSuggestion: suggestionResult.data,
+  });
+
+  if (sessionUpdateResult.error) {
+    console.error(
+      '[experience-suggestion] Session update failed:',
+      sessionUpdateResult.error
+    );
+    // Continue anyway - user still gets the suggestion
+  }
+
+  return suggestionResult;
 }
 
 // ============================================================================
