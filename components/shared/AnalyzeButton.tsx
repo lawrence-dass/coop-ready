@@ -45,7 +45,6 @@ export function AnalyzeButton({
   const setLoading = useOptimizationStore((state) => state.setLoading);
   const resumeContent = useOptimizationStore((state) => state.resumeContent);
   const jobDescription = useOptimizationStore((state) => state.jobDescription);
-  const keywordAnalysis = useOptimizationStore((state) => state.keywordAnalysis);
 
   // Don't show button if resume or JD is missing
   if (!hasResume || !hasJobDescription) {

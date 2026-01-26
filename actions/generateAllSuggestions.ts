@@ -185,13 +185,17 @@ export async function generateAllSuggestions(
     }
 
     // Save successful suggestions to session (graceful degradation)
-    const sessionUpdate: Record<string, unknown> = {};
+    const sessionUpdate: {
+      summarySuggestion?: SummarySuggestion;
+      skillsSuggestion?: SkillsSuggestion;
+      experienceSuggestion?: ExperienceSuggestion;
+    } = {};
     if (result.summary) sessionUpdate.summarySuggestion = result.summary;
     if (result.skills) sessionUpdate.skillsSuggestion = result.skills;
     if (result.experience) sessionUpdate.experienceSuggestion = result.experience;
 
     if (Object.keys(sessionUpdate).length > 0) {
-      const saveResult = await updateSession(sessionId, sessionUpdate as Parameters<typeof updateSession>[1]);
+      const saveResult = await updateSession(sessionId, sessionUpdate);
       if (saveResult.error) {
         console.error('[SS:generateAll] Session save failed:', saveResult.error.message);
         // Continue — user still gets suggestions in the UI

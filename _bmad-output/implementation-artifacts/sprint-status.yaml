@@ -77,7 +77,7 @@ development_status:
   5-5-epic-5-integration-and-verification-testing: done
 
   # Epic 6: Content Optimization (V0.1)
-  epic-6: in-progress
+  epic-6: done
   6-1-implement-llm-pipeline-api-route: done
   6-2-implement-summary-section-suggestions: done
   6-3-implement-skills-section-suggestions: done
@@ -86,7 +86,7 @@ development_status:
   6-6-implement-copy-to-clipboard: done
   6-7-implement-regenerate-suggestions: done
   6-8-epic-6-integration-and-verification-testing: done
-  6-9-wire-suggestion-pipeline: review
+  6-9-wire-suggestion-pipeline: done
 
   # Epic 7: Error Handling & Feedback (V0.1)
   epic-7: in-progress
