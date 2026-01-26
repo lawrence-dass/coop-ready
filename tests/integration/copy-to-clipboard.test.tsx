@@ -16,6 +16,17 @@ vi.mock('sonner', () => ({
   },
 }));
 
+// Mock the store
+vi.mock('@/store/useOptimizationStore', () => ({
+  useOptimizationStore: vi.fn((selector: (s: Record<string, unknown>) => unknown) => {
+    const state = {
+      getFeedbackForSuggestion: () => null,
+      recordSuggestionFeedback: vi.fn().mockResolvedValue(undefined),
+    };
+    return selector ? selector(state) : state;
+  }),
+}));
+
 describe('Copy to Clipboard Integration', () => {
   const originalClipboard = navigator.clipboard;
 
@@ -43,6 +54,7 @@ describe('Copy to Clipboard Integration', () => {
 
   describe('SuggestionCard with CopyButton', () => {
     const mockSuggestion = {
+      suggestionId: 'sug_experience_0',
       original: 'Managed team projects.',
       suggested: 'Led cross-functional team of 8 engineers to deliver 3 major product releases, increasing customer satisfaction by 25%.',
       points: 15,
@@ -103,6 +115,7 @@ describe('Copy to Clipboard Integration', () => {
 
     it('should work for summary section suggestions', async () => {
       const summarySuggestion = {
+        suggestionId: 'sug_summary_0',
         original: 'Software engineer with experience.',
         suggested: 'Results-driven Senior Software Engineer with 7+ years of experience building scalable web applications.',
         sectionType: 'summary' as const,
@@ -120,6 +133,7 @@ describe('Copy to Clipboard Integration', () => {
 
     it('should work for skills section suggestions', async () => {
       const skillsSuggestion = {
+        suggestionId: 'sug_skills_0',
         original: 'JavaScript, React',
         suggested: 'JavaScript (ES6+), React.js, TypeScript, Node.js, PostgreSQL, AWS',
         sectionType: 'skills' as const,
@@ -146,6 +160,7 @@ describe('Copy to Clipboard Integration', () => {
 
     it('should show error toast for empty suggestions', async () => {
       const emptySuggestion = {
+        suggestionId: 'sug_summary_1',
         original: '',
         suggested: '',
         sectionType: 'summary' as const,
@@ -165,6 +180,7 @@ describe('Copy to Clipboard Integration', () => {
 
     it('should handle very long suggestions', async () => {
       const longSuggestion = {
+        suggestionId: 'sug_experience_1',
         original: 'Did some work.',
         suggested: 'A'.repeat(1000), // 1000 character suggestion
         sectionType: 'experience' as const,
@@ -182,6 +198,7 @@ describe('Copy to Clipboard Integration', () => {
 
     it('should handle suggestions with special characters', async () => {
       const specialSuggestion = {
+        suggestionId: 'sug_experience_2',
         original: 'Basic text',
         suggested: 'Led R&D initiatives\nAchieved 50% reduction in costs\tDeveloped new APIs',
         sectionType: 'experience' as const,
@@ -201,12 +218,14 @@ describe('Copy to Clipboard Integration', () => {
   describe('Multiple suggestion cards', () => {
     it('should handle copying from multiple cards independently', async () => {
       const suggestion1 = {
+        suggestionId: 'sug_summary_2',
         original: 'Original 1',
         suggested: 'Suggested text 1',
         sectionType: 'summary' as const,
       };
 
       const suggestion2 = {
+        suggestionId: 'sug_skills_1',
         original: 'Original 2',
         suggested: 'Suggested text 2',
         sectionType: 'skills' as const,

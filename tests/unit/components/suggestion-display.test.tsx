@@ -13,9 +13,15 @@ import type {
   ExperienceSuggestion,
 } from '@/types/suggestions';
 
-// Mock the Zustand store
+// Mock the Zustand store (Story 7.4: Added feedback methods)
 vi.mock('@/store/useOptimizationStore', () => ({
-  useOptimizationStore: vi.fn(),
+  useOptimizationStore: vi.fn((selector) => {
+    const state = {
+      getFeedbackForSuggestion: () => null,
+      recordSuggestionFeedback: vi.fn().mockResolvedValue(undefined),
+    };
+    return selector ? selector(state) : state;
+  }),
 }));
 
 describe('SuggestionDisplay', () => {
@@ -69,6 +75,9 @@ describe('SuggestionDisplay', () => {
       experienceSuggestion: null,
       isLoading: false,
       loadingStep: null,
+      // Story 7.4: Add feedback methods
+      getFeedbackForSuggestion: () => null,
+      recordSuggestionFeedback: vi.fn().mockResolvedValue(undefined),
     };
     const state = { ...defaultState, ...overrides };
     (useOptimizationStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(

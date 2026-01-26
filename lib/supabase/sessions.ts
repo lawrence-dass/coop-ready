@@ -28,6 +28,7 @@ import type {
   Resume,
   AnalysisResult,
   SuggestionSet,
+  SuggestionFeedback,
 } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
 import type {
@@ -52,7 +53,7 @@ interface SessionRow {
   jd_content: string | null;
   analysis: AnalysisResult | null;
   suggestions: SuggestionSet | null;
-  feedback: Record<string, 'helpful' | 'not-helpful'> | null;
+  feedback: SuggestionFeedback[] | null; // Story 7.4: Changed to array
   keyword_analysis: KeywordAnalysisResult | null; // Story 5.1
   ats_score: ATSScore | null; // Story 5.2
   summary_suggestion: SummarySuggestion | null; // Story 6.2
@@ -78,6 +79,7 @@ function toOptimizationSession(row: SessionRow): OptimizationSession {
     jobDescription: row.jd_content ? JSON.parse(row.jd_content) : null,
     analysisResult: row.analysis,
     suggestions: row.suggestions,
+    feedback: row.feedback ?? [], // Story 7.4: Include feedback array
     keywordAnalysis: row.keyword_analysis,
     atsScore: row.ats_score,
     summarySuggestion: row.summary_suggestion,
@@ -216,7 +218,7 @@ export async function updateSession(
     jobDescription?: string | null; // Epic 4 uses string, not JobDescription object
     analysisResult?: AnalysisResult | null;
     suggestions?: SuggestionSet | null;
-    feedback?: Record<string, 'helpful' | 'not-helpful'> | null;
+    feedback?: SuggestionFeedback[]; // Story 7.4: Changed to array
     keywordAnalysis?: KeywordAnalysisResult | null; // Story 5.1
     atsScore?: ATSScore | null; // Story 5.2
     summarySuggestion?: SummarySuggestion | null; // Story 6.2

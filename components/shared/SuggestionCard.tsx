@@ -5,8 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { CopyButton } from './CopyButton';
+import { FeedbackButtons } from './FeedbackButtons';
+import { useOptimizationStore } from '@/store/useOptimizationStore';
+import { toast } from 'sonner';
 
 export interface SuggestionCardProps {
+  /** Unique ID for this suggestion */
+  suggestionId: string;
+
   /** Original text from resume */
   original: string;
 
@@ -36,8 +42,10 @@ export interface SuggestionCardProps {
  * Uses two-column layout on desktop, tabs on mobile.
  *
  * Story 6.5: Implement Suggestion Display UI
+ * Story 7.4: Added feedback buttons
  */
 export function SuggestionCard({
+  suggestionId,
   original,
   suggested,
   points,
@@ -46,6 +54,25 @@ export function SuggestionCard({
   sectionType,
   className,
 }: SuggestionCardProps) {
+  // Get feedback state and actions from store
+  const currentFeedback = useOptimizationStore(
+    (state: { getFeedbackForSuggestion: (id: string) => boolean | null }) =>
+      state.getFeedbackForSuggestion(suggestionId)
+  );
+  const recordSuggestionFeedback = useOptimizationStore(
+    (state: { recordSuggestionFeedback: (id: string, section: 'summary' | 'skills' | 'experience', helpful: boolean | null) => Promise<void> }) =>
+      state.recordSuggestionFeedback
+  );
+
+  // Handle feedback submission
+  const handleFeedback = async (helpful: boolean | null) => {
+    await recordSuggestionFeedback(suggestionId, sectionType, helpful);
+
+    // Show toast confirmation
+    if (helpful !== null) {
+      toast.success('Thanks for the feedback!');
+    }
+  };
   return (
     <Card
       data-section={sectionType}
@@ -140,8 +167,17 @@ export function SuggestionCard({
           </div>
         )}
 
-        {/* Copy Button */}
-        <div className="mt-4 flex justify-end">
+        {/* Action Buttons: Copy and Feedback */}
+        <div className="mt-4 flex items-center justify-between gap-4">
+          {/* Feedback Buttons */}
+          <FeedbackButtons
+            suggestionId={suggestionId}
+            sectionType={sectionType}
+            currentFeedback={currentFeedback}
+            onFeedback={handleFeedback}
+          />
+
+          {/* Copy Button */}
           <CopyButton
             text={suggested}
             label="Copy suggestion"
