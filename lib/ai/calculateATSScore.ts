@@ -125,17 +125,20 @@ export async function calculateATSScore(
       };
     }
 
+    console.log('[SS:score] Calculating ATS score...');
     // Calculate keyword score (instant calculation)
     const keywordScore = calculateKeywordScore(keywordAnalysis);
 
     // Calculate section coverage score (instant calculation)
     const sectionCoverageScore = calculateSectionCoverageScore(parsedResume);
 
+    console.log('[SS:score] Keyword:', keywordScore, '| Section:', sectionCoverageScore, '| Calling quality judge...');
     // Calculate content quality score (LLM-based, may timeout)
     let contentQualityScore = 0;
     const qualityResult = await judgeContentQuality(parsedResume, jdContent);
 
     if (qualityResult.error) {
+      console.log('[SS:score] Quality judge failed, using fallback weights:', qualityResult.error.message);
       // Fallback: Use keyword + section only, reweighted
       // Keyword: 0.50 / 0.75 = 0.67
       // Section: 0.25 / 0.75 = 0.33
@@ -159,6 +162,7 @@ export async function calculateATSScore(
     }
 
     contentQualityScore = qualityResult.data;
+    console.log('[SS:score] Quality:', contentQualityScore);
 
     // Calculate weighted overall score
     const breakdown: ScoreBreakdown = {

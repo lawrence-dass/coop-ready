@@ -51,9 +51,10 @@ export async function matchKeywords(
       };
     }
 
+    console.log('[SS:match] Matching', extractedKeywords.length, 'keywords against resume (' + resumeContent.length + ' chars)');
     // Initialize LLM
     const model = new ChatAnthropic({
-      modelName: 'claude-haiku-4-20250514',
+      modelName: 'claude-3-5-haiku-20241022',
       temperature: 0,
       maxTokens: 4000,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY
@@ -151,6 +152,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       : 0;
 
     // Return results
+    console.log('[SS:match] Match complete:', matched.length, 'matched,', missing.length, 'missing, rate:', matchRate + '%');
     return {
       data: {
         matched,

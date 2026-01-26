@@ -67,6 +67,7 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
       return;
     }
 
+    console.log('[SS:ui] Regenerate clicked for section:', sectionType);
     setRegeneratingSection(sectionType, true);
     startTransition(async () => {
       try {

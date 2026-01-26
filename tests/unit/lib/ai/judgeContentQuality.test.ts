@@ -273,7 +273,7 @@ describe('judgeContentQuality', () => {
 
       await judgeContentQuality(mockResume, mockJD);
 
-      expect(capturedModelName).toBe('claude-haiku-4-20250514');
+      expect(capturedModelName).toBe('claude-3-5-haiku-20241022');
     });
   });
 });

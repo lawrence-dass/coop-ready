@@ -52,7 +52,7 @@ async function evaluateSectionQuality(
 
     // Initialize Haiku model (cost-efficient)
     const model = new ChatAnthropic({
-      modelName: 'claude-haiku-4-20250514',
+      modelName: 'claude-3-5-haiku-20241022',
       temperature: 0,
       maxTokens: 500,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY
@@ -183,6 +183,7 @@ export async function judgeContentQuality(
 
     const sectionScores: number[] = [];
 
+    console.log('[SS:quality] Judging content quality for sections:', sectionTypes.filter(s => parsedResume[s]?.trim()).join(', '));
     for (const sectionType of sectionTypes) {
       const sectionContent = parsedResume[sectionType];
 
@@ -219,6 +220,7 @@ export async function judgeContentQuality(
     const averageQualityScore = Math.round(
       sectionScores.reduce((sum, score) => sum + score, 0) / sectionScores.length
     );
+    console.log('[SS:quality] Quality scores:', sectionScores, '→ average:', averageQualityScore);
 
     return {
       data: averageQualityScore,

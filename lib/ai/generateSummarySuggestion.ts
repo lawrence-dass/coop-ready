@@ -42,6 +42,7 @@ export async function generateSummarySuggestion(
   keywords?: string[]
 ): Promise<ActionResponse<SummarySuggestion>> {
   try {
+    console.log('[SS:genSummary] Generating summary suggestion (' + resumeSummary?.length + ' chars summary, ' + jobDescription?.length + ' chars JD)');
     // Validation
     if (!resumeSummary || resumeSummary.trim().length === 0) {
       return {
@@ -82,7 +83,7 @@ export async function generateSummarySuggestion(
 
     // Initialize LLM
     const model = new ChatAnthropic({
-      modelName: 'claude-haiku-4-20250514',
+      modelName: 'claude-3-5-haiku-20241022',
       temperature: 0.3, // Slightly creative for natural rewrites
       maxTokens: 2000,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
@@ -165,6 +166,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     const suggestedAITellPhrases = detectAITellPhrases(parsed.suggested);
 
     // Return suggestion
+    console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added);
     return {
       data: {
         original: resumeSummary, // Return full original, not truncated

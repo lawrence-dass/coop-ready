@@ -49,11 +49,13 @@ export function AnalyzeButton({
     startTransition(async () => {
       try {
         // Step 1: Extracting keywords
+        console.log('[SS:ui] Analyze button clicked, sessionId:', sessionId);
         setLoadingStep('Analyzing keywords...');
 
         const { data, error } = await analyzeResume(sessionId);
 
         if (error) {
+          console.error('[SS:ui] Analysis error:', error.code, '-', error.message);
           setLoadingStep('');
 
           // Handle specific error codes
@@ -72,6 +74,7 @@ export function AnalyzeButton({
         }
 
         // Success - update store with both keyword analysis and score
+        console.log('[SS:ui] Analysis result received. Score:', data.atsScore.overall);
         setKeywordAnalysis(data.keywordAnalysis);
         setATSScore(data.atsScore);
 
