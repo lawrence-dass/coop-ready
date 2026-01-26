@@ -61,6 +61,7 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
     itemCount: number
   ): Promise<boolean> => {
     store.setIsParsing(true);
+    console.log('[SS:parse] Parsing resume sections...');
     toast.info('Parsing resume sections...');
 
     const parseResult = await parseResumeText(text, {
@@ -78,6 +79,7 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
 
     // Store parsed Resume object with metadata
     const parsedResume = parseResult.data!;
+    console.log('[SS:parse] Resume parsed:', { summary: !!parsedResume.summary, skills: !!parsedResume.skills, experience: !!parsedResume.experience, education: !!parsedResume.education });
     store.setResumeContent(parsedResume);
     store.setPendingFile(null);
 
@@ -100,6 +102,7 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
       }
 
       // Server action validates file type, so we just start extraction
+      console.log('[SS:extract] Starting extraction:', file.name, `(${file.type}, ${(file.size / 1024).toFixed(1)}KB)`);
       store.setIsExtracting(true);
 
       // Timeout warning for slow extractions (AC: 3 second requirement)
@@ -122,6 +125,7 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
           }
 
           if (data) {
+            console.log('[SS:extract] PDF extracted:', data.pageCount, 'pages,', data.text.length, 'chars');
             toast.success(`Extracted ${data.pageCount} page(s) from PDF`);
             await parseAndStoreResume(data.text, file, data.pageCount);
           }
@@ -139,13 +143,14 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
           }
 
           if (data) {
+            console.log('[SS:extract] DOCX extracted:', data.paragraphCount, 'paragraphs,', data.text.length, 'chars');
             toast.success(`Extracted ${data.paragraphCount} paragraph(s) from DOCX`);
             await parseAndStoreResume(data.text, file, data.paragraphCount);
           }
         }
       });
     },
-    [store]
+    [store, parseAndStoreResume]
   );
 
   return { extract, isPending };

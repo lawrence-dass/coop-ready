@@ -75,6 +75,7 @@ export async function generateExperienceSuggestion(
       };
     }
 
+    console.log('[SS:genExp] Generating experience suggestion (' + resumeExperience?.length + ' chars exp, ' + jobDescription?.length + ' chars JD)');
     // Truncate very long inputs to avoid timeout
     // Experience sections are longer than Skills/Summary due to multiple jobs
     const MAX_EXPERIENCE_LENGTH = 6000;
@@ -98,7 +99,7 @@ export async function generateExperienceSuggestion(
 
     // Initialize LLM
     const model = new ChatAnthropic({
-      modelName: 'claude-haiku-4-20250514',
+      modelName: 'claude-3-5-haiku-20241022',
       temperature: 0.4, // Slightly creative for natural bullet rewrites
       maxTokens: 4000, // More tokens for multiple entries
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
@@ -261,6 +262,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     }));
 
     // Return suggestion
+    console.log('[SS:genExp] Experience generated:', normalizedEntries.length, 'entries');
     return {
       data: {
         original: resumeExperience, // Return full original, not truncated

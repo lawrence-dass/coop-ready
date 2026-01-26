@@ -7,6 +7,7 @@ export async function extractPdfText(
   file: File
 ): Promise<ActionResponse<{ text: string; pageCount: number }>> {
   try {
+    console.log('[SS:pdf] Extracting text from PDF:', file.name, `(${(file.size / 1024).toFixed(1)}KB)`);
     // Validate file type
     if (file.type !== 'application/pdf') {
       return {
@@ -36,6 +37,7 @@ export async function extractPdfText(
     }
 
     // Return extracted text
+    console.log('[SS:pdf] Extraction complete:', result.totalPages || 1, 'pages,', result.text.length, 'chars');
     return {
       data: {
         text: result.text,

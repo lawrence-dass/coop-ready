@@ -128,6 +128,7 @@ export async function regenerateSuggestions(
     }
 
     const { currentContent, jdContent, sectionType, sessionId, keywords, resumeContent } = validation.data;
+    console.log('[SS:regenerate] Regenerating', sectionType, 'for session:', sessionId.slice(0, 8) + '...');
 
     let suggestionResult: ActionResponse<SectionSuggestion>;
 
@@ -201,6 +202,7 @@ export async function regenerateSuggestions(
       // Continue anyway - user still gets the suggestion
     }
 
+    console.log('[SS:regenerate] Regeneration complete for', sectionType);
     return {
       data: {
         section: sectionType,

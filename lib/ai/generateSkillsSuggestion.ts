@@ -64,6 +64,7 @@ export async function generateSkillsSuggestion(
       };
     }
 
+    console.log('[SS:genSkills] Generating skills suggestion (' + resumeSkills?.length + ' chars skills, ' + jobDescription?.length + ' chars JD)');
     // Truncate very long inputs to avoid timeout
     const MAX_SKILLS_LENGTH = 1000;
     const MAX_JD_LENGTH = 3000;
@@ -87,7 +88,7 @@ export async function generateSkillsSuggestion(
 
     // Initialize LLM
     const model = new ChatAnthropic({
-      modelName: 'claude-haiku-4-20250514',
+      modelName: 'claude-3-5-haiku-20241022',
       temperature: 0.3, // Slightly creative for finding relevant skills
       maxTokens: 2500,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
@@ -223,6 +224,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       : [];
 
     // Return suggestion
+    console.log('[SS:genSkills] Skills generated:', parsed.matched_keywords.length, 'matched,', parsed.skill_additions.length, 'additions');
     return {
       data: {
         original: resumeSkills, // Return full original, not truncated

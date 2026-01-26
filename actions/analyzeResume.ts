@@ -34,6 +34,7 @@ export async function analyzeResume(
   sessionId: string
 ): Promise<ActionResponse<AnalysisResult>> {
   try {
+    console.log('[SS:analyze] Starting analysis for session:', sessionId?.slice(0, 8) + '...');
     // Validation
     if (!sessionId || sessionId.trim().length === 0) {
       return {
@@ -116,9 +117,11 @@ export async function analyzeResume(
     }
 
     // Step 1: Extract keywords from JD
+    console.log('[SS:analyze] Step 1: Extracting keywords from JD (' + jdContent.length + ' chars)');
     const extractResult = await extractKeywords(jdContent);
 
     if (extractResult.error) {
+      console.error('[SS:analyze] Step 1 FAILED:', extractResult.error.code, '-', extractResult.error.message);
       return {
         data: null,
         error: extractResult.error
@@ -136,12 +139,14 @@ export async function analyzeResume(
     }
 
     // Step 2: Match keywords against resume
+    console.log('[SS:analyze] Step 2: Matching', extractResult.data.keywords.length, 'keywords against resume');
     const matchResult = await matchKeywords(
       parsedResume.rawText,
       extractResult.data.keywords
     );
 
     if (matchResult.error) {
+      console.error('[SS:analyze] Step 2 FAILED:', matchResult.error.code, '-', matchResult.error.message);
       return {
         data: null,
         error: matchResult.error
@@ -149,6 +154,7 @@ export async function analyzeResume(
     }
 
     // Step 3: Calculate ATS score
+    console.log('[SS:analyze] Step 3: Calculating ATS score (matchRate:', matchResult.data.matchRate + '%)');
     const scoreResult = await calculateATSScore(
       matchResult.data,
       parsedResume,
@@ -156,8 +162,7 @@ export async function analyzeResume(
     );
 
     if (scoreResult.error) {
-      // If score calculation fails, we can still return keyword analysis
-      // But for now, we'll return the error to match strict TDD
+      console.error('[SS:analyze] Step 3 FAILED:', scoreResult.error.code, '-', scoreResult.error.message);
       return {
         data: null,
         error: scoreResult.error
@@ -180,6 +185,7 @@ export async function analyzeResume(
     }
 
     // Return successful results
+    console.log('[SS:analyze] Analysis complete. ATS score:', scoreResult.data.overall, '| Breakdown:', JSON.stringify(scoreResult.data.breakdown));
     return {
       data: {
         keywordAnalysis: matchResult.data,

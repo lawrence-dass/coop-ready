@@ -39,6 +39,7 @@ export async function extractKeywords(
       };
     }
 
+    console.log('[SS:keywords] Extracting keywords from JD (' + jobDescription.length + ' chars)');
     // Truncate very long JDs to avoid timeout
     const MAX_JD_LENGTH = 5000;
     const processedJD = jobDescription.length > MAX_JD_LENGTH
@@ -47,7 +48,7 @@ export async function extractKeywords(
 
     // Initialize LLM
     const model = new ChatAnthropic({
-      modelName: 'claude-haiku-4-20250514',
+      modelName: 'claude-3-5-haiku-20241022',
       temperature: 0,
       maxTokens: 2000,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY
@@ -81,18 +82,21 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 }`;
 
     // Invoke LLM with timeout enforcement
+    console.log('[SS:keywords] Calling LLM (claude-haiku-4)...');
     const response = await withTimeout(
       model.invoke(extractionPrompt),
       EXTRACTION_TIMEOUT_MS,
       'Keyword extraction timed out'
     );
     const content = response.content as string;
+    console.log('[SS:keywords] LLM responded, content length:', content.length);
 
     // Parse JSON response
     let parsed: { keywords: ExtractedKeyword[] };
     try {
       parsed = JSON.parse(content);
     } catch (parseError) {
+      console.error('[SS:keywords] JSON parse failed. Raw content:', content.substring(0, 200));
       return {
         data: null,
         error: {
@@ -114,6 +118,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     }
 
     // Return results
+    console.log('[SS:keywords] Extracted', parsed.keywords.length, 'keywords');
     return {
       data: {
         keywords: parsed.keywords,
@@ -123,6 +128,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     };
 
   } catch (error: unknown) {
+    console.error('[SS:keywords] Error:', error instanceof Error ? error.message : error);
     // Handle timeout
     if (error instanceof Error && error.message.includes('timeout')) {
       return {

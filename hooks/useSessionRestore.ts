@@ -76,6 +76,7 @@ export function useSessionRestore({
       try {
         setIsRestoring(true);
         setError(null);
+        console.log('[SS:session] Restoring session for anonymousId:', anonymousId.slice(0, 8) + '...');
 
         // Try to get existing session
         const { data: existingSession, error: getError } =
@@ -83,6 +84,7 @@ export function useSessionRestore({
 
         if (getError) {
           // Failed to query database
+          console.log('[SS:session] Failed to fetch session:', getError.message);
           setError(getError.message);
           toast.error(`Failed to restore session: ${getError.message}`);
           setIsRestoring(false);
@@ -91,17 +93,20 @@ export function useSessionRestore({
 
         if (existingSession) {
           // Session found - hydrate store
+          console.log('[SS:session] Existing session found:', existingSession.id, '| has resume:', !!existingSession.resumeContent, '| has JD:', !!existingSession.jobDescription);
           loadFromSession(existingSession);
           setIsRestoring(false);
           return;
         }
 
         // No session found - create new one
+        console.log('[SS:session] No existing session, creating new one');
         const { data: newSession, error: createError } =
           await createSession(anonymousId);
 
         if (createError) {
           // Failed to create session
+          console.log('[SS:session] Failed to create session:', createError.message);
           setError(createError.message);
           toast.error(`Failed to create session: ${createError.message}`);
           setIsRestoring(false);
@@ -109,6 +114,7 @@ export function useSessionRestore({
         }
 
         // Set the new session ID (empty session)
+        console.log('[SS:session] New session created:', newSession.id);
         setSessionId(newSession.id);
         setIsRestoring(false);
       } catch (err) {

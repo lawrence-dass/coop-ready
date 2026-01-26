@@ -144,6 +144,7 @@ async function runOptimizationPipeline(
   try {
     // Step 1: Extract keywords from job description
     // Note: prompt injection defense (XML wrapping) is handled by extractKeywords/matchKeywords
+    console.log('[SS:optimize] Pipeline started for session:', request.session_id.slice(0, 8) + '...');
     const keywordResult = await extractKeywords(request.jd_content);
 
     if (keywordResult.error) {
@@ -198,6 +199,7 @@ async function runOptimizationPipeline(
     }
 
     // Return results
+    console.log('[SS:optimize] Pipeline complete. ATS score:', scoreResult.data.overall);
     return {
       data: {
         keywordAnalysis: matchResult.data,

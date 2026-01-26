@@ -107,6 +107,7 @@ export function useSessionSync() {
       }
 
       try {
+        console.log('[SS:sync] Auto-saving session:', sessionId.slice(0, 8) + '...');
         const { error } = await updateSession(sessionId, sessionData);
 
         // Check again after async operation
@@ -116,11 +117,13 @@ export function useSessionSync() {
 
         if (error) {
           // Show error toast but don't block user
+          console.log('[SS:sync] Auto-save failed:', error.message);
           toast.error(`Failed to auto-save: ${error.message}`);
           return;
         }
 
         // Update last saved hash on success
+        console.log('[SS:sync] Auto-save successful');
         lastSavedHashRef.current = currentHash;
       } catch (err) {
         // Catch unexpected errors (only show if still mounted)
