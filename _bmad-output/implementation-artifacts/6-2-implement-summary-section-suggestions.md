@@ -1,6 +1,6 @@
 # Story 6.2: Implement Summary Section Suggestions
 
-Status: review
+Status: done
 
 ---
 
@@ -379,6 +379,16 @@ Successfully implemented the backend infrastructure for Summary section optimiza
   - Build successful with no TypeScript errors
   - Frontend UI components (Tasks 6-7) deferred for future work
 
+- 2026-01-25: **Code review fixes applied** (Adversarial review)
+  - H1: Relocated unit tests from `tests/lib/ai/detectAITellPhrases.spec.ts` to `tests/unit/ai/detectAITellPhrases.test.ts` (vitest config compliance)
+  - H2: Fixed snake_case `summary_suggestion` to camelCase `summarySuggestion` in `updateSession()` parameter and route caller
+  - H3: Extracted duplicated `withTimeout` to shared `lib/utils/withTimeout.ts`, removed redundant inner timeout, fixed timer leak
+  - M1: Updated Story Files table to reflect actual file locations
+  - M2: Note - integration tests require live LLM API (acknowledged, no mock added - tracked as known limitation)
+  - M3: Timer leak fixed via `clearTimeout` in shared utility
+  - Bonus: Fixed broken test data in multi-phrase detection test (leverages vs leverage)
+  - All 15 unit tests passing
+
 - 2026-01-25: Story 6-2 created with comprehensive developer context
   - 10 detailed acceptance criteria
   - 8 implementation tasks with subtasks
@@ -400,8 +410,10 @@ Successfully implemented the backend infrastructure for Summary section optimiza
 | `/app/api/suggestions/summary/route.ts` | API endpoint for Summary suggestions | ✅ Created |
 | `/types/suggestions.ts` | Type definitions for suggestion responses | ✅ Created |
 | `/types/optimization.ts` | Added summarySuggestion to OptimizationSession | ✅ Modified |
-| `/lib/supabase/sessions.ts` | Added summary_suggestion support | ✅ Modified |
+| `/lib/supabase/sessions.ts` | Added summarySuggestion support (camelCase) | ✅ Modified |
+| `/lib/utils/withTimeout.ts` | Shared timeout utility (extracted from duplication) | ✅ Created |
+| `/app/api/optimize/route.ts` | Updated to use shared withTimeout utility | ✅ Modified |
 | `/supabase/migrations/20260125020000_add_summary_suggestion_column.sql` | Database migration | ✅ Created |
-| `/tests/api/suggestions-summary.spec.ts` | Integration tests for API endpoint | ✅ Created |
-| `/tests/lib/ai/detectAITellPhrases.spec.ts` | Unit tests for AI-tell phrase detector | ✅ Created |
+| `/tests/api/suggestions-summary.spec.ts` | Integration tests for API endpoint (Playwright) | ✅ Created |
+| `/tests/unit/ai/detectAITellPhrases.test.ts` | Unit tests for AI-tell phrase detector (Vitest) | ✅ Created |
 | `/components/shared/SummaryOptimization.tsx` | UI component for displaying suggestions | ⏭️ Deferred (Tasks 6-7) |

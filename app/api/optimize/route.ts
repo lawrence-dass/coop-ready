@@ -23,6 +23,7 @@ import { extractKeywords } from '@/lib/ai/extractKeywords';
 import { matchKeywords } from '@/lib/ai/matchKeywords';
 import { calculateATSScore } from '@/lib/ai/calculateATSScore';
 import { updateSession } from '@/lib/supabase/sessions';
+import { withTimeout } from '@/lib/utils/withTimeout';
 
 // ============================================================================
 // TYPES
@@ -46,26 +47,6 @@ interface OptimizationResult {
 // ============================================================================
 
 const TIMEOUT_MS = 60000; // 60 seconds
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Wraps a promise with a timeout
- */
-function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  errorMessage: string
-): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`TIMEOUT: ${errorMessage}`)), timeoutMs)
-    ),
-  ]);
-}
 
 /**
  * Extract basic resume sections using simple heuristics.

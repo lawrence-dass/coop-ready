@@ -58,7 +58,7 @@ describe('detectAITellPhrases', () => {
   });
 
   it('should detect multiple AI-tell phrases', () => {
-    const text = 'I have the pleasure of being a passionate about technology professional who leverages my expertise.';
+    const text = 'I have the pleasure of being a passionate about technology professional who can leverage my expertise.';
     const result = detectAITellPhrases(text);
 
     expect(result.length).toBeGreaterThan(1);

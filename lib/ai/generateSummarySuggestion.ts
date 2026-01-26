@@ -15,32 +15,6 @@ import { SummarySuggestion } from '@/types/suggestions';
 import { detectAITellPhrases } from './detectAITellPhrases';
 
 // ============================================================================
-// CONSTANTS
-// ============================================================================
-
-const GENERATION_TIMEOUT_MS = 25000; // 25 seconds budget for generation
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Wraps a promise with a timeout
- */
-function withTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-  errorMessage: string
-): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`timeout: ${errorMessage}`)), ms)
-    ),
-  ]);
-}
-
-// ============================================================================
 // MAIN FUNCTION
 // ============================================================================
 
@@ -148,12 +122,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
   "keywords_added": ["keyword1", "keyword2", "keyword3"]
 }`;
 
-    // Invoke LLM with timeout enforcement
-    const response = await withTimeout(
-      model.invoke(prompt),
-      GENERATION_TIMEOUT_MS,
-      'Summary suggestion generation timed out'
-    );
+    // Invoke LLM (timeout enforced at the route level)
+    const response = await model.invoke(prompt);
     const content = response.content as string;
 
     // Parse JSON response

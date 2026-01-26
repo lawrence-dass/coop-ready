@@ -16,6 +16,7 @@ import type { ActionResponse } from '@/types';
 import type { SummarySuggestion } from '@/types/suggestions';
 import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
+import { withTimeout } from '@/lib/utils/withTimeout';
 
 // ============================================================================
 // TYPES
@@ -39,22 +40,6 @@ const TIMEOUT_MS = 60000; // 60 seconds
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-/**
- * Wraps a promise with a timeout
- */
-function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  errorMessage: string
-): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`TIMEOUT: ${errorMessage}`)), timeoutMs)
-    ),
-  ]);
-}
 
 /**
  * Validate request body
@@ -147,7 +132,7 @@ async function runSuggestionGeneration(
 
     // Save to session (graceful degradation - don't fail if session update fails)
     const sessionUpdateResult = await updateSession(request.session_id, {
-      summary_suggestion: suggestionResult.data,
+      summarySuggestion: suggestionResult.data,
     });
 
     if (sessionUpdateResult.error) {

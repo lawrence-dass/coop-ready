@@ -211,7 +211,7 @@ export async function updateSession(
     feedback?: Record<string, 'helpful' | 'not-helpful'> | null;
     keywordAnalysis?: KeywordAnalysisResult | null; // Story 5.1
     atsScore?: ATSScore | null; // Story 5.2
-    summary_suggestion?: SummarySuggestion | null; // Story 6.2
+    summarySuggestion?: SummarySuggestion | null; // Story 6.2
   }
 ): Promise<ActionResponse<{ success: boolean }>> {
   const supabase = createClient();
@@ -252,8 +252,8 @@ export async function updateSession(
       dbUpdates.ats_score = updates.atsScore;
     }
 
-    if ('summary_suggestion' in updates) {
-      dbUpdates.summary_suggestion = updates.summary_suggestion;
+    if ('summarySuggestion' in updates) {
+      dbUpdates.summary_suggestion = updates.summarySuggestion;
     }
 
     const { error } = await supabase
