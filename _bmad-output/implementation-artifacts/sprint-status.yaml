@@ -79,7 +79,7 @@ development_status:
   # Epic 6: Content Optimization (V0.1)
   epic-6: in-progress
   6-1-implement-llm-pipeline-api-route: done
-  6-2-implement-summary-section-suggestions: backlog
+  6-2-implement-summary-section-suggestions: done
   6-3-implement-skills-section-suggestions: backlog
   6-4-implement-experience-section-suggestions: backlog
   6-5-implement-suggestion-display-ui: backlog

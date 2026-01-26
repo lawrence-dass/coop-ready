@@ -30,6 +30,7 @@ import type {
   SuggestionSet,
 } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
+import type { SummarySuggestion } from '@/types/suggestions';
 
 // ============================================================================
 // DATABASE ROW TYPE (snake_case)
@@ -50,6 +51,7 @@ interface SessionRow {
   feedback: Record<string, 'helpful' | 'not-helpful'> | null;
   keyword_analysis: KeywordAnalysisResult | null; // Story 5.1
   ats_score: ATSScore | null; // Story 5.2
+  summary_suggestion: SummarySuggestion | null; // Story 6.2
   created_at: string;
   updated_at: string;
 }
@@ -72,6 +74,7 @@ function toOptimizationSession(row: SessionRow): OptimizationSession {
     suggestions: row.suggestions,
     keywordAnalysis: row.keyword_analysis,
     atsScore: row.ats_score,
+    summarySuggestion: row.summary_suggestion,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -208,6 +211,7 @@ export async function updateSession(
     feedback?: Record<string, 'helpful' | 'not-helpful'> | null;
     keywordAnalysis?: KeywordAnalysisResult | null; // Story 5.1
     atsScore?: ATSScore | null; // Story 5.2
+    summarySuggestion?: SummarySuggestion | null; // Story 6.2
   }
 ): Promise<ActionResponse<{ success: boolean }>> {
   const supabase = createClient();
@@ -246,6 +250,10 @@ export async function updateSession(
 
     if ('atsScore' in updates) {
       dbUpdates.ats_score = updates.atsScore;
+    }
+
+    if ('summarySuggestion' in updates) {
+      dbUpdates.summary_suggestion = updates.summarySuggestion;
     }
 
     const { error } = await supabase
