@@ -1,12 +1,14 @@
 'use client';
 
 // Story 5.1 + 5.2: Analyze Button Component (Keywords + ATS Score)
+// Story 7.3: Added client-side timeout handling
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
 import { analyzeResume } from '@/actions/analyzeResume';
 import { useOptimizationStore } from '@/store';
 import { toast } from 'sonner';
+import { fetchWithTimeout, TIMEOUT_MS } from '@/lib/timeoutUtils';
 
 interface AnalyzeButtonProps {
   /** Session ID for the analysis */
@@ -34,6 +36,7 @@ export function AnalyzeButton({
   const [loadingStep, setLoadingStep] = useState<string>('');
   const setKeywordAnalysis = useOptimizationStore((state) => state.setKeywordAnalysis);
   const setATSScore = useOptimizationStore((state) => state.setATSScore);
+  const setGeneralError = useOptimizationStore((state) => state.setGeneralError);
 
   // Don't show button if resume or JD is missing
   if (!hasResume || !hasJobDescription) {
@@ -52,24 +55,19 @@ export function AnalyzeButton({
         console.log('[SS:ui] Analyze button clicked, sessionId:', sessionId);
         setLoadingStep('Analyzing keywords...');
 
-        const { data, error } = await analyzeResume(sessionId);
+        // Wrap analyzeResume with client-side timeout (Story 7.3)
+        // This provides first line of defense before server-side timeout
+        const { data, error } = await fetchWithTimeout(
+          analyzeResume(sessionId),
+          TIMEOUT_MS
+        );
 
         if (error) {
           console.error('[SS:ui] Analysis error:', error.code, '-', error.message);
           setLoadingStep('');
 
-          // Handle specific error codes
-          if (error.code === 'LLM_TIMEOUT') {
-            toast.error('Analysis timed out. Please try again.');
-          } else if (error.code === 'LLM_ERROR') {
-            toast.error('Analysis failed. Please retry.');
-          } else if (error.code === 'SCORE_CALCULATION_ERROR') {
-            toast.error('Failed to calculate score. Please try again.');
-          } else if (error.code === 'RATE_LIMITED') {
-            toast.error('Rate limit exceeded. Please wait and try again.');
-          } else {
-            toast.error(error.message);
-          }
+          // Store error in general error state — ErrorDisplay component handles display
+          setGeneralError({ code: error.code, message: error.message });
           return;
         }
 
@@ -83,8 +81,15 @@ export function AnalyzeButton({
 
       } catch (err) {
         setLoadingStep('');
-        toast.error('Unexpected error occurred. Please try again.');
-        console.error('[AnalyzeButton] Error:', err);
+
+        // Check if this is a timeout error from fetchWithTimeout
+        if (err instanceof Error && err.message.includes('Timeout after')) {
+          console.error('[AnalyzeButton] Client-side timeout:', err.message);
+          setGeneralError({ code: 'LLM_TIMEOUT', message: 'Analysis exceeded 60 second timeout' });
+        } else {
+          console.error('[AnalyzeButton] Error:', err);
+          setGeneralError({ code: 'LLM_ERROR', message: 'Unexpected error occurred' });
+        }
       }
     });
   };

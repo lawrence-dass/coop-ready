@@ -98,12 +98,14 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 }`;
 
     // Invoke LLM with timeout enforcement
+    console.log('[SS:match] Calling LLM (claude-haiku-4)...');
     const response = await withTimeout(
       model.invoke(matchingPrompt),
       MATCHING_TIMEOUT_MS,
       'Keyword matching timed out'
     );
     const content = response.content as string;
+    console.log('[SS:match] LLM responded, content length:', content.length);
 
     // Parse JSON response
     let parsed: { matches: MatchedKeyword[] };

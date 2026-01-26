@@ -89,6 +89,7 @@ Return ONLY a JSON object with three numeric scores (no markdown, no explanation
     );
 
     const responseText = response.content.toString().trim();
+    console.log(`[SS:quality] Section ${sectionType} LLM responded, length:`, responseText.length);
 
     // Parse JSON response
     let scores: QualityScores;
@@ -192,6 +193,7 @@ export async function judgeContentQuality(
         continue;
       }
 
+      console.log(`[SS:quality] Evaluating ${sectionType} (${sectionContent.length} chars)...`);
       const result = await evaluateSectionQuality(
         sectionType,
         sectionContent,
@@ -200,10 +202,12 @@ export async function judgeContentQuality(
 
       if (result.error) {
         // If any section fails, return the error (fallback handled by caller)
+        console.error(`[SS:quality] ${sectionType} evaluation failed:`, result.error.code);
         return result;
       }
 
       if (result.data > 0) {
+        console.log(`[SS:quality] ${sectionType} score:`, result.data);
         sectionScores.push(result.data);
       }
     }

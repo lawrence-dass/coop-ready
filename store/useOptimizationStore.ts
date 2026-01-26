@@ -34,6 +34,7 @@ import type { OptimizationSession } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
 import { calculateBackoffDelay, delay, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
 import { analyzeResume } from '@/actions/analyzeResume';
+import { fetchWithTimeout, TIMEOUT_MS } from '@/lib/timeoutUtils';
 
 // ============================================================================
 // EXTENDED STORE INTERFACE
@@ -331,8 +332,8 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         // Wait for backoff delay
         await delay(backoffDelay);
 
-        // Call analyze action with same session
-        const result = await analyzeResume(sessionId);
+        // Call analyze action with same session, with timeout protection (Story 7.3)
+        const result = await fetchWithTimeout(analyzeResume(sessionId), TIMEOUT_MS);
 
         // Handle result
         if (result.error) {
@@ -351,11 +352,20 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
           freshState.setLastError(null);
         }
       } catch (error) {
-        console.error('[retryOptimization] Unexpected error:', error);
-        useOptimizationStore.getState().setGeneralError({
-          code: 'LLM_ERROR',
-          message: error instanceof Error ? error.message : 'Retry failed',
-        });
+        // Handle timeout from fetchWithTimeout (Story 7.3)
+        if (error instanceof Error && error.message.includes('Timeout after')) {
+          console.error('[retryOptimization] Client-side timeout:', error.message);
+          useOptimizationStore.getState().setGeneralError({
+            code: 'LLM_TIMEOUT',
+            message: 'Analysis exceeded 60 second timeout',
+          });
+        } else {
+          console.error('[retryOptimization] Unexpected error:', error);
+          useOptimizationStore.getState().setGeneralError({
+            code: 'LLM_ERROR',
+            message: error instanceof Error ? error.message : 'Retry failed',
+          });
+        }
       } finally {
         // Always clear retrying state
         useOptimizationStore.getState().setIsRetrying(false);
