@@ -1,6 +1,6 @@
 # Story 6.3: Implement Skills Section Suggestions
 
-Status: review
+Status: done
 
 ---
 
@@ -213,8 +213,7 @@ Return SkillsSuggestion
 ### File Structure
 
 ```
-/lib/ai/generateSkillsSuggestion.ts       ← New LLM function
-/lib/ai/extractSkillsFromResume.ts        ← Skill parsing utility
+/lib/ai/generateSkillsSuggestion.ts       ← New LLM function (includes skill extraction)
 /app/api/suggestions/skills/route.ts      ← New API endpoint
 /components/shared/SkillsOptimization.tsx ← Component for display [may defer]
 /types/suggestions.ts                      ← Update with SkillsSuggestion type
@@ -361,6 +360,7 @@ Most resume skills sections are structured → recommend hybrid approach:
 - `supabase/migrations/20260125030000_add_skills_suggestion_column.sql` - Database migration (created)
 - `tests/integration/api-suggestions-skills.test.ts` - Integration tests (created)
 - `tests/unit/ai/skills-generation.test.ts` - Unit tests (created)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` - Sprint tracking (updated)
 
 ---
 
@@ -392,6 +392,17 @@ Most resume skills sections are structured → recommend hybrid approach:
   - ✅ All acceptance criteria satisfied
   - ✅ All tests passing (14 unit + 15 integration)
   - ✅ Backend implementation complete and ready for frontend integration
+
+- 2026-01-26: Code Review fixes applied
+  - 🔧 H1: Fixed XML tag to use `<user_content>` per project standard (prompt injection defense consistency)
+  - 🔧 H4: Added runtime normalization for `missing_but_relevant` and `skill_removals` items (handles LLM returning strings instead of objects)
+  - 🔧 M1: Added `sprint-status.yaml` to File List
+  - 🔧 M2: Removed references to non-existent `extractSkillsFromResume.ts` from story summary and file structure
+  - ✅ Added 1 new unit test for normalization logic (15 unit + 15 integration = 30 tests)
+  - ⚠️ H2: `anonymous_id` not used for session update RLS - pre-existing pattern from 6.2, logged as tech debt
+  - ⚠️ H3: Timeout integration test takes 60s to run - acceptable but could be optimized
+  - ⚠️ M3: snake_case in TS interfaces (SkillsSuggestion) - pre-existing pattern from 6.2, logged as design debt
+  - ℹ️ L1: Redundant timeout handling in LLM function - not harmful, no change needed
 
 ---
 
@@ -509,7 +520,7 @@ This story implements AI-generated suggestions for the Skills section of a resum
 - **Backend API:** `/api/suggestions/skills` with 60-second timeout
 - **LLM Function:** `generateSkillsSuggestion()` with skill matching and gap analysis
 - **Database:** `skills_suggestion` JSONB column in sessions table
-- **Utilities:** `extractSkillsFromResume()` for parsing various skill formats
+- **Skill Extraction:** LLM-based extraction (no separate utility needed)
 - **Tests:** Comprehensive coverage of all scenarios
 - **UI:** Deferred to later story (can follow same pattern as 6-2)
 

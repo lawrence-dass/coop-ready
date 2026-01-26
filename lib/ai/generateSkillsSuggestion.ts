@@ -98,15 +98,15 @@ export async function generateSkillsSuggestion(
 
 Your task is to analyze a skills section and optimize it for a specific job description.
 
-<current_skills>
+<user_content>
 ${processedSkills}
-</current_skills>
+</user_content>
 
 <job_description>
 ${processedJD}
 </job_description>
 
-${processedResume ? `<full_resume>\n${processedResume}\n</full_resume>` : ''}
+${processedResume ? `<user_content>\n${processedResume}\n</user_content>` : ''}
 
 **Instructions:**
 1. Extract all skills from the current skills section
@@ -204,15 +204,33 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       };
     }
 
+    // Normalize missing_but_relevant items to ensure { skill, reason } structure
+    const normalizedMissing = Array.isArray(parsed.missing_but_relevant)
+      ? parsed.missing_but_relevant.map((item) =>
+          typeof item === 'string'
+            ? { skill: item, reason: '' }
+            : { skill: String(item.skill || ''), reason: String(item.reason || '') }
+        )
+      : [];
+
+    // Normalize skill_removals items to ensure { skill, reason } structure
+    const normalizedRemovals = Array.isArray(parsed.skill_removals)
+      ? parsed.skill_removals.map((item) =>
+          typeof item === 'string'
+            ? { skill: item, reason: '' }
+            : { skill: String(item.skill || ''), reason: String(item.reason || '') }
+        )
+      : [];
+
     // Return suggestion
     return {
       data: {
         original: resumeSkills, // Return full original, not truncated
         existing_skills: parsed.existing_skills,
         matched_keywords: parsed.matched_keywords,
-        missing_but_relevant: parsed.missing_but_relevant || [],
+        missing_but_relevant: normalizedMissing,
         skill_additions: parsed.skill_additions,
-        skill_removals: parsed.skill_removals || [],
+        skill_removals: normalizedRemovals,
         summary: parsed.summary,
       },
       error: null,

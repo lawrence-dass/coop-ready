@@ -120,6 +120,42 @@ describe('generateSkillsSuggestion', () => {
       expect(result.data?.skill_removals).toHaveLength(1);
     });
 
+    it('should normalize string items in missing_but_relevant and skill_removals', async () => {
+      // LLM might return strings instead of { skill, reason } objects
+      const mockResponse = {
+        existing_skills: ['Python'],
+        matched_keywords: ['Python'],
+        missing_but_relevant: ['Docker', 'Kubernetes'] as unknown[],
+        skill_additions: ['Docker'],
+        skill_removals: ['jQuery'] as unknown[],
+        summary: 'Test summary',
+      };
+
+      const mockInvoke = vi.fn().mockResolvedValue({
+        content: JSON.stringify(mockResponse),
+      });
+
+      vi.mocked(ChatAnthropic).mockImplementation(
+        () =>
+          ({
+            invoke: mockInvoke,
+          }) as unknown as ChatAnthropic
+      );
+
+      const result = await generateSkillsSuggestion(
+        'Python, jQuery',
+        'Looking for Python developer with Docker'
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.data).not.toBeNull();
+      // String items should be normalized to { skill, reason } objects
+      expect(result.data?.missing_but_relevant[0]).toHaveProperty('skill', 'Docker');
+      expect(result.data?.missing_but_relevant[0]).toHaveProperty('reason', '');
+      expect(result.data?.skill_removals[0]).toHaveProperty('skill', 'jQuery');
+      expect(result.data?.skill_removals[0]).toHaveProperty('reason', '');
+    });
+
     it('should return PARSE_ERROR for invalid JSON', async () => {
       const mockInvoke = vi.fn().mockResolvedValue({
         content: 'This is not JSON',
@@ -380,9 +416,9 @@ describe('generateSkillsSuggestion', () => {
       expect(result.error).toBeNull();
       expect(mockInvoke).toHaveBeenCalled();
 
-      // Check that prompt includes resume content
+      // Check that prompt includes resume content wrapped in user_content tags
       const promptArg = mockInvoke.mock.calls[0][0] as string;
-      expect(promptArg).toContain('full_resume');
+      expect(promptArg).toContain('user_content');
     });
   });
 });
