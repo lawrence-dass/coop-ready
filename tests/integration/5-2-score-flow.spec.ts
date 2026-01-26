@@ -1,13 +1,13 @@
 // Integration Tests for ATS Score Calculation Flow
 // Story 5.2: Implement ATS Score Calculation
 
-import { test, expect, describe, beforeEach } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { createClient } from '@/lib/supabase/client';
 
-describe('[P0] ATS Score Calculation Integration', () => {
+test.describe('[P0] ATS Score Calculation Integration', () => {
   let testSessionId: string;
 
-  beforeEach(async () => {
+  test.beforeEach(async () => {
     // Create a test session
     const supabase = createClient();
     const { data: session } = await supabase

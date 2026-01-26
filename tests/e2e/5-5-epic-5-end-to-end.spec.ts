@@ -14,7 +14,7 @@ import path from 'path';
  */
 
 test.describe('Epic 5: ATS Analysis & Scoring - Integration Tests', () => {
-  const resumePath = path.join(__dirname, '../fixtures/sample-resume.pdf');
+  const resumePath = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
   const sampleJD = `We are looking for a Senior Software Engineer with the following qualifications:
 
 Required Skills:

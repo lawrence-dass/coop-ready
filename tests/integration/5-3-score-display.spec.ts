@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 
-const RESUME_PATH = path.join(__dirname, '../fixtures/sample-resume.pdf');
+const RESUME_PATH = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
 const JOB_DESCRIPTION = `
 Senior Software Engineer
 
