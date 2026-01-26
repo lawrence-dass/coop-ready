@@ -200,7 +200,7 @@ export async function analyzeResume(
     return {
       data: null,
       error: {
-        code: 'SCORE_CALCULATION_ERROR',
+        code: 'LLM_ERROR',
         message: error instanceof Error ? error.message : 'Failed to analyze resume'
       }
     };

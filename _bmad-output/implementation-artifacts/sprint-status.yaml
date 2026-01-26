@@ -89,7 +89,7 @@ development_status:
 
   # Epic 7: Error Handling & Feedback (V0.1)
   epic-7: in-progress
-  7-1-implement-error-display-component: ready-for-dev
+  7-1-implement-error-display-component: review
   7-2-implement-retry-functionality: backlog
   7-3-implement-timeout-recovery: backlog
   7-4-implement-suggestion-feedback: backlog
