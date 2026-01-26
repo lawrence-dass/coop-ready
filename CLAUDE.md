@@ -39,7 +39,7 @@ Next.js 16 + TypeScript + React 19 | Tailwind 4 + shadcn/ui | Supabase + LangCha
 **1. ActionResponse Pattern (MANDATORY)**
 - Never throw from server actions
 - Always return `{ data: T, error: null }` or `{ data: null, error: ErrorObject }`
-- Full details: [See project-context.md](project-context.md)
+- Full details: [See project-context.md](_bmad-output/project-context.md)
 
 **2. Error Codes (Standardized)**
 Use: `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `PARSE_ERROR`, `LLM_TIMEOUT`, `LLM_ERROR`, `RATE_LIMITED`, `VALIDATION_ERROR`
@@ -63,8 +63,8 @@ Use: `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `PARSE_ERROR`, `LLM_TIMEOUT`, `LLM_E
 
 | What | Where |
 |------|-------|
-| All critical rules & patterns | [project-context.md](project-context.md) |
-| Architecture decisions | [architecture.md](planning-artifacts/architecture.md) |
+| All critical rules & patterns | [project-context.md](_bmad-output/project-context.md) |
+| Architecture decisions | [architecture.md](_bmad-output/planning-artifacts/architecture.md) |
 | Testing framework & commands | [docs/TESTING.md](docs/TESTING.md) |
 | MCP server setup | [docs/MCP-SETUP.md](docs/MCP-SETUP.md) |
 | Database migrations | [docs/DATABASE.md](docs/DATABASE.md) |
