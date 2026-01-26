@@ -98,7 +98,7 @@ export async function generateExperienceSuggestion(
 
     // Initialize LLM
     const model = new ChatAnthropic({
-      modelName: 'claude-sonnet-4-20250514',
+      modelName: 'claude-haiku-4-20250514',
       temperature: 0.4, // Slightly creative for natural bullet rewrites
       maxTokens: 4000, // More tokens for multiple entries
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
