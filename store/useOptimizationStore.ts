@@ -62,6 +62,15 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** ATS compatibility score (Story 5.2) */
   atsScore: ATSScore | null;
 
+  /** Summary section suggestion (Story 6.2) */
+  summarySuggestion: import('@/types/suggestions').SummarySuggestion | null;
+
+  /** Skills section suggestion (Story 6.3) */
+  skillsSuggestion: import('@/types/suggestions').SkillsSuggestion | null;
+
+  /** Experience section suggestion (Story 6.4) */
+  experienceSuggestion: import('@/types/suggestions').ExperienceSuggestion | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -85,6 +94,15 @@ interface ExtendedOptimizationStore extends OptimizationStore {
 
   /** Set ATS score (Story 5.2) */
   setATSScore: (score: ATSScore | null) => void;
+
+  /** Set summary suggestion (Story 6.2) */
+  setSummarySuggestion: (suggestion: import('@/types/suggestions').SummarySuggestion | null) => void;
+
+  /** Set skills suggestion (Story 6.3) */
+  setSkillsSuggestion: (suggestion: import('@/types/suggestions').SkillsSuggestion | null) => void;
+
+  /** Set experience suggestion (Story 6.4) */
+  setExperienceSuggestion: (suggestion: import('@/types/suggestions').ExperienceSuggestion | null) => void;
 
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
@@ -122,6 +140,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     isParsing: false,
     keywordAnalysis: null,
     atsScore: null,
+    summarySuggestion: null,
+    skillsSuggestion: null,
+    experienceSuggestion: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -180,6 +201,15 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     setATSScore: (score) =>
       set({ atsScore: score, error: null }),
 
+    setSummarySuggestion: (suggestion) =>
+      set({ summarySuggestion: suggestion, error: null }),
+
+    setSkillsSuggestion: (suggestion) =>
+      set({ skillsSuggestion: suggestion, error: null }),
+
+    setExperienceSuggestion: (suggestion) =>
+      set({ experienceSuggestion: suggestion, error: null }),
+
     /**
      * Hydrate store from database session
      *
@@ -194,6 +224,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         suggestions: session.suggestions ?? null,
         keywordAnalysis: session.keywordAnalysis ?? null,
         atsScore: session.atsScore ?? null,
+        summarySuggestion: session.summarySuggestion ?? null,
+        skillsSuggestion: session.skillsSuggestion ?? null,
+        experienceSuggestion: session.experienceSuggestion ?? null,
         error: null,
       }),
 
@@ -225,6 +258,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         isParsing: false,
         keywordAnalysis: null,
         atsScore: null,
+        summarySuggestion: null,
+        skillsSuggestion: null,
+        experienceSuggestion: null,
       }),
   })
 );
@@ -292,3 +328,12 @@ export const selectOverallScore = (state: ExtendedOptimizationStore) =>
 
 export const selectScoreBreakdown = (state: ExtendedOptimizationStore) =>
   state.atsScore?.breakdown ?? null;
+
+export const selectSummarySuggestion = (state: ExtendedOptimizationStore) =>
+  state.summarySuggestion;
+
+export const selectSkillsSuggestion = (state: ExtendedOptimizationStore) =>
+  state.skillsSuggestion;
+
+export const selectExperienceSuggestion = (state: ExtendedOptimizationStore) =>
+  state.experienceSuggestion;
