@@ -5,7 +5,7 @@
  * All types use camelCase to match TypeScript conventions (DB uses snake_case).
  */
 
-import type { KeywordAnalysisResult } from './analysis';
+import type { KeywordAnalysisResult, ATSScore } from './analysis';
 
 // ============================================================================
 // RESUME TYPES
@@ -187,6 +187,9 @@ export interface OptimizationSession {
 
   /** Keyword analysis results (Story 5.1 - new structured format) */
   keywordAnalysis?: KeywordAnalysisResult | null;
+
+  /** ATS compatibility score (Story 5.2) */
+  atsScore?: ATSScore | null;
 
   /** Generated optimization suggestions */
   suggestions?: SuggestionSet | null;

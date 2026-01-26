@@ -31,7 +31,7 @@
 import { create } from 'zustand';
 import type { OptimizationStore } from '@/types/store';
 import type { OptimizationSession } from '@/types/optimization';
-import type { KeywordAnalysisResult } from '@/types/analysis';
+import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
 
 // ============================================================================
 // EXTENDED STORE INTERFACE
@@ -59,6 +59,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Keyword analysis results (Story 5.1) */
   keywordAnalysis: KeywordAnalysisResult | null;
 
+  /** ATS compatibility score (Story 5.2) */
+  atsScore: ATSScore | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -79,6 +82,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
 
   /** Clear keyword analysis results (Story 5.1) */
   clearKeywordAnalysis: () => void;
+
+  /** Set ATS score (Story 5.2) */
+  setATSScore: (score: ATSScore | null) => void;
 
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
@@ -115,6 +121,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     isExtracting: false,
     isParsing: false,
     keywordAnalysis: null,
+    atsScore: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -170,6 +177,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     clearKeywordAnalysis: () =>
       set({ keywordAnalysis: null }),
 
+    setATSScore: (score) =>
+      set({ atsScore: score, error: null }),
+
     /**
      * Hydrate store from database session
      *
@@ -183,6 +193,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         analysisResult: session.analysisResult ?? null,
         suggestions: session.suggestions ?? null,
         keywordAnalysis: session.keywordAnalysis ?? null,
+        atsScore: session.atsScore ?? null,
         error: null,
       }),
 
@@ -213,6 +224,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         isExtracting: false,
         isParsing: false,
         keywordAnalysis: null,
+        atsScore: null,
       }),
   })
 );
@@ -271,3 +283,12 @@ export const selectIsParsing = (state: ExtendedOptimizationStore) =>
 
 export const selectKeywordAnalysis = (state: ExtendedOptimizationStore) =>
   state.keywordAnalysis;
+
+export const selectATSScore = (state: ExtendedOptimizationStore) =>
+  state.atsScore;
+
+export const selectOverallScore = (state: ExtendedOptimizationStore) =>
+  state.atsScore?.overall ?? null;
+
+export const selectScoreBreakdown = (state: ExtendedOptimizationStore) =>
+  state.atsScore?.breakdown ?? null;

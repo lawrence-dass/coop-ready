@@ -35,3 +35,24 @@ export interface KeywordAnalysisResult {
   matchRate: number; // Percentage (0-100)
   analyzedAt: string; // ISO timestamp
 }
+
+// ATS Score Types
+// Story 5.2: Implement ATS Score Calculation
+
+export interface ScoreBreakdown {
+  keywordScore: number; // 0-100 (50% weight)
+  sectionCoverageScore: number; // 0-100 (25% weight)
+  contentQualityScore: number; // 0-100 (25% weight)
+}
+
+export interface ATSScore {
+  overall: number; // 0-100 weighted average
+  breakdown: ScoreBreakdown;
+  calculatedAt: string; // ISO timestamp
+}
+
+export const SCORE_WEIGHTS = {
+  keyword: 0.50,
+  section: 0.25,
+  quality: 0.25,
+} as const;

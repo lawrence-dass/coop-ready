@@ -1,10 +1,10 @@
 'use client';
 
-// Story 5.1: Analyze Button Component
+// Story 5.1 + 5.2: Analyze Button Component (Keywords + ATS Score)
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
-import { analyzeKeywords } from '@/actions/analyzeKeywords';
+import { analyzeResume } from '@/actions/analyzeResume';
 import { useOptimizationStore } from '@/store';
 import { toast } from 'sonner';
 
@@ -20,10 +20,10 @@ interface AnalyzeButtonProps {
 }
 
 /**
- * Button to trigger keyword analysis
+ * Button to trigger resume analysis (keywords + ATS score)
  *
  * Visible only when both resume and JD are present.
- * Uses useTransition for loading state.
+ * Uses useTransition for loading state with multi-step progress.
  */
 export function AnalyzeButton({
   sessionId,
@@ -31,7 +31,9 @@ export function AnalyzeButton({
   hasJobDescription
 }: AnalyzeButtonProps) {
   const [isPending, startTransition] = useTransition();
+  const [loadingStep, setLoadingStep] = useState<string>('');
   const setKeywordAnalysis = useOptimizationStore((state) => state.setKeywordAnalysis);
+  const setATSScore = useOptimizationStore((state) => state.setATSScore);
 
   // Don't show button if resume or JD is missing
   if (!hasResume || !hasJobDescription) {
@@ -45,24 +47,42 @@ export function AnalyzeButton({
 
   const handleAnalyze = () => {
     startTransition(async () => {
-      const { data, error } = await analyzeKeywords(sessionId);
+      try {
+        // Step 1: Extracting keywords
+        setLoadingStep('Analyzing keywords...');
 
-      if (error) {
-        if (error.code === 'LLM_TIMEOUT') {
-          toast.error('Analysis timed out. Please try again.');
-        } else if (error.code === 'LLM_ERROR') {
-          toast.error('Analysis failed. Please retry.');
-        } else if (error.code === 'RATE_LIMITED') {
-          toast.error('Rate limit exceeded. Please wait and try again.');
-        } else {
-          toast.error(error.message);
+        const { data, error } = await analyzeResume(sessionId);
+
+        if (error) {
+          setLoadingStep('');
+
+          // Handle specific error codes
+          if (error.code === 'LLM_TIMEOUT') {
+            toast.error('Analysis timed out. Please try again.');
+          } else if (error.code === 'LLM_ERROR') {
+            toast.error('Analysis failed. Please retry.');
+          } else if (error.code === 'SCORE_CALCULATION_ERROR') {
+            toast.error('Failed to calculate score. Please try again.');
+          } else if (error.code === 'RATE_LIMITED') {
+            toast.error('Rate limit exceeded. Please wait and try again.');
+          } else {
+            toast.error(error.message);
+          }
+          return;
         }
-        return;
-      }
 
-      // Success - update store
-      setKeywordAnalysis(data);
-      toast.success('Analysis complete!');
+        // Success - update store with both keyword analysis and score
+        setKeywordAnalysis(data.keywordAnalysis);
+        setATSScore(data.atsScore);
+
+        setLoadingStep('');
+        toast.success(`Analysis complete! Your ATS score is ${data.atsScore.overall}`);
+
+      } catch (err) {
+        setLoadingStep('');
+        toast.error('Unexpected error occurred. Please try again.');
+        console.error('[AnalyzeButton] Error:', err);
+      }
     });
   };
 
@@ -75,12 +95,12 @@ export function AnalyzeButton({
       {isPending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Analyzing...
+          {loadingStep || 'Analyzing...'}
         </>
       ) : (
         <>
           <Sparkles className="mr-2 h-4 w-4" />
-          Analyze Keywords
+          Analyze Resume
         </>
       )}
     </Button>

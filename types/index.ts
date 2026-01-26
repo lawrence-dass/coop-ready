@@ -77,6 +77,9 @@ export const ERROR_CODES = {
 
   /** Invalid input data (empty resume, missing required field) */
   VALIDATION_ERROR: 'VALIDATION_ERROR',
+
+  /** ATS score calculation failed (Story 5.2) */
+  SCORE_CALCULATION_ERROR: 'SCORE_CALCULATION_ERROR',
 } as const;
 
 /**
