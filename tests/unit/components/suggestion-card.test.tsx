@@ -1,16 +1,29 @@
 /**
  * Unit tests for SuggestionCard component
  * Story 6.5: Implement Suggestion Display UI
+ * Story 7.4: Updated for feedback buttons
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { SuggestionCard } from '@/components/shared/SuggestionCard';
+
+// Mock the store
+vi.mock('@/store/useOptimizationStore', () => ({
+  useOptimizationStore: vi.fn((selector) => {
+    const state = {
+      getFeedbackForSuggestion: () => null,
+      recordSuggestionFeedback: vi.fn().mockResolvedValue(undefined),
+    };
+    return selector ? selector(state) : state;
+  }),
+}));
 
 describe('SuggestionCard', () => {
   it('should render original and suggested text', () => {
     render(
       <SuggestionCard
+        suggestionId="sug_summary_0"
         original="Junior developer with 2 years experience"
         suggested="Results-driven software engineer with 2+ years of experience delivering scalable web applications"
         sectionType="summary"
@@ -25,6 +38,7 @@ describe('SuggestionCard', () => {
   it('should display point badge when points provided', () => {
     render(
       <SuggestionCard
+        suggestionId="sug_exp_0"
         original="Worked on projects"
         suggested="Led development of 5+ enterprise applications"
         points={8}
@@ -38,6 +52,7 @@ describe('SuggestionCard', () => {
   it('should not display point badge when points not provided', () => {
     render(
       <SuggestionCard
+        suggestionId="sug_exp_1"
         original="Worked on projects"
         suggested="Led development of enterprise applications"
         sectionType="experience"
@@ -50,6 +65,7 @@ describe('SuggestionCard', () => {
   it('should render with section type data attribute', () => {
     const { container } = render(
       <SuggestionCard
+        suggestionId="sug_summary_1"
         original="Test original"
         suggested="Test suggested"
         sectionType="summary"
@@ -62,6 +78,7 @@ describe('SuggestionCard', () => {
   it('should have aria-label for accessibility', () => {
     render(
       <SuggestionCard
+        suggestionId="sug_exp_2"
         original="Test"
         suggested="Test improved"
         sectionType="experience"
@@ -74,6 +91,7 @@ describe('SuggestionCard', () => {
   it('should display keywords when provided', () => {
     render(
       <SuggestionCard
+        suggestionId="sug_skills_0"
         original="Developer with experience"
         suggested="Full-stack developer with cloud computing experience"
         keywords={['full-stack', 'cloud computing']}
@@ -88,6 +106,7 @@ describe('SuggestionCard', () => {
   it('should display metrics when provided', () => {
     render(
       <SuggestionCard
+        suggestionId="sug_exp_3"
         original="Improved performance"
         suggested="Improved application performance by 30%"
         metrics={['30%']}
@@ -101,6 +120,7 @@ describe('SuggestionCard', () => {
   it('should render desktop two-column layout', () => {
     const { container } = render(
       <SuggestionCard
+        suggestionId="sug_summary_2"
         original="Test"
         suggested="Test improved"
         sectionType="summary"
@@ -115,6 +135,7 @@ describe('SuggestionCard', () => {
   it('should render mobile tabs layout', () => {
     const { container } = render(
       <SuggestionCard
+        suggestionId="sug_summary_3"
         original="Test"
         suggested="Test improved"
         sectionType="summary"

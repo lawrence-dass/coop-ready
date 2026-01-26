@@ -62,6 +62,18 @@ const defaultIcons: Record<SuggestionSectionProps['section'], React.ReactNode> =
 };
 
 // ---------------------------------------------------------------------------
+// Helper: Generate deterministic suggestion ID (Story 7.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates a unique suggestion ID based on section and index
+ * Format: "sug_{section}_{index}"
+ */
+function generateSuggestionId(section: string, index: number): string {
+  return `sug_${section}_${index}`;
+}
+
+// ---------------------------------------------------------------------------
 // Shared section header
 // ---------------------------------------------------------------------------
 
@@ -112,6 +124,7 @@ function SummaryBody({ suggestion }: { suggestion: SummarySuggestion }) {
   return (
     <div className="space-y-4">
       <SuggestionCard
+        suggestionId={generateSuggestionId('summary', 0)}
         original={suggestion.original}
         suggested={suggestion.suggested}
         keywords={suggestion.ats_keywords_added}
@@ -125,6 +138,7 @@ function SkillsBody({ suggestion }: { suggestion: SkillsSuggestion }) {
   return (
     <div className="space-y-4">
       <SuggestionCard
+        suggestionId={generateSuggestionId('skills', 0)}
         original={suggestion.original}
         suggested={suggestion.summary}
         keywords={suggestion.matched_keywords}
@@ -133,6 +147,7 @@ function SkillsBody({ suggestion }: { suggestion: SkillsSuggestion }) {
 
       {suggestion.skill_additions.length > 0 && (
         <SuggestionCard
+          suggestionId={generateSuggestionId('skills', 1)}
           original="Missing skills"
           suggested={`Consider adding: ${suggestion.skill_additions.join(', ')}`}
           keywords={suggestion.skill_additions}
@@ -144,6 +159,9 @@ function SkillsBody({ suggestion }: { suggestion: SkillsSuggestion }) {
 }
 
 function ExperienceBody({ suggestion }: { suggestion: ExperienceSuggestion }) {
+  // Calculate global bullet index across all entries for consistent suggestion IDs
+  let globalBulletIndex = 0;
+
   return (
     <div className="space-y-4">
       {suggestion.experience_entries.map((entry, entryIndex) => (
@@ -157,16 +175,22 @@ function ExperienceBody({ suggestion }: { suggestion: ExperienceSuggestion }) {
           </div>
 
           {/* Bullet suggestions */}
-          {entry.suggested_bullets.map((bullet, bulletIndex) => (
-            <SuggestionCard
-              key={`${entry.company}-bullet-${bulletIndex}`}
-              original={bullet.original}
-              suggested={bullet.suggested}
-              keywords={bullet.keywords_incorporated}
-              metrics={bullet.metrics_added}
-              sectionType="experience"
-            />
-          ))}
+          {entry.suggested_bullets.map((bullet, bulletIndex) => {
+            const suggestionId = generateSuggestionId('experience', globalBulletIndex);
+            globalBulletIndex++;
+
+            return (
+              <SuggestionCard
+                key={`${entry.company}-bullet-${bulletIndex}`}
+                suggestionId={suggestionId}
+                original={bullet.original}
+                suggested={bullet.suggested}
+                keywords={bullet.keywords_incorporated}
+                metrics={bullet.metrics_added}
+                sectionType="experience"
+              />
+            );
+          })}
         </div>
       ))}
     </div>

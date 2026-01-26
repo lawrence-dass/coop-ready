@@ -158,6 +158,33 @@ export interface SuggestionSet {
 // SESSION TYPES
 // ============================================================================
 
+// ============================================================================
+// FEEDBACK TYPES (Story 7.4)
+// ============================================================================
+
+/**
+ * Feedback for a single suggestion
+ *
+ * Tracks user satisfaction with individual suggestions for future analytics.
+ * Stored as a JSONB array in the sessions table.
+ */
+export interface SuggestionFeedback {
+  /** Unique identifier for the suggestion (section + index based) */
+  suggestionId: string;
+
+  /** Which resume section this suggestion belongs to */
+  sectionType: 'summary' | 'skills' | 'experience';
+
+  /** true = helpful (thumbs up), false = not helpful (thumbs down) */
+  helpful: boolean;
+
+  /** When the feedback was recorded (ISO timestamp) */
+  recordedAt: string;
+
+  /** Session ID for analytics (links to session) */
+  sessionId: string;
+}
+
 /**
  * Complete optimization session structure
  *
@@ -170,6 +197,7 @@ export interface SuggestionSet {
  * - `jd_content` → jobDescription
  * - `analysis` → analysisResult
  * - `suggestions` → suggestions
+ * - `feedback` → feedback
  */
 export interface OptimizationSession {
   /** Unique session ID (UUID from database) */
@@ -207,6 +235,9 @@ export interface OptimizationSession {
 
   /** Generated optimization suggestions */
   suggestions?: SuggestionSet | null;
+
+  /** User feedback on suggestions (Story 7.4) */
+  feedback?: SuggestionFeedback[];
 
   /** When the session was created */
   createdAt: Date;

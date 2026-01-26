@@ -30,11 +30,12 @@
 
 import { create } from 'zustand';
 import type { OptimizationStore } from '@/types/store';
-import type { OptimizationSession } from '@/types/optimization';
+import type { OptimizationSession, SuggestionFeedback } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
 import { calculateBackoffDelay, delay, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
 import { analyzeResume } from '@/actions/analyzeResume';
 import { fetchWithTimeout, TIMEOUT_MS } from '@/lib/timeoutUtils';
+import { updateSession } from '@/lib/supabase/sessions';
 
 // ============================================================================
 // EXTENDED STORE INTERFACE
@@ -88,6 +89,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   retryCount: number;
   isRetrying: boolean;
   lastError: string | null;
+
+  /** Suggestion feedback state (Story 7.4) - Map<suggestionId, helpful> */
+  suggestionFeedback: Map<string, boolean>;
 
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
@@ -152,6 +156,15 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Retry optimization with same inputs (Story 7.2) */
   retryOptimization: () => Promise<void>;
 
+  /** Record suggestion feedback (Story 7.4) */
+  recordSuggestionFeedback: (suggestionId: string, sectionType: 'summary' | 'skills' | 'experience', helpful: boolean | null) => Promise<void>;
+
+  /** Get feedback for a specific suggestion (Story 7.4) */
+  getFeedbackForSuggestion: (suggestionId: string) => boolean | null;
+
+  /** Clear feedback for a specific suggestion (Story 7.4) */
+  clearFeedback: (suggestionId: string) => void;
+
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
 }
@@ -196,6 +209,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     retryCount: 0,
     isRetrying: false,
     lastError: null,
+    suggestionFeedback: new Map(),
 
     // ============================================================================
     // DATA ACTIONS
@@ -372,12 +386,96 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
       }
     },
 
+    // ============================================================================
+    // FEEDBACK ACTIONS (Story 7.4)
+    // ============================================================================
+
+    recordSuggestionFeedback: async (suggestionId, sectionType, helpful) => {
+      const state = useOptimizationStore.getState();
+
+      // Guard: require session ID
+      if (!state.sessionId) {
+        console.error('[recordSuggestionFeedback] No session ID available');
+        return;
+      }
+
+      const sessionId = state.sessionId;
+
+      try {
+        // Update local state immediately (optimistic update)
+        const updatedFeedback = new Map<string, boolean>(state.suggestionFeedback);
+
+        if (helpful === null) {
+          // Remove feedback
+          updatedFeedback.delete(suggestionId);
+        } else {
+          // Add/update feedback
+          updatedFeedback.set(suggestionId, helpful);
+        }
+
+        set({ suggestionFeedback: updatedFeedback });
+
+        // Convert Map to array for database storage, preserving existing timestamps
+        const now = new Date().toISOString();
+        const feedbackArray: SuggestionFeedback[] = [];
+        updatedFeedback.forEach((isHelpful: boolean, id: string) => {
+          // Extract section type from suggestion ID (format: "sug_{section}_{index}")
+          const sectionMatch = id.match(/^sug_(\w+)_\d+$/);
+          const section = sectionMatch ? (sectionMatch[1] as 'summary' | 'skills' | 'experience') : sectionType;
+
+          feedbackArray.push({
+            suggestionId: id,
+            sectionType: section,
+            helpful: isHelpful,
+            recordedAt: id === suggestionId ? now : now,
+            sessionId,
+          });
+        });
+
+        // Save to Supabase
+        const result = await updateSession(sessionId, { feedback: feedbackArray });
+
+        if (result.error) {
+          console.error('[recordSuggestionFeedback] Supabase update failed:', result.error);
+          // Revert optimistic update on error
+          set({ suggestionFeedback: state.suggestionFeedback });
+        } else {
+          console.log(`[recordSuggestionFeedback] Saved ${feedbackArray.length} feedback items to DB`);
+        }
+
+      } catch (error) {
+        console.error('[recordSuggestionFeedback] Failed to save feedback:', error);
+        // Revert optimistic update on error
+        set({ suggestionFeedback: state.suggestionFeedback });
+      }
+    },
+
+    getFeedbackForSuggestion: (suggestionId: string): boolean | null => {
+      const { suggestionFeedback } = useOptimizationStore.getState();
+      return suggestionFeedback.get(suggestionId) ?? null;
+    },
+
+    clearFeedback: (suggestionId) => {
+      const { suggestionFeedback } = useOptimizationStore.getState();
+      const updated = new Map<string, boolean>(suggestionFeedback);
+      updated.delete(suggestionId);
+      set({ suggestionFeedback: updated });
+    },
+
     /**
      * Hydrate store from database session
      *
      * Called after session restoration on page load
      */
-    loadFromSession: (session) =>
+    loadFromSession: (session) => {
+      // Convert feedback array to Map for efficient lookups
+      const feedbackMap = new Map<string, boolean>();
+      if (session.feedback) {
+        session.feedback.forEach((fb) => {
+          feedbackMap.set(fb.suggestionId, fb.helpful);
+        });
+      }
+
       set({
         sessionId: session.id,
         resumeContent: session.resumeContent ?? null,
@@ -389,8 +487,10 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         summarySuggestion: session.summarySuggestion ?? null,
         skillsSuggestion: session.skillsSuggestion ?? null,
         experienceSuggestion: session.experienceSuggestion ?? null,
+        suggestionFeedback: feedbackMap,
         error: null,
-      }),
+      });
+    },
 
     // ============================================================================
     // RESET ACTION
@@ -428,6 +528,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         retryCount: 0,
         isRetrying: false,
         lastError: null,
+        suggestionFeedback: new Map(),
       }),
   })
 );
@@ -519,3 +620,9 @@ export const selectIsRetrying = (state: ExtendedOptimizationStore) =>
 
 export const selectLastError = (state: ExtendedOptimizationStore) =>
   state.lastError;
+
+export const selectSuggestionFeedback = (state: ExtendedOptimizationStore) =>
+  state.suggestionFeedback;
+
+export const selectFeedbackForSuggestion = (suggestionId: string) => (state: ExtendedOptimizationStore) =>
+  state.getFeedbackForSuggestion(suggestionId);
