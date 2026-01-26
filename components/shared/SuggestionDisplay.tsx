@@ -3,6 +3,9 @@
 import { useOptimizationStore } from '@/store/useOptimizationStore';
 import { SuggestionSection } from './SuggestionSection';
 import { AlertCircle } from 'lucide-react';
+import { useTransition } from 'react';
+import { toast } from 'sonner';
+import { regenerateSuggestions } from '@/actions/regenerateSuggestions';
 
 export interface SuggestionDisplayProps {
   /** Additional className */
@@ -17,8 +20,11 @@ export interface SuggestionDisplayProps {
  * for each available section (Summary, Skills, Experience).
  *
  * Story 6.5: Implement Suggestion Display UI
+ * Story 6.7: Added regenerate functionality
  */
 export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
+  const [, startTransition] = useTransition();
+
   // Get suggestions from Zustand store
   const summarySuggestion = useOptimizationStore(
     (state) => state.summarySuggestion
@@ -34,8 +40,61 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
   const isLoading = useOptimizationStore((state) => state.isLoading);
   const loadingStep = useOptimizationStore((state) => state.loadingStep);
 
+  // Get regenerating state (Story 6.7)
+  const isRegeneratingSection = useOptimizationStore((state) => state.isRegeneratingSection) || {};
+  const setRegeneratingSection = useOptimizationStore((state) => state.setRegeneratingSection);
+  const updateSectionSuggestion = useOptimizationStore((state) => state.updateSectionSuggestion);
+
+  // Get context for regeneration
+  const resumeContent = useOptimizationStore((state) => state.resumeContent);
+  const jobDescription = useOptimizationStore((state) => state.jobDescription);
+  const sessionId = useOptimizationStore((state) => state.sessionId);
+  const keywordAnalysis = useOptimizationStore((state) => state.keywordAnalysis);
+
   // Determine if suggestions are being generated
   const isGenerating = isLoading && loadingStep === 'generating-suggestions';
+
+  /**
+   * Handle regeneration for a specific section (Story 6.7)
+   */
+  const handleRegenerate = async (
+    sectionType: 'summary' | 'skills' | 'experience',
+    currentContent: string
+  ) => {
+    // Validate required data
+    if (!resumeContent || !jobDescription || !sessionId) {
+      toast.error('Missing required data for regeneration');
+      return;
+    }
+
+    setRegeneratingSection(sectionType, true);
+    startTransition(async () => {
+      try {
+        const result = await regenerateSuggestions({
+          currentContent,
+          jdContent: jobDescription,
+          sectionType,
+          sessionId,
+          resumeContent: resumeContent?.rawText || undefined,
+          keywords: keywordAnalysis?.matched.map((k) => k.keyword),
+        });
+
+        if (result.error) {
+          toast.error(result.error.message || 'Failed to generate new suggestions');
+          return;
+        }
+
+        // Update store with new suggestion
+        updateSectionSuggestion(sectionType, result.data.suggestion);
+        toast.success('New suggestions generated!');
+      } catch (error) {
+        console.error(`[regenerate-${sectionType}]`, error);
+        toast.error('Failed to generate new suggestions');
+      } finally {
+        setRegeneratingSection(sectionType, false);
+      }
+    });
+  };
 
   // Check if any suggestions exist
   const hasSuggestions =
@@ -70,6 +129,12 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
           suggestion={summarySuggestion}
           sectionLabel="Summary"
           loading={isGenerating && !summarySuggestion}
+          regenerating={isRegeneratingSection.summary || false}
+          onRegenerate={
+            summarySuggestion
+              ? () => handleRegenerate('summary', summarySuggestion.original)
+              : undefined
+          }
         />
       )}
 
@@ -79,6 +144,12 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
           suggestion={skillsSuggestion}
           sectionLabel="Skills"
           loading={isGenerating && !skillsSuggestion}
+          regenerating={isRegeneratingSection.skills || false}
+          onRegenerate={
+            skillsSuggestion
+              ? () => handleRegenerate('skills', skillsSuggestion.original)
+              : undefined
+          }
         />
       )}
 
@@ -88,6 +159,12 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
           suggestion={experienceSuggestion}
           sectionLabel="Experience"
           loading={isGenerating && !experienceSuggestion}
+          regenerating={isRegeneratingSection.experience || false}
+          onRegenerate={
+            experienceSuggestion
+              ? () => handleRegenerate('experience', experienceSuggestion.original)
+              : undefined
+          }
         />
       )}
     </div>

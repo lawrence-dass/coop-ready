@@ -47,7 +47,7 @@ export async function extractKeywords(
 
     // Initialize LLM
     const model = new ChatAnthropic({
-      modelName: 'claude-sonnet-4-20250514',
+      modelName: 'claude-haiku-4-20250514',
       temperature: 0,
       maxTokens: 2000,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY

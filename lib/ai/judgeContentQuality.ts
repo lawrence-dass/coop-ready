@@ -52,7 +52,7 @@ async function evaluateSectionQuality(
 
     // Initialize Haiku model (cost-efficient)
     const model = new ChatAnthropic({
-      modelName: 'claude-3-5-haiku-20241022',
+      modelName: 'claude-haiku-4-20250514',
       temperature: 0,
       maxTokens: 500,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY

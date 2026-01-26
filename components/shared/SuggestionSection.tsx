@@ -1,7 +1,9 @@
 'use client';
 
-import { FileText, Wrench, Briefcase } from 'lucide-react';
+import { FileText, Wrench, Briefcase, RotateCcw } from 'lucide-react';
 import { SuggestionCard } from './SuggestionCard';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type {
   SummarySuggestion,
   SkillsSuggestion,
@@ -39,6 +41,12 @@ export type SuggestionSectionProps = SectionVariant & {
   /** Loading state */
   loading?: boolean;
 
+  /** Regenerating state (Story 6.7) */
+  regenerating?: boolean;
+
+  /** Regenerate handler (Story 6.7) */
+  onRegenerate?: () => void;
+
   /** Additional className */
   className?: string;
 };
@@ -60,14 +68,38 @@ const defaultIcons: Record<SuggestionSectionProps['section'], React.ReactNode> =
 function SectionHeader({
   icon,
   label,
+  onRegenerate,
+  regenerating,
 }: {
   icon: React.ReactNode;
   label: string;
+  onRegenerate?: () => void;
+  regenerating?: boolean;
 }) {
   return (
-    <div className="mb-4 flex items-center gap-3">
-      <div className="text-indigo-600">{icon}</div>
-      <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
+    <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="text-indigo-600">{icon}</div>
+        <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
+      </div>
+      {onRegenerate && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRegenerate}
+              disabled={regenerating}
+              aria-label={`Regenerate ${label} suggestions`}
+              className="gap-2"
+            >
+              <RotateCcw className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
+              Regenerate
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Generate alternative suggestions for this section</TooltipContent>
+        </Tooltip>
+      )}
     </div>
   );
 }
@@ -168,9 +200,19 @@ function renderSectionBody(props: SectionVariant): React.ReactNode {
  * Uses discriminated union props for type-safe rendering per section type.
  *
  * Story 6.5: Implement Suggestion Display UI
+ * Story 6.7: Added regenerate button with loading state
  */
 export function SuggestionSection(props: SuggestionSectionProps) {
-  const { section, suggestion, sectionLabel, sectionIcon, loading = false, className } = props;
+  const {
+    section,
+    suggestion,
+    sectionLabel,
+    sectionIcon,
+    loading = false,
+    regenerating = false,
+    onRegenerate,
+    className
+  } = props;
 
   // Don't render if no suggestion and not loading
   if (!suggestion && !loading) {
@@ -183,11 +225,33 @@ export function SuggestionSection(props: SuggestionSectionProps) {
   if (loading) {
     return (
       <section className={className} aria-busy="true">
-        <SectionHeader icon={icon} label={sectionLabel} />
+        <SectionHeader icon={icon} label={sectionLabel} onRegenerate={onRegenerate} regenerating={regenerating} />
         <div className="flex items-center justify-center py-12 border border-gray-200 rounded-lg bg-gray-50">
           <div className="text-center space-y-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto" />
             <p className="text-sm text-gray-600">Generating suggestions...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Regenerating state (Story 6.7)
+  if (regenerating && suggestion) {
+    return (
+      <section className={className} aria-busy="true">
+        <SectionHeader icon={icon} label={sectionLabel} onRegenerate={onRegenerate} regenerating={regenerating} />
+        <div className="relative">
+          {/* Show existing suggestions with overlay */}
+          <div className="opacity-50 pointer-events-none">
+            {renderSectionBody(props)}
+          </div>
+          {/* Loading overlay */}
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
+            <div className="text-center space-y-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto" />
+              <p className="text-sm text-gray-600">Generating new suggestions...</p>
+            </div>
           </div>
         </div>
       </section>
@@ -201,7 +265,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
   // Type-safe rendering via discriminated union narrowing on props
   return (
     <section className={className}>
-      <SectionHeader icon={icon} label={sectionLabel} />
+      <SectionHeader icon={icon} label={sectionLabel} onRegenerate={onRegenerate} regenerating={regenerating} />
       {renderSectionBody(props)}
     </section>
   );
