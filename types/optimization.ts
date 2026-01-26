@@ -6,6 +6,7 @@
  */
 
 import type { KeywordAnalysisResult, ATSScore } from './analysis';
+import type { SummarySuggestion } from './suggestions';
 
 // ============================================================================
 // RESUME TYPES
@@ -190,6 +191,9 @@ export interface OptimizationSession {
 
   /** ATS compatibility score (Story 5.2) */
   atsScore?: ATSScore | null;
+
+  /** Summary section optimization suggestion (Story 6.2) */
+  summarySuggestion?: SummarySuggestion | null;
 
   /** Generated optimization suggestions */
   suggestions?: SuggestionSet | null;
