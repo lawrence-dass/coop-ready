@@ -17,3 +17,6 @@ export { KeywordAnalysisDisplay } from './KeywordAnalysisDisplay';
 export { ScoreCircle } from './ScoreCircle';
 export { ScoreBreakdownCard } from './ScoreBreakdownCard';
 export { ATSScoreDisplay } from './ATSScoreDisplay';
+export { GapSummaryCard } from './GapSummaryCard';
+export { PriorityFilterChips, type PriorityFilter } from './PriorityFilterChips';
+export { MissingKeywordItem } from './MissingKeywordItem';
