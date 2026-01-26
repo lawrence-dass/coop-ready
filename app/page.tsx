@@ -9,7 +9,7 @@
 import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay } from '@/components/shared';
 import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
 import { toast } from 'sonner';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function Home() {
   const pendingFile = useOptimizationStore(selectPendingFile);
@@ -66,7 +66,7 @@ export default function Home() {
         {/* Retry Loading Indicator (Story 7.2) */}
         {isRetrying && !generalError && (
           <div className="flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800">
-            <CheckCircle2 className="h-4 w-4 shrink-0 animate-spin" />
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             <p>Retrying optimization...</p>
           </div>
         )}

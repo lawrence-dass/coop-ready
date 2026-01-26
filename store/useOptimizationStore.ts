@@ -32,7 +32,7 @@ import { create } from 'zustand';
 import type { OptimizationStore } from '@/types/store';
 import type { OptimizationSession } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
-import { calculateBackoffDelay, delay } from '@/lib/retryUtils';
+import { calculateBackoffDelay, delay, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
 import { analyzeResume } from '@/actions/analyzeResume';
 
 // ============================================================================
@@ -301,54 +301,64 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     retryOptimization: async () => {
       const state = useOptimizationStore.getState();
 
+      // Guard: prevent retries beyond max limit
+      if (state.retryCount >= MAX_RETRY_ATTEMPTS) {
+        console.warn('[retryOptimization] Max retry attempts reached');
+        return;
+      }
+
       // Validate session ID exists
       if (!state.sessionId) {
         console.error('[retryOptimization] No session ID available');
         return;
       }
 
+      const sessionId = state.sessionId;
+
       try {
-        // Increment retry count
+        // Increment retry count and read fresh value
         state.incrementRetryCount();
-        const currentRetryCount = state.retryCount;
+        const currentRetryCount = useOptimizationStore.getState().retryCount;
 
         // Calculate exponential backoff delay
         const backoffDelay = calculateBackoffDelay(currentRetryCount);
         console.log(`[retryOptimization] Attempt ${currentRetryCount}, waiting ${backoffDelay}ms before retry`);
 
-        // Set retrying state
+        // Set retrying state and clear old error
         state.setIsRetrying(true);
+        state.clearGeneralError();
 
         // Wait for backoff delay
         await delay(backoffDelay);
 
         // Call analyze action with same session
-        const result = await analyzeResume(state.sessionId);
+        const result = await analyzeResume(sessionId);
 
         // Handle result
         if (result.error) {
           // Retry failed - update error
           console.error('[retryOptimization] Retry failed:', result.error.code);
-          state.setGeneralError({ code: result.error.code, message: result.error.message });
-          state.setLastError(result.error.code);
+          useOptimizationStore.getState().setGeneralError({ code: result.error.code, message: result.error.message });
+          useOptimizationStore.getState().setLastError(result.error.code);
         } else {
           // Retry succeeded - clear error and update results
           console.log('[retryOptimization] Retry succeeded');
-          state.setKeywordAnalysis(result.data.keywordAnalysis);
-          state.setATSScore(result.data.atsScore);
-          state.clearGeneralError();
-          state.resetRetryCount();
-          state.setLastError(null);
+          const freshState = useOptimizationStore.getState();
+          freshState.setKeywordAnalysis(result.data.keywordAnalysis);
+          freshState.setATSScore(result.data.atsScore);
+          freshState.clearGeneralError();
+          freshState.resetRetryCount();
+          freshState.setLastError(null);
         }
       } catch (error) {
         console.error('[retryOptimization] Unexpected error:', error);
-        state.setGeneralError({
+        useOptimizationStore.getState().setGeneralError({
           code: 'LLM_ERROR',
           message: error instanceof Error ? error.message : 'Retry failed',
         });
       } finally {
         // Always clear retrying state
-        state.setIsRetrying(false);
+        useOptimizationStore.getState().setIsRetrying(false);
       }
     },
 

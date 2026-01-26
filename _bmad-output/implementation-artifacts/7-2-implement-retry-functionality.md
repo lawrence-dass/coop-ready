@@ -1,6 +1,6 @@
 # Story 7.2: Implement Retry Functionality
 
-Status: review
+Status: done
 
 ---
 
@@ -494,13 +494,14 @@ Story Creation: Claude Haiku 4.5 (claude-haiku-4-5-20251001)
 
 **New Files:**
 - `lib/retryUtils.ts` - Retry utilities (backoff calculation, error retriability check)
-- `tests/unit/lib/retryUtils.test.ts` - Unit tests for retry utilities (19 tests)
-- `tests/unit/store/retryFunctionality.test.ts` - Unit tests for retry store (14 tests)
+- `tests/unit/lib/retryUtils.test.ts` - Unit tests for retry utilities (21 tests)
+- `tests/unit/store/retryFunctionality.test.ts` - Unit tests for retry store (19 tests)
 
 **Modified Files:**
 - `store/useOptimizationStore.ts` - Add retry state (retryCount, isRetrying, lastError) and retryOptimization action
 - `components/shared/ErrorDisplay.tsx` - Add retry button with conditional display and onRetry callback
 - `app/page.tsx` - Wire retry handler to ErrorDisplay, show retry loading state
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` - Sprint status updated
 
 ### Change Log
 
@@ -514,8 +515,18 @@ Story Creation: Claude Haiku 4.5 (claude-haiku-4-5-20251001)
 - Created comprehensive test suite: 33 new tests (19 retryUtils + 14 store)
 - All 537 tests passing, build successful with no TypeScript errors
 
+**2026-01-26 - Code Review Fixes (Claude Opus 4.5)**
+- **FIXED [HIGH]** Stale state bug in retryOptimization: `state.retryCount` read from snapshot after `incrementRetryCount()` returned 0 on first retry (no backoff). Now uses `useOptimizationStore.getState().retryCount` for fresh value. Backoff delays corrected: 1000ms, 2000ms, 4000ms.
+- **FIXED [HIGH]** Missing max-retry guard in retryOptimization action: Added `retryCount >= MAX_RETRY_ATTEMPTS` check at top of action for defense in depth.
+- **FIXED [MEDIUM]** Wrong icon (CheckCircle2) used as loading spinner in page.tsx retry indicator. Replaced with Loader2 for correct semantics.
+- **FIXED [MEDIUM]** Added integration tests for retryOptimization async action (5 new tests): no-session guard, max-retry guard, success flow, failure flow, backoff delay verification.
+- **FIXED [MEDIUM]** generalError now cleared at retry start for clearer UX during retry.
+- **FIXED [LOW]** Added delay() function unit tests (2 new tests with fake timers).
+- All 544 tests passing after fixes (40 retry tests total).
+
 ---
 
 _Story created: 2026-01-26_
 _Created on feature/7-2-retry-functionality branch_
 _Story completed: 2026-01-26_
+_Code review: 2026-01-26 (Claude Opus 4.5)_

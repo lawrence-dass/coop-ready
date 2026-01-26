@@ -7,8 +7,8 @@
  * - Constants validation
  */
 
-import { describe, it, expect } from 'vitest';
-import { calculateBackoffDelay, isErrorRetriable, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
+import { describe, it, expect, vi } from 'vitest';
+import { calculateBackoffDelay, isErrorRetriable, delay, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
 
 // ============================================================================
 // BACKOFF DELAY CALCULATION TESTS
@@ -116,5 +116,41 @@ describe('MAX_RETRY_ATTEMPTS', () => {
 
   it('should be a number', () => {
     expect(typeof MAX_RETRY_ATTEMPTS).toBe('number');
+  });
+});
+
+// ============================================================================
+// DELAY FUNCTION TESTS
+// ============================================================================
+
+describe('delay', () => {
+  it('should resolve after the specified time', async () => {
+    vi.useFakeTimers();
+
+    let resolved = false;
+    const promise = delay(1000).then(() => { resolved = true; });
+
+    expect(resolved).toBe(false);
+
+    vi.advanceTimersByTime(1000);
+    await promise;
+
+    expect(resolved).toBe(true);
+
+    vi.useRealTimers();
+  });
+
+  it('should resolve immediately for 0ms delay', async () => {
+    vi.useFakeTimers();
+
+    let resolved = false;
+    const promise = delay(0).then(() => { resolved = true; });
+
+    vi.advanceTimersByTime(0);
+    await promise;
+
+    expect(resolved).toBe(true);
+
+    vi.useRealTimers();
   });
 });
