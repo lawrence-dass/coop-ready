@@ -11,6 +11,7 @@
 
 export { ResumeUploader } from './ResumeUploader';
 export { FileValidationError } from './FileValidationError';
+export { ErrorDisplay } from './ErrorDisplay';
 export { JobDescriptionInput } from './JobDescriptionInput';
 export { AnalyzeButton } from './AnalyzeButton';
 export { KeywordAnalysisDisplay } from './KeywordAnalysisDisplay';

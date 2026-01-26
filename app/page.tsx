@@ -6,8 +6,8 @@
  * Main page where users upload resumes and get optimization suggestions.
  */
 
-import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay } from '@/components/shared';
-import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore } from '@/store';
+import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay } from '@/components/shared';
+import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError } from '@/store';
 import { toast } from 'sonner';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -24,6 +24,8 @@ export default function Home() {
   const sessionId = useOptimizationStore((state) => state.sessionId);
   const keywordAnalysis = useOptimizationStore(selectKeywordAnalysis);
   const atsScore = useOptimizationStore(selectATSScore);
+  const generalError = useOptimizationStore(selectGeneralError);
+  const clearGeneralError = useOptimizationStore((state) => state.clearGeneralError);
 
   const handleFileError = (error: { code: string; message: string }) => {
     // Only set file error for known error codes
@@ -45,6 +47,15 @@ export default function Home() {
             Optimize your resume for ATS systems
           </p>
         </div>
+
+        {/* General Error Display - Above all content */}
+        {generalError && (
+          <ErrorDisplay
+            errorCode={generalError.code}
+            message={generalError.message}
+            onDismiss={clearGeneralError}
+          />
+        )}
 
         {/* Resume Upload Section */}
         <div className="flex flex-col gap-4">

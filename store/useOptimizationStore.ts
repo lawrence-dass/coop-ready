@@ -78,6 +78,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
     experience?: boolean;
   };
 
+  /** General application error (Story 7.1) - for non-file-specific errors */
+  generalError: { code: string; message?: string } | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -120,6 +123,12 @@ interface ExtendedOptimizationStore extends OptimizationStore {
     suggestion: import('@/types/suggestions').SummarySuggestion | import('@/types/suggestions').SkillsSuggestion | import('@/types/suggestions').ExperienceSuggestion
   ) => void;
 
+  /** Set general error (Story 7.1) - for non-file-specific errors */
+  setGeneralError: (error: { code: string; message?: string } | null) => void;
+
+  /** Clear general error (Story 7.1) */
+  clearGeneralError: () => void;
+
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
 }
@@ -160,6 +169,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     skillsSuggestion: null,
     experienceSuggestion: null,
     isRegeneratingSection: {},
+    generalError: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -175,10 +185,10 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
       set({ jobDescription: null, error: null }),
 
     setAnalysisResult: (result) =>
-      set({ analysisResult: result, error: null }),
+      set({ analysisResult: result, error: null, generalError: null }),
 
     setSuggestions: (suggestions) =>
-      set({ suggestions, error: null }),
+      set({ suggestions, error: null, generalError: null }),
 
     // ============================================================================
     // UI STATE ACTIONS
@@ -237,13 +247,19 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     updateSectionSuggestion: (section, suggestion) => {
       if (section === 'summary') {
-        set({ summarySuggestion: suggestion as import('@/types/suggestions').SummarySuggestion, error: null });
+        set({ summarySuggestion: suggestion as import('@/types/suggestions').SummarySuggestion, error: null, generalError: null });
       } else if (section === 'skills') {
-        set({ skillsSuggestion: suggestion as import('@/types/suggestions').SkillsSuggestion, error: null });
+        set({ skillsSuggestion: suggestion as import('@/types/suggestions').SkillsSuggestion, error: null, generalError: null });
       } else if (section === 'experience') {
-        set({ experienceSuggestion: suggestion as import('@/types/suggestions').ExperienceSuggestion, error: null });
+        set({ experienceSuggestion: suggestion as import('@/types/suggestions').ExperienceSuggestion, error: null, generalError: null });
       }
     },
+
+    setGeneralError: (error) =>
+      set({ generalError: error, isLoading: false, loadingStep: null }),
+
+    clearGeneralError: () =>
+      set({ generalError: null }),
 
     /**
      * Hydrate store from database session
@@ -297,6 +313,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         skillsSuggestion: null,
         experienceSuggestion: null,
         isRegeneratingSection: {},
+        generalError: null,
       }),
   })
 );
@@ -376,3 +393,6 @@ export const selectExperienceSuggestion = (state: ExtendedOptimizationStore) =>
 
 export const selectIsRegeneratingSection = (state: ExtendedOptimizationStore) =>
   state.isRegeneratingSection;
+
+export const selectGeneralError = (state: ExtendedOptimizationStore) =>
+  state.generalError;
