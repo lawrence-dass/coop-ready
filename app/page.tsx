@@ -7,7 +7,7 @@
  */
 
 import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay } from '@/components/shared';
-import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError } from '@/store';
+import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
 import { toast } from 'sonner';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -26,6 +26,9 @@ export default function Home() {
   const atsScore = useOptimizationStore(selectATSScore);
   const generalError = useOptimizationStore(selectGeneralError);
   const clearGeneralError = useOptimizationStore((state) => state.clearGeneralError);
+  const retryCount = useOptimizationStore(selectRetryCount);
+  const isRetrying = useOptimizationStore(selectIsRetrying);
+  const retryOptimization = useOptimizationStore((state) => state.retryOptimization);
 
   const handleFileError = (error: { code: string; message: string }) => {
     // Only set file error for known error codes
@@ -48,13 +51,24 @@ export default function Home() {
           </p>
         </div>
 
-        {/* General Error Display - Above all content */}
+        {/* General Error Display - Above all content (Story 7.1 + 7.2) */}
         {generalError && (
           <ErrorDisplay
             errorCode={generalError.code}
             message={generalError.message}
             onDismiss={clearGeneralError}
+            onRetry={retryOptimization}
+            retryCount={retryCount}
+            isRetrying={isRetrying}
           />
+        )}
+
+        {/* Retry Loading Indicator (Story 7.2) */}
+        {isRetrying && !generalError && (
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800">
+            <CheckCircle2 className="h-4 w-4 shrink-0 animate-spin" />
+            <p>Retrying optimization...</p>
+          </div>
         )}
 
         {/* Resume Upload Section */}

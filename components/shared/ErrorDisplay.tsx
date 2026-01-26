@@ -34,11 +34,12 @@
  * ```
  */
 
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle, X, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { getErrorDisplay } from '@/lib/errorMessages';
+import { isErrorRetriable, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
 
 // ============================================================================
 // TYPES
@@ -51,6 +52,12 @@ interface ErrorDisplayProps {
   message?: string;
   /** Optional callback when error is dismissed */
   onDismiss?: () => void;
+  /** Optional callback when retry is clicked (Story 7.2) */
+  onRetry?: () => void;
+  /** Current retry attempt count (Story 7.2) */
+  retryCount?: number;
+  /** Whether retry is currently in progress (Story 7.2) */
+  isRetrying?: boolean;
   /** Optional className for styling */
   className?: string;
 }
@@ -63,6 +70,9 @@ export function ErrorDisplay({
   errorCode,
   message,
   onDismiss,
+  onRetry,
+  retryCount = 0,
+  isRetrying = false,
   className,
 }: ErrorDisplayProps) {
   // Get error display information from mapping
@@ -70,6 +80,10 @@ export function ErrorDisplay({
 
   // Use custom message if provided, otherwise use mapped message
   const displayMessage = message ?? errorInfo.message;
+
+  // Determine if error is retriable and retry button should be shown
+  const canRetry = isErrorRetriable(errorCode) && onRetry !== undefined;
+  const maxRetriesReached = retryCount >= MAX_RETRY_ATTEMPTS;
 
   return (
     <Card
@@ -104,6 +118,36 @@ export function ErrorDisplay({
         <p className="text-xs text-muted-foreground/70 mt-1 font-mono">
           Error code: {errorCode}
         </p>
+
+        {/* Max Retries Message (Story 7.2) */}
+        {canRetry && maxRetriesReached && (
+          <p className="text-xs text-orange-600 mt-2 font-medium">
+            Maximum retry attempts reached
+          </p>
+        )}
+
+        {/* Retry Button (Story 7.2) */}
+        {canRetry && !maxRetriesReached && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRetry}
+            disabled={isRetrying}
+            className="mt-3 border-destructive/30 text-destructive hover:bg-destructive/10"
+          >
+            {isRetrying ? (
+              <>
+                <RotateCw className="h-3 w-3 mr-2 animate-spin" />
+                Retrying...
+              </>
+            ) : (
+              <>
+                <RotateCw className="h-3 w-3 mr-2" />
+                Retry {retryCount > 0 ? `(Attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})` : ''}
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Dismiss Button */}
