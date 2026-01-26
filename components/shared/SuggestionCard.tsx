@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { CopyButton } from './CopyButton';
 
 export interface SuggestionCardProps {
   /** Original text from resume */
@@ -138,6 +139,16 @@ export function SuggestionCard({
             )}
           </div>
         )}
+
+        {/* Copy Button */}
+        <div className="mt-4 flex justify-end">
+          <CopyButton
+            text={suggested}
+            label="Copy suggestion"
+            variant="outline"
+            size="sm"
+          />
+        </div>
       </CardContent>
     </Card>
   );
