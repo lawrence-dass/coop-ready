@@ -81,8 +81,8 @@ const ERROR_MESSAGES: Record<ErrorCode, ErrorDisplayInfo> = {
   // LLM Processing Errors
   LLM_TIMEOUT: {
     title: 'Optimization Took Too Long',
-    message: 'The optimization process exceeded the 60-second time limit',
-    recoveryAction: 'Please try again. Your inputs are preserved',
+    message: 'The optimization process exceeded the 60-second time limit. Try again with a smaller resume or job description',
+    recoveryAction: 'Please try again with a smaller input',
   },
 
   LLM_ERROR: {
