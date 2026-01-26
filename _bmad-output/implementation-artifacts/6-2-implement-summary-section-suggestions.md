@@ -1,6 +1,6 @@
 # Story 6.2: Implement Summary Section Suggestions
 
-Status: ready-for-dev
+Status: review
 
 ---
 
