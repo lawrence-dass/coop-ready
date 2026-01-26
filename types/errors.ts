@@ -56,6 +56,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.VALIDATION_ERROR]:
     'Invalid input. Please check your data and try again.',
+
+  [ERROR_CODES.SCORE_CALCULATION_ERROR]:
+    'Unable to calculate ATS score. Please try again.',
 };
 
 // ============================================================================
