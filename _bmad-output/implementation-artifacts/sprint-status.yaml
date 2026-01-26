@@ -83,7 +83,7 @@ development_status:
   6-3-implement-skills-section-suggestions: done
   6-4-implement-experience-section-suggestions: done
   6-5-implement-suggestion-display-ui: done
-  6-6-implement-copy-to-clipboard: backlog
+  6-6-implement-copy-to-clipboard: ready-for-dev
   6-7-implement-regenerate-suggestions: backlog
   6-8-epic-6-integration-and-verification-testing: backlog
 
