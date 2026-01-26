@@ -6,7 +6,7 @@
  */
 
 import type { KeywordAnalysisResult, ATSScore } from './analysis';
-import type { SummarySuggestion } from './suggestions';
+import type { SummarySuggestion, SkillsSuggestion } from './suggestions';
 
 // ============================================================================
 // RESUME TYPES
@@ -194,6 +194,9 @@ export interface OptimizationSession {
 
   /** Summary section optimization suggestion (Story 6.2) */
   summarySuggestion?: SummarySuggestion | null;
+
+  /** Skills section optimization suggestion (Story 6.3) */
+  skillsSuggestion?: SkillsSuggestion | null;
 
   /** Generated optimization suggestions */
   suggestions?: SuggestionSet | null;

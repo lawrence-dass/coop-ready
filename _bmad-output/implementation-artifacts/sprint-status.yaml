@@ -80,7 +80,7 @@ development_status:
   epic-6: in-progress
   6-1-implement-llm-pipeline-api-route: done
   6-2-implement-summary-section-suggestions: done
-  6-3-implement-skills-section-suggestions: ready-for-dev
+  6-3-implement-skills-section-suggestions: review
   6-4-implement-experience-section-suggestions: backlog
   6-5-implement-suggestion-display-ui: backlog
   6-6-implement-copy-to-clipboard: backlog
