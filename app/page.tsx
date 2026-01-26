@@ -6,8 +6,8 @@
  * Main page where users upload resumes and get optimization suggestions.
  */
 
-import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay } from '@/components/shared';
-import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis } from '@/store';
+import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay } from '@/components/shared';
+import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore } from '@/store';
 import { toast } from 'sonner';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -23,6 +23,7 @@ export default function Home() {
   const clearJobDescription = useOptimizationStore((state) => state.clearJobDescription);
   const sessionId = useOptimizationStore((state) => state.sessionId);
   const keywordAnalysis = useOptimizationStore(selectKeywordAnalysis);
+  const atsScore = useOptimizationStore(selectATSScore);
 
   const handleFileError = (error: { code: string; message: string }) => {
     // Only set file error for known error codes
@@ -101,6 +102,11 @@ export default function Home() {
         {/* Keyword Analysis Results */}
         {keywordAnalysis && (
           <KeywordAnalysisDisplay analysis={keywordAnalysis} />
+        )}
+
+        {/* ATS Score Display */}
+        {atsScore && (
+          <ATSScoreDisplay score={atsScore} />
         )}
       </main>
     </div>
