@@ -14,3 +14,6 @@ export { FileValidationError } from './FileValidationError';
 export { JobDescriptionInput } from './JobDescriptionInput';
 export { AnalyzeButton } from './AnalyzeButton';
 export { KeywordAnalysisDisplay } from './KeywordAnalysisDisplay';
+export { ScoreCircle } from './ScoreCircle';
+export { ScoreBreakdownCard } from './ScoreBreakdownCard';
+export { ATSScoreDisplay } from './ATSScoreDisplay';
