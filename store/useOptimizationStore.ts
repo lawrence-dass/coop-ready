@@ -32,6 +32,8 @@ import { create } from 'zustand';
 import type { OptimizationStore } from '@/types/store';
 import type { OptimizationSession } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
+import { calculateBackoffDelay, delay, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
+import { analyzeResume } from '@/actions/analyzeResume';
 
 // ============================================================================
 // EXTENDED STORE INTERFACE
@@ -81,6 +83,11 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** General application error (Story 7.1) - for non-file-specific errors */
   generalError: { code: string; message?: string } | null;
 
+  /** Retry state (Story 7.2) */
+  retryCount: number;
+  isRetrying: boolean;
+  lastError: string | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -129,6 +136,21 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Clear general error (Story 7.1) */
   clearGeneralError: () => void;
 
+  /** Increment retry count (Story 7.2) */
+  incrementRetryCount: () => void;
+
+  /** Reset retry count to 0 (Story 7.2) */
+  resetRetryCount: () => void;
+
+  /** Set isRetrying state (Story 7.2) */
+  setIsRetrying: (isRetrying: boolean) => void;
+
+  /** Set last error code (Story 7.2) */
+  setLastError: (errorCode: string | null) => void;
+
+  /** Retry optimization with same inputs (Story 7.2) */
+  retryOptimization: () => Promise<void>;
+
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
 }
@@ -170,22 +192,25 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     experienceSuggestion: null,
     isRegeneratingSection: {},
     generalError: null,
+    retryCount: 0,
+    isRetrying: false,
+    lastError: null,
 
     // ============================================================================
     // DATA ACTIONS
     // ============================================================================
 
     setResumeContent: (resume) =>
-      set({ resumeContent: resume, error: null }),
+      set({ resumeContent: resume, error: null, retryCount: 0 }),
 
     setJobDescription: (jd) =>
-      set({ jobDescription: jd, error: null }),
+      set({ jobDescription: jd, error: null, retryCount: 0 }),
 
     clearJobDescription: () =>
       set({ jobDescription: null, error: null }),
 
     setAnalysisResult: (result) =>
-      set({ analysisResult: result, error: null, generalError: null }),
+      set({ analysisResult: result, error: null, generalError: null, retryCount: 0 }),
 
     setSuggestions: (suggestions) =>
       set({ suggestions, error: null, generalError: null }),
@@ -261,6 +286,82 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     clearGeneralError: () =>
       set({ generalError: null }),
 
+    incrementRetryCount: () =>
+      set((state) => ({ retryCount: state.retryCount + 1 })),
+
+    resetRetryCount: () =>
+      set({ retryCount: 0 }),
+
+    setIsRetrying: (isRetrying) =>
+      set({ isRetrying }),
+
+    setLastError: (errorCode) =>
+      set({ lastError: errorCode }),
+
+    retryOptimization: async () => {
+      const state = useOptimizationStore.getState();
+
+      // Guard: prevent retries beyond max limit
+      if (state.retryCount >= MAX_RETRY_ATTEMPTS) {
+        console.warn('[retryOptimization] Max retry attempts reached');
+        return;
+      }
+
+      // Validate session ID exists
+      if (!state.sessionId) {
+        console.error('[retryOptimization] No session ID available');
+        return;
+      }
+
+      const sessionId = state.sessionId;
+
+      try {
+        // Increment retry count and read fresh value
+        state.incrementRetryCount();
+        const currentRetryCount = useOptimizationStore.getState().retryCount;
+
+        // Calculate exponential backoff delay
+        const backoffDelay = calculateBackoffDelay(currentRetryCount);
+        console.log(`[retryOptimization] Attempt ${currentRetryCount}, waiting ${backoffDelay}ms before retry`);
+
+        // Set retrying state and clear old error
+        state.setIsRetrying(true);
+        state.clearGeneralError();
+
+        // Wait for backoff delay
+        await delay(backoffDelay);
+
+        // Call analyze action with same session
+        const result = await analyzeResume(sessionId);
+
+        // Handle result
+        if (result.error) {
+          // Retry failed - update error
+          console.error('[retryOptimization] Retry failed:', result.error.code);
+          useOptimizationStore.getState().setGeneralError({ code: result.error.code, message: result.error.message });
+          useOptimizationStore.getState().setLastError(result.error.code);
+        } else {
+          // Retry succeeded - clear error and update results
+          console.log('[retryOptimization] Retry succeeded');
+          const freshState = useOptimizationStore.getState();
+          freshState.setKeywordAnalysis(result.data.keywordAnalysis);
+          freshState.setATSScore(result.data.atsScore);
+          freshState.clearGeneralError();
+          freshState.resetRetryCount();
+          freshState.setLastError(null);
+        }
+      } catch (error) {
+        console.error('[retryOptimization] Unexpected error:', error);
+        useOptimizationStore.getState().setGeneralError({
+          code: 'LLM_ERROR',
+          message: error instanceof Error ? error.message : 'Retry failed',
+        });
+      } finally {
+        // Always clear retrying state
+        useOptimizationStore.getState().setIsRetrying(false);
+      }
+    },
+
     /**
      * Hydrate store from database session
      *
@@ -314,6 +415,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         experienceSuggestion: null,
         isRegeneratingSection: {},
         generalError: null,
+        retryCount: 0,
+        isRetrying: false,
+        lastError: null,
       }),
   })
 );
@@ -396,3 +500,12 @@ export const selectIsRegeneratingSection = (state: ExtendedOptimizationStore) =>
 
 export const selectGeneralError = (state: ExtendedOptimizationStore) =>
   state.generalError;
+
+export const selectRetryCount = (state: ExtendedOptimizationStore) =>
+  state.retryCount;
+
+export const selectIsRetrying = (state: ExtendedOptimizationStore) =>
+  state.isRetrying;
+
+export const selectLastError = (state: ExtendedOptimizationStore) =>
+  state.lastError;
