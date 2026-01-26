@@ -15,7 +15,7 @@ test.describe('Task 10: Keyword Analysis Integration', () => {
 
   test('[P0] should analyze keywords and display results', async ({ page }) => {
     // Step 1: Upload resume
-    const resumePath = path.join(__dirname, '../fixtures/sample-resume.pdf');
+    const resumePath = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(resumePath);
 
@@ -70,7 +70,7 @@ Nice to have:
 
   test('[P0] should persist analysis results after page refresh', async ({ page }) => {
     // Upload resume
-    const resumePath = path.join(__dirname, '../fixtures/sample-resume.pdf');
+    const resumePath = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(resumePath);
     await expect(page.getByText(/Resume extracted successfully/i)).toBeVisible({ timeout: 10000 });
@@ -106,7 +106,7 @@ Nice to have:
     // Instead, we verify the error handling UI exists and is properly wired.
 
     // Upload resume
-    const resumePath = path.join(__dirname, '../fixtures/sample-resume.pdf');
+    const resumePath = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(resumePath);
     await expect(page.getByText(/Resume extracted successfully/i)).toBeVisible({ timeout: 10000 });
@@ -126,7 +126,7 @@ Nice to have:
 
   test('[P1] should allow multiple analyses with different job descriptions', async ({ page }) => {
     // Upload resume
-    const resumePath = path.join(__dirname, '../fixtures/sample-resume.pdf');
+    const resumePath = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(resumePath);
     await expect(page.getByText(/Resume extracted successfully/i)).toBeVisible({ timeout: 10000 });
@@ -154,7 +154,7 @@ Nice to have:
 
   test('[P2] should display matched keyword context', async ({ page }) => {
     // Upload resume
-    const resumePath = path.join(__dirname, '../fixtures/sample-resume.pdf');
+    const resumePath = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(resumePath);
     await expect(page.getByText(/Resume extracted successfully/i)).toBeVisible({ timeout: 10000 });
@@ -180,7 +180,7 @@ Nice to have:
 
   test('[P2] should group missing keywords by category', async ({ page }) => {
     // Upload resume
-    const resumePath = path.join(__dirname, '../fixtures/sample-resume.pdf');
+    const resumePath = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(resumePath);
     await expect(page.getByText(/Resume extracted successfully/i)).toBeVisible({ timeout: 10000 });
@@ -221,7 +221,7 @@ Nice to have:
 
   test('[P0] should hide analyze button when job description is missing', async ({ page }) => {
     // Upload resume but don't enter JD
-    const resumePath = path.join(__dirname, '../fixtures/sample-resume.pdf');
+    const resumePath = path.join(process.cwd(), 'tests/fixtures/sample-resume.pdf');
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(resumePath);
     await expect(page.getByText(/Resume extracted successfully/i)).toBeVisible({ timeout: 10000 });
