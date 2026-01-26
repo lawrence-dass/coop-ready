@@ -30,7 +30,11 @@ import type {
   SuggestionSet,
 } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
-import type { SummarySuggestion, SkillsSuggestion } from '@/types/suggestions';
+import type {
+  SummarySuggestion,
+  SkillsSuggestion,
+  ExperienceSuggestion,
+} from '@/types/suggestions';
 
 // ============================================================================
 // DATABASE ROW TYPE (snake_case)
@@ -53,6 +57,7 @@ interface SessionRow {
   ats_score: ATSScore | null; // Story 5.2
   summary_suggestion: SummarySuggestion | null; // Story 6.2
   skills_suggestion: SkillsSuggestion | null; // Story 6.3
+  experience_suggestion: ExperienceSuggestion | null; // Story 6.4
   created_at: string;
   updated_at: string;
 }
@@ -77,6 +82,7 @@ function toOptimizationSession(row: SessionRow): OptimizationSession {
     atsScore: row.ats_score,
     summarySuggestion: row.summary_suggestion,
     skillsSuggestion: row.skills_suggestion,
+    experienceSuggestion: row.experience_suggestion,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -215,6 +221,7 @@ export async function updateSession(
     atsScore?: ATSScore | null; // Story 5.2
     summarySuggestion?: SummarySuggestion | null; // Story 6.2
     skillsSuggestion?: SkillsSuggestion | null; // Story 6.3
+    experienceSuggestion?: ExperienceSuggestion | null; // Story 6.4
   }
 ): Promise<ActionResponse<{ success: boolean }>> {
   const supabase = createClient();
@@ -261,6 +268,10 @@ export async function updateSession(
 
     if ('skillsSuggestion' in updates) {
       dbUpdates.skills_suggestion = updates.skillsSuggestion;
+    }
+
+    if ('experienceSuggestion' in updates) {
+      dbUpdates.experience_suggestion = updates.experienceSuggestion;
     }
 
     const { error } = await supabase
