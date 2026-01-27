@@ -58,7 +58,7 @@ test.describe('[P0] Session Persistence - Error, Retry, Feedback', () => {
     await expect(page.locator('[data-testid="retry-button"]')).toBeVisible();
   });
 
-  test('[P0] should persist retry count across page refresh', async ({ page, context }) => {
+  test('[P0] should persist retry count across page refresh', async ({ page }) => {
     // GIVEN: User navigates to app
     await page.goto('/');
 

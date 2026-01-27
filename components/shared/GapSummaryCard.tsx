@@ -33,7 +33,7 @@ export function GapSummaryCard({ missing }: GapSummaryCardProps) {
     .slice(0, 3);
 
   return (
-    <Card>
+    <Card data-testid="gap-analysis">
       <CardHeader>
         <CardTitle>Gap Analysis Summary</CardTitle>
         <CardDescription>

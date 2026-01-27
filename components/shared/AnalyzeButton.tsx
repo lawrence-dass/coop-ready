@@ -156,6 +156,7 @@ export function AnalyzeButton({
       onClick={handleAnalyze}
       disabled={isPending}
       className="w-full bg-indigo-600 hover:bg-indigo-700"
+      data-testid="optimize-button"
     >
       {isPending ? (
         <>

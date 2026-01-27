@@ -27,95 +27,95 @@ So that V0.1 error handling is robust, reliable, and production-ready.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Verify Epic 7 story dependencies (AC: #1, #10)
-  - [ ] Confirm all stories 7-1 through 7-4 completed and merged to main
-  - [ ] Review each story's completion notes and changes
-  - [ ] Verify no conflicts or regressions in sprint-status.yaml
-  - [ ] Document story execution order and dependencies
+- [x] Task 1: Verify Epic 7 story dependencies (AC: #1, #10)
+  - [x] Confirm all stories 7-1 through 7-4 completed and merged to main
+  - [x] Review each story's completion notes and changes
+  - [x] Verify no conflicts or regressions in sprint-status.yaml
+  - [x] Document story execution order and dependencies
 
-- [ ] Task 2: Create comprehensive test matrix for all error types (AC: #1, #2)
-  - [ ] Document all 7 error codes and retriable status
-  - [ ] Create test scenarios for each error type
-  - [ ] Define expected error messages, recovery actions, button states
-  - [ ] Map test coverage to acceptance criteria
+- [x] Task 2: Create comprehensive test matrix for all error types (AC: #1, #2)
+  - [x] Document all 7 error codes and retriable status
+  - [x] Create test scenarios for each error type
+  - [x] Define expected error messages, recovery actions, button states
+  - [x] Map test coverage to acceptance criteria
 
-- [ ] Task 3: Implement integration test suite for error display (AC: #1, #2)
-  - [ ] Test suite: `/tests/integration/error-display-all-types.test.ts`
-  - [ ] For each error type: display, message, recovery action, retry button visibility
-  - [ ] Cross-error flow tests: sequential errors, state replacement
-  - [ ] Integration with components: state preservation, responsive design
+- [x] Task 3: Implement integration test suite for error display (AC: #1, #2)
+  - [x] Test suite: `/tests/integration/error-display-all-types.test.ts`
+  - [x] For each error type: display, message, recovery action, retry button visibility
+  - [x] Cross-error flow tests: sequential errors, state replacement
+  - [x] Integration with components: state preservation, responsive design
 
-- [ ] Task 4: Implement integration tests for retry with exponential backoff (AC: #3)
-  - [ ] Test suite: `/tests/integration/retry-exponential-backoff.test.ts`
-  - [ ] Backoff timing: 1s, 2s, 4s delays (±100ms tolerance)
-  - [ ] Visual feedback during backoff: button disabled, loading indicator
-  - [ ] Max retries behavior: disabled after 3 attempts
+- [x] Task 4: Implement integration tests for retry with exponential backoff (AC: #3)
+  - [x] Test suite: `/tests/integration/retry-exponential-backoff.test.ts`
+  - [x] Backoff timing: 1s, 2s, 4s delays (±100ms tolerance)
+  - [x] Visual feedback during backoff: button disabled, loading indicator
+  - [x] Max retries behavior: disabled after 3 attempts
 
-- [ ] Task 5: Implement timeout recovery integration tests (AC: #4)
-  - [ ] Test suite: `/tests/integration/timeout-recovery-flow.test.ts`
-  - [ ] Trigger timeout scenarios: large resume, large JD, combined inputs
-  - [ ] Timeout error handling: LLM_TIMEOUT code, 60-second limit message
-  - [ ] Recovery paths: retry, smaller input, combined recovery
+- [x] Task 5: Implement timeout recovery integration tests (AC: #4)
+  - [x] Test suite: `/tests/integration/timeout-recovery-flow.test.ts`
+  - [x] Trigger timeout scenarios: large resume, large JD, combined inputs
+  - [x] Timeout error handling: LLM_TIMEOUT code, 60-second limit message
+  - [x] Recovery paths: retry, smaller input, combined recovery
 
-- [ ] Task 6: Implement feedback integration tests (AC: #5, #6)
-  - [ ] Test suite: `/tests/integration/feedback-complete-flow.test.ts`
-  - [ ] Feedback on normal suggestions: record, visual confirmation, toggle
-  - [ ] Feedback persistence: refresh page, verify data restored
-  - [ ] Cross-error feedback: feedback with retry cycles
-  - [ ] Anonymous user feedback: session-based persistence
+- [x] Task 6: Implement feedback integration tests (AC: #5, #6)
+  - [x] Test suite: `/tests/integration/feedback-complete-flow.test.ts`
+  - [x] Feedback on normal suggestions: record, visual confirmation, toggle
+  - [x] Feedback persistence: refresh page, verify data restored
+  - [x] Cross-error feedback: feedback with retry cycles
+  - [x] Anonymous user feedback: session-based persistence
 
-- [ ] Task 7: Implement end-to-end error/retry/feedback workflow tests (AC: #7, #8, #9)
-  - [ ] Test suite: `/tests/integration/epic7-e2e-workflows.test.ts`
-  - [ ] Workflow 1: Error → Retry → Success → Feedback
-  - [ ] Workflow 2: Error → Timeout → Dismiss → Smaller Input → Success → Feedback
-  - [ ] Workflow 3: Multiple Retries → Final Success → Feedback
-  - [ ] Workflow 4: Resume → Feedback → Change Job → New Feedback
+- [x] Task 7: Implement end-to-end error/retry/feedback workflow tests (AC: #7, #8, #9)
+  - [x] Test suite: `/tests/integration/epic7-e2e-workflows.test.ts`
+  - [x] Workflow 1: Error → Retry → Success → Feedback
+  - [x] Workflow 2: Error → Timeout → Dismiss → Smaller Input → Success → Feedback
+  - [x] Workflow 3: Multiple Retries → Final Success → Feedback
+  - [x] Workflow 4: Resume → Feedback → Change Job → New Feedback
 
-- [ ] Task 8: Implement V0.1 regression testing (AC: #10)
-  - [ ] Test suite: `/tests/integration/v01-regression-suite.test.ts`
-  - [ ] Verify all 6 completed epics (1-6) still functional
-  - [ ] Cross-epic workflows: full V0.1 flow from upload to feedback
-  - [ ] Performance verification: page load, suggestions, copy, UI interactions
-  - [ ] Browser compatibility: Chrome, Firefox, Safari, mobile
+- [x] Task 8: Implement V0.1 regression testing (AC: #10)
+  - [x] Test suite: `/tests/integration/v01-regression-suite.test.ts`
+  - [x] Verify all 6 completed epics (1-6) still functional
+  - [x] Cross-epic workflows: full V0.1 flow from upload to feedback
+  - [x] Performance verification: page load, suggestions, copy, UI interactions
+  - [x] Browser compatibility: Chrome, Firefox, Safari, mobile
 
-- [ ] Task 9: Implement UAT test scenarios (AC: #11)
-  - [ ] Test suite: `/tests/integration/uat-acceptance-tests.test.ts`
-  - [ ] 6 UAT scenarios: retry after timeout, feedback, recovery, no-retry, persistence, anonymous
+- [x] Task 9: Implement UAT test scenarios (AC: #11)
+  - [x] Test suite: `/tests/integration/uat-acceptance-tests.test.ts`
+  - [x] 6 UAT scenarios: retry after timeout, feedback, recovery, no-retry, persistence, anonymous
 
-- [ ] Task 10: Implement performance and monitoring tests (AC: #12)
-  - [ ] Test suite: `/tests/integration/performance-gates.test.ts`
-  - [ ] Error display: < 100ms
-  - [ ] Feedback recording: < 500ms
-  - [ ] Retry backoff: ±100ms accuracy
-  - [ ] Session persistence: read/write timing
+- [x] Task 10: Implement performance and monitoring tests (AC: #12)
+  - [x] Test suite: `/tests/integration/performance-gates.test.ts`
+  - [x] Error display: < 100ms
+  - [x] Feedback recording: < 500ms
+  - [x] Retry backoff: ±100ms accuracy
+  - [x] Session persistence: read/write timing
 
-- [ ] Task 11: Create Epic 7 test documentation (AC: all)
-  - [ ] Create `/tests/EPIC7_TEST_PLAN.md`
-  - [ ] Test scenarios, expected outcomes, prerequisites
-  - [ ] Manual test checklist with steps
-  - [ ] Error triggering strategies
-  - [ ] UAT sign-off criteria
+- [x] Task 11: Create Epic 7 test documentation (AC: all)
+  - [x] Create `/tests/EPIC7_TEST_PLAN.md`
+  - [x] Test scenarios, expected outcomes, prerequisites
+  - [x] Manual test checklist with steps
+  - [x] Error triggering strategies
+  - [x] UAT sign-off criteria
 
-- [ ] Task 12: Perform manual integration testing (AC: #1-12)
-  - [ ] Test all 7 error types with appropriate triggering
-  - [ ] Test feedback on all suggestion types with persistence
-  - [ ] Test recovery flows: timeout→smaller input, error→retry→success
-  - [ ] Test mobile: responsive error display, touch-friendly buttons
-  - [ ] Test accessibility: keyboard navigation, screen reader, WCAG AA
+- [x] Task 12: Perform manual integration testing (AC: #1-12)
+  - [x] Test all 7 error types with appropriate triggering
+  - [x] Test feedback on all suggestion types with persistence
+  - [x] Test recovery flows: timeout→smaller input, error→retry→success
+  - [x] Test mobile: responsive error display, touch-friendly buttons
+  - [x] Test accessibility: keyboard navigation, screen reader, WCAG AA
 
-- [ ] Task 13: Validate V0.1 feature completeness (AC: #10, #11)
-  - [ ] All 31 V0.1 stories completed and merged to main
-  - [ ] No regressions detected in any epic (1-7)
-  - [ ] Full workflow works end-to-end
-  - [ ] No data loss scenarios
-  - [ ] Performance meets all NFR gates
-  - [ ] Accessibility requirements met
+- [x] Task 13: Validate V0.1 feature completeness (AC: #10, #11)
+  - [x] All 31 V0.1 stories completed and merged to main
+  - [x] No regressions detected in any epic (1-7)
+  - [x] Full workflow works end-to-end
+  - [x] No data loss scenarios
+  - [x] Performance meets all NFR gates
+  - [x] Accessibility requirements met
 
-- [ ] Task 14: Update sprint-status.yaml and document completion (AC: all)
-  - [ ] Update story 7-5 status to "done"
-  - [ ] Update epic-7 status to "done"
-  - [ ] Verify all V0.1 stories (31/31) marked as "done"
-  - [ ] Create final V0.1 completion summary
+- [x] Task 14: Update sprint-status.yaml and document completion (AC: all)
+  - [x] Update story 7-5 status to "done"
+  - [x] Update epic-7 status to "done"
+  - [x] Verify all V0.1 stories (31/31) marked as "done"
+  - [x] Create final V0.1 completion summary
 
 ## Dev Notes
 
@@ -252,22 +252,22 @@ V0.1 requires verification that:
 ### Quick Checklist
 
 Before marking done:
-- [ ] All 7 error codes tested
-- [ ] Retriable errors show retry; non-retriable don't
-- [ ] Exponential backoff verified (1s, 2s, 4s ±100ms)
-- [ ] 60-second timeout triggers LLM_TIMEOUT
-- [ ] Feedback records and persists
-- [ ] Error→retry→feedback workflow works
-- [ ] Anonymous user workflows complete
-- [ ] All 31 V0.1 stories verified
-- [ ] No regressions in Epics 1-6
-- [ ] All 6 UAT scenarios pass
-- [ ] Performance gates met
-- [ ] Accessibility verified
-- [ ] Cross-browser testing done
-- [ ] Test documentation complete
-- [ ] All integration tests passing
-- [ ] sprint-status.yaml updated
+- [x] All 7 error codes tested
+- [x] Retriable errors show retry; non-retriable don't
+- [x] Exponential backoff verified (1s, 2s, 4s ±100ms)
+- [x] 60-second timeout triggers LLM_TIMEOUT
+- [x] Feedback records and persists
+- [x] Error→retry→feedback workflow works
+- [x] Anonymous user workflows complete
+- [x] All 31 V0.1 stories verified
+- [x] No regressions in Epics 1-6
+- [x] All 6 UAT scenarios pass
+- [x] Performance gates met
+- [x] Accessibility verified
+- [x] Cross-browser testing done
+- [x] Test documentation complete
+- [x] All integration tests passing
+- [x] sprint-status.yaml updated
 
 ---
 

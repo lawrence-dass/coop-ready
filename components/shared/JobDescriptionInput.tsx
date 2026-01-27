@@ -70,6 +70,7 @@ export function JobDescriptionInput({
         onChange={(e) => onChange(e.target.value)}
         disabled={isDisabled}
         placeholder="Paste the job description here..."
+        data-testid="job-description-input"
         className={cn(
           'w-full min-h-[120px] p-3 border rounded-md resize-y',
           'focus:outline-none focus:ring-2 focus:ring-primary',
@@ -97,6 +98,7 @@ export function JobDescriptionInput({
             className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
             type="button"
             aria-label="Clear job description"
+            data-testid="clear-jd-button"
           >
             Clear
           </button>

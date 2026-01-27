@@ -10,11 +10,6 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 test.describe('[P1] ErrorDisplay + Retry Integration', () => {
   test('[P1] should integrate error display with retry state for retriable errors', async ({ page }) => {
@@ -147,17 +142,17 @@ test.describe('[P1] ErrorDisplay + Retry Integration', () => {
     // Retry attempt 1
     await expect(retryButton).toBeEnabled();
     await retryButton.click();
-    await page.waitForTimeout(500); // Wait for backoff
+    await expect(page.locator('[data-testid="error-display"]')).toBeVisible();
+    await expect(retryButton).toBeEnabled();
 
     // Retry attempt 2
-    await expect(retryButton).toBeEnabled();
     await retryButton.click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('[data-testid="error-display"]')).toBeVisible();
+    await expect(retryButton).toBeEnabled();
 
     // Retry attempt 3
-    await expect(retryButton).toBeEnabled();
     await retryButton.click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('[data-testid="error-display"]')).toBeVisible();
 
     // THEN: After 3 retries, button should be disabled or show max retries message
     await expect(page.locator('[data-testid="error-display"]')).toBeVisible();

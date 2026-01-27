@@ -104,6 +104,7 @@ function SectionHeader({
               disabled={regenerating}
               aria-label={`Regenerate ${label} suggestions`}
               className="gap-2"
+              data-testid="regenerate-button"
             >
               <RotateCcw className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
               Regenerate
@@ -248,7 +249,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
   // Loading state
   if (loading) {
     return (
-      <section className={className} aria-busy="true">
+      <section className={className} aria-busy="true" data-testid={`suggestions-${section}`}>
         <SectionHeader icon={icon} label={sectionLabel} onRegenerate={onRegenerate} regenerating={regenerating} />
         <div className="flex items-center justify-center py-12 border border-gray-200 rounded-lg bg-gray-50">
           <div className="text-center space-y-2">
@@ -263,7 +264,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
   // Regenerating state (Story 6.7)
   if (regenerating && suggestion) {
     return (
-      <section className={className} aria-busy="true">
+      <section className={className} aria-busy="true" data-testid={`suggestions-${section}`}>
         <SectionHeader icon={icon} label={sectionLabel} onRegenerate={onRegenerate} regenerating={regenerating} />
         <div className="relative">
           {/* Show existing suggestions with overlay */}
@@ -288,7 +289,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
 
   // Type-safe rendering via discriminated union narrowing on props
   return (
-    <section className={className}>
+    <section className={className} data-testid={`suggestions-${section}`}>
       <SectionHeader icon={icon} label={sectionLabel} onRegenerate={onRegenerate} regenerating={regenerating} />
       {renderSectionBody(props)}
     </section>

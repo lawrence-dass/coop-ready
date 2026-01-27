@@ -12,7 +12,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('[P1] Feedback Supabase Storage Integration', () => {
-  test('[P1] should store feedback in Supabase sessions table', async ({ page, context }) => {
+  test('[P1] should store feedback in Supabase sessions table', async ({ page }) => {
     // GIVEN: User completes optimization
     await page.goto('/');
 
