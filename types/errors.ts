@@ -59,6 +59,16 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.SCORE_CALCULATION_ERROR]:
     'Unable to calculate ATS score. Please try again.',
+
+  [ERROR_CODES.AUTH_ERROR]: 'Authentication failed. Please try again.',
+
+  [ERROR_CODES.INVALID_EMAIL]: 'Please enter a valid email address.',
+
+  [ERROR_CODES.WEAK_PASSWORD]:
+    'Password must be at least 8 characters with uppercase, number, and special character.',
+
+  [ERROR_CODES.USER_EXISTS]:
+    'An account with this email already exists. Sign in instead?',
 };
 
 // ============================================================================
