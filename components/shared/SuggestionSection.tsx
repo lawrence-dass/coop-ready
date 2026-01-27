@@ -8,7 +8,9 @@ import type {
   SummarySuggestion,
   SkillsSuggestion,
   ExperienceSuggestion,
+  BulletSuggestion,
 } from '@/types/suggestions';
+import type { SuggestionSortBy } from '@/store/useOptimizationStore';
 
 // ---------------------------------------------------------------------------
 // Discriminated union props for type-safe section rendering
@@ -46,6 +48,9 @@ export type SuggestionSectionProps = SectionVariant & {
 
   /** Regenerate handler (Story 6.7) */
   onRegenerate?: () => void;
+
+  /** Sort order for experience bullets (Story 11.1) */
+  sortBy?: SuggestionSortBy;
 
   /** Additional className */
   className?: string;
@@ -129,6 +134,7 @@ function SummaryBody({ suggestion }: { suggestion: SummarySuggestion }) {
         original={suggestion.original}
         suggested={suggestion.suggested}
         keywords={suggestion.ats_keywords_added}
+        points={suggestion.point_value}
         sectionType="summary"
       />
     </div>
@@ -143,6 +149,7 @@ function SkillsBody({ suggestion }: { suggestion: SkillsSuggestion }) {
         original={suggestion.original}
         suggested={suggestion.summary}
         keywords={suggestion.matched_keywords}
+        points={suggestion.total_point_value}
         sectionType="skills"
       />
 
@@ -159,41 +166,78 @@ function SkillsBody({ suggestion }: { suggestion: SkillsSuggestion }) {
   );
 }
 
-function ExperienceBody({ suggestion }: { suggestion: ExperienceSuggestion }) {
+function sortBullets(
+  bullets: BulletSuggestion[],
+  sortBy: SuggestionSortBy
+): BulletSuggestion[] {
+  if (sortBy === 'relevance') return bullets;
+  const sorted = [...bullets];
+  sorted.sort((a, b) => {
+    const aVal = a.point_value ?? 0;
+    const bVal = b.point_value ?? 0;
+    return sortBy === 'points-high' ? bVal - aVal : aVal - bVal;
+  });
+  return sorted;
+}
+
+function ExperienceBody({
+  suggestion,
+  sortBy = 'relevance',
+}: {
+  suggestion: ExperienceSuggestion;
+  sortBy?: SuggestionSortBy;
+}) {
   // Calculate global bullet index across all entries for consistent suggestion IDs
+  // We need stable IDs regardless of sort order, so compute the ID map from original order
   let globalBulletIndex = 0;
+  const bulletIdMap = new Map<string, string>();
+  for (const entry of suggestion.experience_entries) {
+    for (let i = 0; i < entry.suggested_bullets.length; i++) {
+      const bullet = entry.suggested_bullets[i];
+      const key = `${entry.company}-${i}-${bullet.original}`;
+      bulletIdMap.set(key, generateSuggestionId('experience', globalBulletIndex));
+      globalBulletIndex++;
+    }
+  }
 
   return (
     <div className="space-y-4">
-      {suggestion.experience_entries.map((entry, entryIndex) => (
-        <div key={`${entry.company}-${entryIndex}`} className="space-y-3">
-          {/* Company/Role Header */}
-          <div className="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 className="font-semibold text-gray-900">{entry.role}</h4>
-            <p className="text-sm text-gray-600">
-              {entry.company} &bull; {entry.dates}
-            </p>
+      {suggestion.experience_entries.map((entry, entryIndex) => {
+        const displayBullets = sortBullets(entry.suggested_bullets, sortBy);
+
+        return (
+          <div key={`${entry.company}-${entryIndex}`} className="space-y-3">
+            {/* Company/Role Header */}
+            <div className="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="font-semibold text-gray-900">{entry.role}</h4>
+              <p className="text-sm text-gray-600">
+                {entry.company} &bull; {entry.dates}
+              </p>
+            </div>
+
+            {/* Bullet suggestions */}
+            {displayBullets.map((bullet) => {
+              // Find original index for stable suggestion ID
+              const origIndex = entry.suggested_bullets.indexOf(bullet);
+              const key = `${entry.company}-${origIndex}-${bullet.original}`;
+              const suggestionId = bulletIdMap.get(key) ?? generateSuggestionId('experience', 0);
+
+              return (
+                <SuggestionCard
+                  key={`${entry.company}-bullet-${origIndex}`}
+                  suggestionId={suggestionId}
+                  original={bullet.original}
+                  suggested={bullet.suggested}
+                  keywords={bullet.keywords_incorporated}
+                  metrics={bullet.metrics_added}
+                  points={bullet.point_value}
+                  sectionType="experience"
+                />
+              );
+            })}
           </div>
-
-          {/* Bullet suggestions */}
-          {entry.suggested_bullets.map((bullet, bulletIndex) => {
-            const suggestionId = generateSuggestionId('experience', globalBulletIndex);
-            globalBulletIndex++;
-
-            return (
-              <SuggestionCard
-                key={`${entry.company}-bullet-${bulletIndex}`}
-                suggestionId={suggestionId}
-                original={bullet.original}
-                suggested={bullet.suggested}
-                keywords={bullet.keywords_incorporated}
-                metrics={bullet.metrics_added}
-                sectionType="experience"
-              />
-            );
-          })}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -202,14 +246,14 @@ function ExperienceBody({ suggestion }: { suggestion: ExperienceSuggestion }) {
 // Type-safe body renderer using discriminated union narrowing
 // ---------------------------------------------------------------------------
 
-function renderSectionBody(props: SectionVariant): React.ReactNode {
+function renderSectionBody(props: SectionVariant, sortBy?: SuggestionSortBy): React.ReactNode {
   switch (props.section) {
     case 'summary':
       return props.suggestion ? <SummaryBody suggestion={props.suggestion} /> : null;
     case 'skills':
       return props.suggestion ? <SkillsBody suggestion={props.suggestion} /> : null;
     case 'experience':
-      return props.suggestion ? <ExperienceBody suggestion={props.suggestion} /> : null;
+      return props.suggestion ? <ExperienceBody suggestion={props.suggestion} sortBy={sortBy} /> : null;
   }
 }
 
@@ -236,6 +280,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
     loading = false,
     regenerating = false,
     onRegenerate,
+    sortBy,
     className
   } = props;
 
@@ -269,7 +314,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
         <div className="relative">
           {/* Show existing suggestions with overlay */}
           <div className="opacity-50 pointer-events-none">
-            {renderSectionBody(props)}
+            {renderSectionBody(props, sortBy)}
           </div>
           {/* Loading overlay */}
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
@@ -291,7 +336,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
   return (
     <section className={className} data-testid={`suggestions-${section}`}>
       <SectionHeader icon={icon} label={sectionLabel} onRegenerate={onRegenerate} regenerating={regenerating} />
-      {renderSectionBody(props)}
+      {renderSectionBody(props, sortBy)}
     </section>
   );
 }

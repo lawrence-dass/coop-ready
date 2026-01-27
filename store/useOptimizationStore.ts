@@ -39,6 +39,12 @@ import { fetchWithTimeout, TIMEOUT_MS } from '@/lib/timeoutUtils';
 import { updateSession } from '@/lib/supabase/sessions';
 
 // ============================================================================
+// SORT TYPE
+// ============================================================================
+
+export type SuggestionSortBy = 'relevance' | 'points-high' | 'points-low';
+
+// ============================================================================
 // EXTENDED STORE INTERFACE
 // ============================================================================
 
@@ -106,6 +112,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Currently loaded session details (Story 10-2) */
   currentSession: OptimizationSession | null;
 
+  /** Sort order for experience suggestions (Story 11.1) */
+  suggestionSortBy: SuggestionSortBy;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -130,6 +139,8 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Remove a history item by session ID (Story 10-3) */
   removeHistoryItem: (sessionId: string) => void;
 
+  /** Set suggestion sort order (Story 11.1) */
+  setSuggestionSortBy: (sortBy: SuggestionSortBy) => void;
 
   /** Set pending file before parsing */
   setPendingFile: (file: File | null) => void;
@@ -249,6 +260,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     historyItems: [],
     isLoadingHistory: false,
     currentSession: null,
+    suggestionSortBy: 'points-high',
 
     // ============================================================================
     // DATA ACTIONS
@@ -309,6 +321,8 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         historyItems: state.historyItems.filter((item) => item.id !== sessionId),
       })),
 
+    setSuggestionSortBy: (sortBy) =>
+      set({ suggestionSortBy: sortBy }),
 
     setPendingFile: (file) =>
       set({ pendingFile: file, error: null, fileError: null }),
@@ -596,6 +610,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         historyItems: [],
         isLoadingHistory: false,
         currentSession: null,
+        suggestionSortBy: 'points-high',
       }),
   })
 );
@@ -702,3 +717,6 @@ export const selectIsLoadingHistory = (state: ExtendedOptimizationStore) =>
 
 export const selectCurrentSession = (state: ExtendedOptimizationStore) =>
   state.currentSession;
+
+export const selectSuggestionSortBy = (state: ExtendedOptimizationStore) =>
+  state.suggestionSortBy;
