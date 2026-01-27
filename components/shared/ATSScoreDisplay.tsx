@@ -96,7 +96,7 @@ export function ATSScoreDisplay({
   const interpretationMessage = getScoreMessage(score.overall);
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-6 ${className}`} data-testid="score-display">
       {/* Overall Score Display */}
       <div className="flex flex-col items-center gap-4">
         <ScoreCircle score={score.overall} size="large" animated={true} />

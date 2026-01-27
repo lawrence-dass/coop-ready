@@ -52,6 +52,9 @@ export function FeedbackButtons({
 
   const isDisabled = disabled || isSubmitting;
 
+  // Extract index from suggestionId format "sug_{section}_{index}"
+  const suggestionIndex = suggestionId.split('_').pop() ?? '0';
+
   return (
     <div
       className="flex items-center gap-3"
@@ -65,6 +68,7 @@ export function FeedbackButtons({
         onClick={() => handleFeedback(true)}
         disabled={isDisabled}
         tabIndex={0}
+        data-testid={`feedback-up-${sectionType}-${suggestionIndex}`}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -78,7 +82,7 @@ export function FeedbackButtons({
           'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           currentFeedback === true
-            ? 'text-indigo-600 bg-indigo-50'
+            ? 'text-indigo-600 bg-indigo-50 active'
             : 'text-gray-400 bg-white'
         )}
       >
@@ -97,6 +101,7 @@ export function FeedbackButtons({
         onClick={() => handleFeedback(false)}
         disabled={isDisabled}
         tabIndex={0}
+        data-testid={`feedback-down-${sectionType}-${suggestionIndex}`}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -110,7 +115,7 @@ export function FeedbackButtons({
           'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           currentFeedback === false
-            ? 'text-indigo-600 bg-indigo-50'
+            ? 'text-indigo-600 bg-indigo-50 active'
             : 'text-gray-400 bg-white'
         )}
       >

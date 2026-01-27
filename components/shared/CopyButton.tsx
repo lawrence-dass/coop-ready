@@ -30,6 +30,9 @@ export interface CopyButtonProps {
 
   /** Additional className */
   className?: string;
+
+  /** Optional data-testid for testing */
+  'data-testid'?: string;
 }
 
 /**
@@ -49,6 +52,7 @@ export function CopyButton({
   successDuration = 2000,
   onCopy,
   className,
+  'data-testid': dataTestId,
 }: CopyButtonProps) {
   const [isCopied, setIsCopied] = useState(false);
 
@@ -88,13 +92,19 @@ export function CopyButton({
       disabled={isCopied}
       aria-label={isCopied ? 'Copied!' : label}
       className={cn('gap-2', className)}
+      data-testid={dataTestId}
     >
       {isCopied ? (
-        <Check className="w-4 h-4" data-testid="check-icon" />
+        <>
+          <Check className="w-4 h-4" data-testid="check-icon" />
+          {showLabel && <span data-testid="copy-success">Copied!</span>}
+        </>
       ) : (
-        <Copy className="w-4 h-4" data-testid="copy-icon" />
+        <>
+          <Copy className="w-4 h-4" data-testid="copy-icon" />
+          {showLabel && label}
+        </>
       )}
-      {showLabel && (isCopied ? 'Copied!' : label)}
     </Button>
   );
 }

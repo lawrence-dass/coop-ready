@@ -93,6 +93,7 @@ export function ErrorDisplay({
       )}
       role="alert"
       aria-live="polite"
+      data-testid="error-display"
     >
       {/* Error Icon */}
       <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
@@ -100,12 +101,12 @@ export function ErrorDisplay({
       {/* Error Content */}
       <div className="flex-1 min-w-0">
         {/* Error Title */}
-        <p className="font-medium text-sm text-destructive">
+        <p className="font-medium text-sm text-destructive" data-testid="error-title">
           {errorInfo.title}
         </p>
 
         {/* Error Message */}
-        <p className="text-sm text-foreground mt-1">
+        <p className="text-sm text-foreground mt-1" data-testid="error-message">
           {displayMessage}
         </p>
 
@@ -121,7 +122,7 @@ export function ErrorDisplay({
 
         {/* Max Retries Message (Story 7.2) */}
         {canRetry && maxRetriesReached && (
-          <p className="text-xs text-orange-600 mt-2 font-medium">
+          <p className="text-xs text-orange-600 mt-2 font-medium" data-testid="max-retries-message">
             Maximum retry attempts reached
           </p>
         )}
@@ -134,6 +135,7 @@ export function ErrorDisplay({
             onClick={onRetry}
             disabled={isRetrying}
             className="mt-3 border-destructive/30 text-destructive hover:bg-destructive/10"
+            data-testid="retry-button"
           >
             {isRetrying ? (
               <>

@@ -73,6 +73,9 @@ export function SuggestionCard({
       toast.success('Thanks for the feedback!');
     }
   };
+
+  // Extract index from suggestionId format "sug_{section}_{index}"
+  const suggestionIndex = suggestionId.split('_').pop() ?? '0';
   return (
     <Card
       data-section={sectionType}
@@ -183,6 +186,7 @@ export function SuggestionCard({
             label="Copy suggestion"
             variant="outline"
             size="sm"
+            data-testid={`copy-${sectionType}-${suggestionIndex}`}
           />
         </div>
       </CardContent>

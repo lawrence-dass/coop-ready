@@ -123,7 +123,7 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
 
   // Render sections that have data (or show loading state during generation)
   return (
-    <div className={`space-y-8 ${className ?? ''}`}>
+    <div className={`space-y-8 ${className ?? ''}`} data-testid="suggestions-display">
       {(summarySuggestion || isGenerating) && (
         <SuggestionSection
           section="summary"
