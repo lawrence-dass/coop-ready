@@ -91,6 +91,9 @@ export const ERROR_CODES = {
 
   /** Failed to fetch session details (Story 10-2) */
   GET_SESSION_ERROR: 'GET_SESSION_ERROR',
+
+  /** Failed to delete session (Story 10-3) */
+  DELETE_SESSION_ERROR: 'DELETE_SESSION_ERROR',
 } as const;
 
 /**
