@@ -1,6 +1,6 @@
 # Story 8.2: Implement Email/Password Login
 
-**Status:** review
+**Status:** done
 **Epic:** 8 - User Authentication (V1.0)
 **Version:** 8.2
 **Date Created:** 2026-01-26
@@ -30,7 +30,7 @@ So that I can access my saved work.
 
 - [x] Task 1: Create login UI component (AC: #1)
   - [x] Build form with email and password fields
-  - [x] Add "Remember me" checkbox (optional)
+  - [ ] ~~Add "Remember me" checkbox~~ (removed: Supabase manages sessions via cookies, checkbox was non-functional)
   - [x] Add "Forgot password?" link
   - [x] Add loading and error states
   - [x] Implement form validation (Zod schema)
@@ -281,12 +281,22 @@ supabase.auth.onAuthStateChange((event, session) => {
 
 ### Modified Files
 - `types/error-codes.ts` - Added INVALID_CREDENTIALS, USER_NOT_FOUND, EMAIL_NOT_CONFIRMED error codes
-- `lib/validations/auth.ts` - Already had loginSchema defined
-- `types/auth.ts` - Already had LoginResult type defined
+- `types/errors.ts` - Added ERROR_MESSAGES for new auth error codes
+- `components/providers/AuthProvider.tsx` - Added `isAuthenticated` property to auth context
+- `lib/validations/auth.ts` - Removed placeholder comment (schema was pre-existing from 8-1)
 
 ---
 
 ## Change Log
+
+**2026-01-26: Code Review Fixes**
+- Removed non-functional "Remember me" checkbox (dead code - state never passed to server action)
+- Added `isAuthenticated` property to AuthProvider context for email user detection
+- Removed unnecessary Suspense wrapper from login page
+- Replaced placeholder test with real aria-label assertion
+- Added aria-label to password toggle button for accessibility
+- Removed stale placeholder comment from loginSchema
+- Corrected File List: removed false modification claims, added missing types/errors.ts
 
 **2026-01-26: Email/Password Login Implementation**
 - Created login server action following ActionResponse pattern

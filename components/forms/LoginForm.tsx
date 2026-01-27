@@ -34,7 +34,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import { login } from '@/actions/auth/login';
 
@@ -46,7 +45,6 @@ interface LoginFormProps {
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<LoginFormData>({
@@ -123,6 +121,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                     data-testid="toggle-password"
                   >
                     {showPassword ? (
@@ -138,24 +137,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           )}
         />
 
-        {/* Remember Me & Forgot Password Row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="remember-me"
-              checked={rememberMe}
-              onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-              disabled={isPending}
-              data-testid="remember-me-checkbox"
-            />
-            <label
-              htmlFor="remember-me"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Remember me
-            </label>
-          </div>
-
+        {/* Forgot Password Link */}
+        <div className="flex items-center justify-end">
           <Link
             href="/auth/forgot-password"
             className="text-sm text-blue-600 hover:underline"

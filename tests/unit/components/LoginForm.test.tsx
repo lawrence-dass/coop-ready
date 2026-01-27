@@ -242,13 +242,10 @@ describe('LoginForm', () => {
     });
   });
 
-  it('should render remember me checkbox (optional)', () => {
+  it('should render password toggle with accessible label', () => {
     render(<LoginForm />);
 
-    // Remember me is optional for this story, so it might not be present
-    // This test documents that it's optional
-    const rememberCheckbox = screen.queryByTestId('remember-me-checkbox');
-    // Don't assert - just document that it's optional
-    expect(rememberCheckbox === null || rememberCheckbox !== null).toBe(true);
+    const toggleButton = screen.getByTestId('toggle-password');
+    expect(toggleButton).toHaveAttribute('aria-label', 'Show password');
   });
 });

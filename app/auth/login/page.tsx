@@ -8,7 +8,6 @@
  * - Redirect to /optimize after successful login
  */
 
-import { Suspense } from 'react';
 import Link from 'next/link';
 import { LoginForm } from '@/components/forms/LoginForm';
 
@@ -33,9 +32,7 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <div className="rounded-lg bg-white px-8 py-10 shadow">
-          <Suspense fallback={<div>Loading...</div>}>
-            <LoginForm />
-          </Suspense>
+          <LoginForm />
 
           {/* Divider */}
           <div className="relative mt-8">
