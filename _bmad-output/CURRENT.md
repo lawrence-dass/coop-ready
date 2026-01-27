@@ -1,29 +1,31 @@
 # Session Handoff - 2026-01-27
 
 ## Current Focus
-Epic 9 (Resume Library V1.0) in progress. Story 9-1 (Implement Save Resume to Library) completed and merged. Ready to create Story 9-2 or continue with next story in Epic 9.
+Epic 9 (Resume Library V1.0) in progress. Story 9-2 (Implement Resume Selection from Library) created and ready for dev implementation. Story 9-1 previously merged.
 
 ## Project State
 - **Phase**: Implementation (V0.1 archived, V1.0 in-progress)
-- **Epic**: Epic 9 - Resume Library (in-progress, 1/4 complete)
-- **Completed Story**: 9-1 - Implement Save Resume to Library (done)
-- **Branch**: main (synced with origin)
-- **Previous Epic**: Epic 8 - User Authentication (DONE, 6/6)
+- **Epic**: Epic 9 - Resume Library (in-progress, 2/4 ready)
+- **Current Story**: 9-2 - Implement Resume Selection from Library (ready-for-dev)
+- **Branch**: feature/9-2-resume-selection (commit 1462d5a)
+- **Previous Story**: 9-1 - Implement Save Resume to Library (done, merged)
 
 ## Recent Work
-- Story 9-1 merged: Resume library save functionality complete
-  - Database schema: user_resumes table with RLS (max 3 per user)
-  - Server action: save-resume with ActionResponse pattern, validation, limit enforcement
-  - UI: modal for naming, character count, success/error toasts
-  - Integration: Zustand resume state management
-  - Error handling: authentication, validation, limit exceeded
-- Sprint status updated: 9-1 marked as done
+- Story 9-2 spec created: Resume selection implementation guide
+  - Two server actions: get-user-resumes (list) and get-resume-content (fetch)
+  - UI component: SelectResumeButton with modal and RadioGroup selection
+  - RLS-protected queries on user_resumes table (from story 9-1)
+  - State management: Zustand selectedResumeId + resumeContent integration
+  - Integration: /optimize page supports both upload and selection modes
+  - Error handling: auth, not-found, network errors with standardized codes
+  - Testing: unit, integration, and manual test checklist included
+- Sprint status updated: Epic 9 in-progress, 9-2 ready-for-dev
 
 ## Git State
-Clean - main branch synced with origin. Feature branch deleted.
+On feature branch 1462d5a. Story 9-2 committed. Ready for dev implementation workflow.
 
 ## Next Action
-Create Story 9-2 (Implement Resume Selection from Library) or next story in Epic 9 roadmap.
+Run `/bmad:bmm:workflows:dev-story story_key=9-2-implement-resume-selection-from-library` to begin implementation.
 
 ## Key References
 - Sprint Status: `_bmad-output/implementation-artifacts/sprint-status.yaml` (line 100: epic-8 done)
