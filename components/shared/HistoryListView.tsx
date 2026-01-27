@@ -111,7 +111,7 @@ export function HistoryListView() {
         <HistorySessionCard
           key={session.id}
           session={session}
-          onViewClick={() => router.push(`/history/${session.id}`)}
+          onClick={() => router.push(`/history/${session.id}`)}
         />
       ))}
     </div>
@@ -128,10 +128,10 @@ export function HistoryListView() {
  */
 interface HistorySessionCardProps {
   session: HistorySession;
-  onViewClick: () => void;
+  onClick: () => void;
 }
 
-function HistorySessionCard({ session, onViewClick }: HistorySessionCardProps) {
+function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const removeHistoryItem = useOptimizationStore((state) => state.removeHistoryItem);
 
@@ -157,7 +157,7 @@ function HistorySessionCard({ session, onViewClick }: HistorySessionCardProps) {
 
   return (
     <>
-      <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-testid="history-session-card" onClick={onViewClick}>
+      <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-testid="history-session-card" onClick={onClick}>
       <CardContent className="p-6">
         {/* Header: Resume Name + Delete Button + ATS Score */}
         <div className="flex items-start justify-between mb-4">

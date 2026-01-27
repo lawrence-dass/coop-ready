@@ -54,18 +54,7 @@ export function SelectResumeButton({
   const setSelectedResumeId = useOptimizationStore((state) => state.setSelectedResumeId);
   const clearSelectedResume = useOptimizationStore((state) => state.clearSelectedResume);
 
-  // Fetch resumes every time the dialog opens (ensures fresh data)
-  useEffect(() => {
-    if (isOpen) {
-      fetchResumes();
-    }
-  }, [isOpen]);
-
-  // Don't render if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
-
+  // Fetch resumes function (defined before useEffect)
   const fetchResumes = async () => {
     setIsFetchingList(true);
     const { data, error } = await getUserResumes();
@@ -79,6 +68,19 @@ export function SelectResumeButton({
     setResumes(data);
     setIsFetchingList(false);
   };
+
+  // Fetch resumes every time the dialog opens (ensures fresh data)
+  useEffect(() => {
+    if (isOpen) {
+      fetchResumes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // Don't render if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const handleSelect = () => {
     if (!selectedId) {

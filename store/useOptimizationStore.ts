@@ -130,6 +130,7 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Remove a history item by session ID (Story 10-3) */
   removeHistoryItem: (sessionId: string) => void;
 
+
   /** Set pending file before parsing */
   setPendingFile: (file: File | null) => void;
 
@@ -307,6 +308,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
       set((state) => ({
         historyItems: state.historyItems.filter((item) => item.id !== sessionId),
       })),
+
 
     setPendingFile: (file) =>
       set({ pendingFile: file, error: null, fileError: null }),
