@@ -83,6 +83,15 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.ONBOARDING_SAVE_ERROR]:
     'Failed to save your preferences. Please try again.',
+
+  [ERROR_CODES.UNAUTHORIZED]:
+    'You must be signed in to perform this action.',
+
+  [ERROR_CODES.SAVE_RESUME_ERROR]:
+    'Failed to save resume. Please try again.',
+
+  [ERROR_CODES.RESUME_LIMIT_EXCEEDED]:
+    'You have reached the maximum of 3 saved resumes. Please delete one before saving a new resume.',
 };
 
 // ============================================================================

@@ -7,6 +7,7 @@
  */
 
 import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay, SuggestionDisplay, SignOutButton } from '@/components/shared';
+import { SaveResumeButton } from '@/components/resume/SaveResumeButton';
 import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
@@ -112,12 +113,22 @@ export default function Home() {
             />
           )}
           {resumeContent && !isExtracting && (
-            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800" data-testid="resume-parsed">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <p>
-                Resume extracted successfully ({resumeContent.rawText.length.toLocaleString()} characters)
-              </p>
-            </div>
+            <>
+              <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800" data-testid="resume-parsed">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <p>
+                  Resume extracted successfully ({resumeContent.rawText.length.toLocaleString()} characters)
+                </p>
+              </div>
+              {/* Save Resume Button - Only visible when authenticated */}
+              <div className="flex justify-end">
+                <SaveResumeButton
+                  resumeContent={resumeContent.rawText}
+                  isAuthenticated={isAuthenticated}
+                  fileName={resumeContent.filename}
+                />
+              </div>
+            </>
           )}
         </div>
 
