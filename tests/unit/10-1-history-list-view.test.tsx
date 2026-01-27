@@ -28,6 +28,15 @@ vi.mock('sonner', () => ({
   },
 }));
 
+// Mock Next.js router
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+  }),
+}));
+
 describe('Story 10.1: HistoryListView Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -115,7 +115,7 @@ development_status:
   # Epic 10: Optimization History (V1.0)
   epic-10: in-progress
   10-1-implement-history-list-view: done
-  10-2-implement-session-reload: ready-for-dev
+  10-2-implement-session-reload: done
   10-3-implement-history-deletion: backlog
   10-4-epic-10-integration-and-verification-testing: backlog
 

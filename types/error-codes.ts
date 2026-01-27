@@ -85,6 +85,12 @@ export const ERROR_CODES = {
 
   /** Failed to fetch optimization history (Story 10-1) */
   GET_HISTORY_ERROR: 'GET_HISTORY_ERROR',
+
+  /** Session not found or deleted (Story 10-2) */
+  SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
+
+  /** Failed to fetch session details (Story 10-2) */
+  GET_SESSION_ERROR: 'GET_SESSION_ERROR',
 } as const;
 
 /**
