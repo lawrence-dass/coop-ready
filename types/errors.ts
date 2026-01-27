@@ -80,6 +80,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.SIGN_OUT_ERROR]:
     'Failed to sign out. Please try again.',
+
+  [ERROR_CODES.ONBOARDING_SAVE_ERROR]:
+    'Failed to save your preferences. Please try again.',
 };
 
 // ============================================================================

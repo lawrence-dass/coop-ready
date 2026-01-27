@@ -58,6 +58,9 @@ export const ERROR_CODES = {
 
   /** Sign out failed */
   SIGN_OUT_ERROR: 'SIGN_OUT_ERROR',
+
+  /** Onboarding save failed (Story 8-5) */
+  ONBOARDING_SAVE_ERROR: 'ONBOARDING_SAVE_ERROR',
 } as const;
 
 /**
