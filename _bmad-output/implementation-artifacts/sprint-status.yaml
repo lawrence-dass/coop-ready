@@ -100,7 +100,7 @@ development_status:
   epic-8: in-progress
   8-1-implement-email-password-registration: done
   8-2-implement-email-password-login: done
-  8-3-implement-google-oauth: backlog
+  8-3-implement-google-oauth: ready-for-dev
   8-4-implement-sign-out: backlog
   8-5-implement-onboarding-flow: backlog
   8-6-epic-8-integration-and-verification-testing: backlog
