@@ -5,6 +5,13 @@
  * All types use camelCase to match TypeScript conventions (DB uses snake_case).
  */
 
+import type { KeywordAnalysisResult, ATSScore } from './analysis';
+import type {
+  SummarySuggestion,
+  SkillsSuggestion,
+  ExperienceSuggestion,
+} from './suggestions';
+
 // ============================================================================
 // RESUME TYPES
 // ============================================================================
@@ -151,6 +158,33 @@ export interface SuggestionSet {
 // SESSION TYPES
 // ============================================================================
 
+// ============================================================================
+// FEEDBACK TYPES (Story 7.4)
+// ============================================================================
+
+/**
+ * Feedback for a single suggestion
+ *
+ * Tracks user satisfaction with individual suggestions for future analytics.
+ * Stored as a JSONB array in the sessions table.
+ */
+export interface SuggestionFeedback {
+  /** Unique identifier for the suggestion (section + index based) */
+  suggestionId: string;
+
+  /** Which resume section this suggestion belongs to */
+  sectionType: 'summary' | 'skills' | 'experience';
+
+  /** true = helpful (thumbs up), false = not helpful (thumbs down) */
+  helpful: boolean;
+
+  /** When the feedback was recorded (ISO timestamp) */
+  recordedAt: string;
+
+  /** Session ID for analytics (links to session) */
+  sessionId: string;
+}
+
 /**
  * Complete optimization session structure
  *
@@ -163,6 +197,7 @@ export interface SuggestionSet {
  * - `jd_content` → jobDescription
  * - `analysis` → analysisResult
  * - `suggestions` → suggestions
+ * - `feedback` → feedback
  */
 export interface OptimizationSession {
   /** Unique session ID (UUID from database) */
@@ -177,14 +212,32 @@ export interface OptimizationSession {
   /** Parsed resume content */
   resumeContent?: Resume | null;
 
-  /** Job description content */
-  jobDescription?: JobDescription | null;
+  /** Job description content (Epic 4 uses string) */
+  jobDescription?: string | null;
 
   /** Keyword analysis results */
   analysisResult?: AnalysisResult | null;
 
+  /** Keyword analysis results (Story 5.1 - new structured format) */
+  keywordAnalysis?: KeywordAnalysisResult | null;
+
+  /** ATS compatibility score (Story 5.2) */
+  atsScore?: ATSScore | null;
+
+  /** Summary section optimization suggestion (Story 6.2) */
+  summarySuggestion?: SummarySuggestion | null;
+
+  /** Skills section optimization suggestion (Story 6.3) */
+  skillsSuggestion?: SkillsSuggestion | null;
+
+  /** Experience section optimization suggestion (Story 6.4) */
+  experienceSuggestion?: ExperienceSuggestion | null;
+
   /** Generated optimization suggestions */
   suggestions?: SuggestionSet | null;
+
+  /** User feedback on suggestions (Story 7.4) */
+  feedback?: SuggestionFeedback[];
 
   /** When the session was created */
   createdAt: Date;

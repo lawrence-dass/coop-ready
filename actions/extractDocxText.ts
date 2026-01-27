@@ -7,6 +7,7 @@ export async function extractDocxText(
   file: File
 ): Promise<ActionResponse<{ text: string; paragraphCount: number }>> {
   try {
+    console.log('[SS:docx] Extracting text from DOCX:', file.name, `(${(file.size / 1024).toFixed(1)}KB)`);
     // Validate file type
     if (
       file.type !==
@@ -43,6 +44,7 @@ export async function extractDocxText(
       .split('\n')
       .filter((p) => p.trim().length > 0).length;
 
+    console.log('[SS:docx] Extraction complete:', paragraphCount, 'paragraphs,', result.value.length, 'chars');
     return {
       data: {
         text: result.value,

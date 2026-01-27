@@ -74,8 +74,8 @@ export interface OptimizationStore {
   /** Parsed resume content (null if not uploaded yet) */
   resumeContent: Resume | null;
 
-  /** Job description content (null if not entered yet) */
-  jobDescription: JobDescription | null;
+  /** Job description content (null if not entered yet) - Epic 4 uses string */
+  jobDescription: string | null;
 
   /** Keyword analysis results (null until analyzed) */
   analysisResult: AnalysisResult | null;
@@ -107,9 +107,15 @@ export interface OptimizationStore {
 
   /**
    * Set the job description content
-   * Call after user enters or edits JD
+   * Call after user enters or edits JD (Epic 4 uses string)
    */
-  setJobDescription: (jd: JobDescription | null) => void;
+  setJobDescription: (jd: string | null) => void;
+
+  /**
+   * Clear the job description content
+   * Call when user wants to reset the JD field
+   */
+  clearJobDescription: () => void;
 
   /**
    * Set the analysis result

@@ -44,6 +44,7 @@ export async function parseResumeText(
   options: ParseResumeOptions = {}
 ): Promise<ActionResponse<Resume>> {
   try {
+    console.log('[SS:parseResume] Parsing resume text:', rawText.length, 'chars');
     // Validate input
     if (!rawText || rawText.trim().length === 0) {
       return {
@@ -101,6 +102,7 @@ ${rawText}
     jsonStr = jsonStr.trim();
 
     const parsed: ParseResult = JSON.parse(jsonStr);
+    console.log('[SS:parseResume] LLM parsed sections:', { summary: !!parsed.summary, skills: !!parsed.skills, experience: !!parsed.experience, education: !!parsed.education });
 
     // Build Resume object with metadata
     const resume: Resume = {

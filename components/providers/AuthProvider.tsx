@@ -47,6 +47,9 @@ interface AuthContextType {
   /** Whether the current user is anonymous */
   isAnonymous: boolean;
 
+  /** Whether the user is authenticated with email (not anonymous) */
+  isAuthenticated: boolean;
+
   /** Whether auth is still loading/initializing */
   isLoading: boolean;
 
@@ -129,6 +132,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       user,
       isAnonymous: user?.is_anonymous ?? false,
+      isAuthenticated: user !== null && !(user.is_anonymous ?? false),
       isLoading,
       error,
       anonymousId: user?.id ?? null,

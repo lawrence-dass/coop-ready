@@ -62,61 +62,62 @@ development_status:
   3-6-epic-3-integration-and-verification-testing: done
 
   # Epic 4: Job Description Input (V0.1)
-  epic-4: backlog
-  4-1-implement-job-description-input: backlog
-  4-2-implement-job-description-editing: backlog
-  4-3-implement-job-description-clear: backlog
-  4-4-epic-4-integration-and-verification-testing: backlog
+  epic-4: done
+  4-1-implement-job-description-input: done
+  4-2-implement-job-description-editing: done
+  4-3-implement-job-description-clear: done
+  4-4-epic-4-integration-and-verification-testing: done
 
   # Epic 5: ATS Analysis & Scoring (V0.1)
-  epic-5: backlog
-  5-1-implement-keyword-analysis: backlog
-  5-2-implement-ats-score-calculation: backlog
-  5-3-implement-score-display-with-breakdown: backlog
-  5-4-implement-gap-analysis-display: backlog
-  5-5-epic-5-integration-and-verification-testing: backlog
+  epic-5: done
+  5-1-implement-keyword-analysis: done
+  5-2-implement-keyword-analysis: done
+  5-3-implement-score-display-with-breakdown: done
+  5-4-implement-gap-analysis-display: done
+  5-5-epic-5-integration-and-verification-testing: done
 
   # Epic 6: Content Optimization (V0.1)
-  epic-6: backlog
-  6-1-implement-llm-pipeline-api-route: backlog
-  6-2-implement-summary-section-suggestions: backlog
-  6-3-implement-skills-section-suggestions: backlog
-  6-4-implement-experience-section-suggestions: backlog
-  6-5-implement-suggestion-display-ui: backlog
-  6-6-implement-copy-to-clipboard: backlog
-  6-7-implement-regenerate-suggestions: backlog
-  6-8-epic-6-integration-and-verification-testing: backlog
+  epic-6: done
+  6-1-implement-llm-pipeline-api-route: done
+  6-2-implement-summary-section-suggestions: done
+  6-3-implement-skills-section-suggestions: done
+  6-4-implement-experience-section-suggestions: done
+  6-5-implement-suggestion-display-ui: done
+  6-6-implement-copy-to-clipboard: done
+  6-7-implement-regenerate-suggestions: done
+  6-8-epic-6-integration-and-verification-testing: done
+  6-9-wire-suggestion-pipeline: done
 
   # Epic 7: Error Handling & Feedback (V0.1)
-  epic-7: backlog
-  7-1-implement-error-display-component: backlog
-  7-2-implement-retry-functionality: backlog
-  7-3-implement-timeout-recovery: backlog
-  7-4-implement-suggestion-feedback: backlog
-  7-5-epic-7-integration-and-verification-testing: backlog
+  epic-7: done
+  7-1-implement-error-display-component: done
+  7-2-implement-retry-functionality: done
+  7-3-implement-timeout-recovery: done
+  7-4-implement-suggestion-feedback: done
+  7-5-epic-7-integration-and-verification-testing: done
 
   # Epic 8: User Authentication (V1.0)
-  epic-8: backlog
-  8-1-implement-email-password-registration: backlog
-  8-2-implement-email-password-login: backlog
-  8-3-implement-google-oauth: backlog
-  8-4-implement-sign-out: backlog
-  8-5-implement-onboarding-flow: backlog
-  8-6-epic-8-integration-and-verification-testing: backlog
+  epic-8: done
+  8-1-implement-email-password-registration: done
+  8-2-implement-email-password-login: done
+  8-3-implement-google-oauth: done
+  8-4-implement-sign-out: done
+  8-5-implement-onboarding-flow: done
+  8-6-epic-8-integration-and-verification-testing: done
 
   # Epic 9: Resume Library (V1.0)
-  epic-9: backlog
-  9-1-implement-save-resume-to-library: backlog
-  9-2-implement-resume-selection-from-library: backlog
-  9-3-implement-resume-deletion-from-library: backlog
-  9-4-epic-9-integration-and-verification-testing: backlog
+  epic-9: done
+  9-1-implement-save-resume-to-library: done
+  9-2-implement-resume-selection-from-library: done
+  9-3-implement-resume-deletion-from-library: done
+  9-4-epic-9-integration-and-verification-testing: done
 
   # Epic 10: Optimization History (V1.0)
-  epic-10: backlog
-  10-1-implement-history-list-view: backlog
-  10-2-implement-session-reload: backlog
-  10-3-implement-history-deletion: backlog
-  10-4-epic-10-integration-and-verification-testing: backlog
+  epic-10: done
+  10-1-implement-history-list-view: done
+  10-2-implement-session-reload: done
+  10-3-implement-history-deletion: done
+  10-4-epic-10-integration-and-verification-testing: done
 
   # Epic 11: Compare & Enhanced Suggestions (V1.0)
   epic-11: backlog

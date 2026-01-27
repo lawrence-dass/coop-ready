@@ -5,8 +5,8 @@
  * for working with ActionResponse errors.
  */
 
-import type { ErrorCode, ActionResponse } from './index';
-import { ERROR_CODES } from './index';
+import { ERROR_CODES, type ErrorCode } from './error-codes';
+import type { ActionResponse } from './index';
 
 // ============================================================================
 // ERROR TYPES
@@ -56,6 +56,66 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.VALIDATION_ERROR]:
     'Invalid input. Please check your data and try again.',
+
+  [ERROR_CODES.SCORE_CALCULATION_ERROR]:
+    'Unable to calculate ATS score. Please try again.',
+
+  [ERROR_CODES.AUTH_ERROR]: 'Authentication failed. Please try again.',
+
+  [ERROR_CODES.INVALID_EMAIL]: 'Please enter a valid email address.',
+
+  [ERROR_CODES.WEAK_PASSWORD]:
+    'Password must be at least 8 characters with uppercase, number, and special character.',
+
+  [ERROR_CODES.USER_EXISTS]:
+    'An account with this email already exists. Sign in instead?',
+
+  [ERROR_CODES.INVALID_CREDENTIALS]: 'Email or password is incorrect.',
+
+  [ERROR_CODES.USER_NOT_FOUND]:
+    'No account found with this email address.',
+
+  [ERROR_CODES.EMAIL_NOT_CONFIRMED]:
+    'Please verify your email before logging in.',
+
+  [ERROR_CODES.SIGN_OUT_ERROR]:
+    'Failed to sign out. Please try again.',
+
+  [ERROR_CODES.ONBOARDING_SAVE_ERROR]:
+    'Failed to save your preferences. Please try again.',
+
+  [ERROR_CODES.UNAUTHORIZED]:
+    'You must be signed in to perform this action.',
+
+  [ERROR_CODES.SAVE_RESUME_ERROR]:
+    'Failed to save resume. Please try again.',
+
+  [ERROR_CODES.RESUME_LIMIT_EXCEEDED]:
+    'You have reached the maximum of 3 saved resumes. Please delete one before saving a new resume.',
+
+  [ERROR_CODES.GET_RESUMES_ERROR]:
+    'Failed to load your saved resumes. Please try again.',
+
+  [ERROR_CODES.RESUME_NOT_FOUND]:
+    'Resume not found. It may have been deleted.',
+
+  [ERROR_CODES.GET_RESUME_CONTENT_ERROR]:
+    'Failed to load resume content. Please try again.',
+
+  [ERROR_CODES.DELETE_RESUME_ERROR]:
+    'Failed to delete resume. Please try again.',
+
+  [ERROR_CODES.GET_HISTORY_ERROR]:
+    'Failed to load optimization history. Please try again.',
+
+  [ERROR_CODES.SESSION_NOT_FOUND]:
+    'Session not found. It may have been deleted.',
+
+  [ERROR_CODES.GET_SESSION_ERROR]:
+    'Failed to load session details. Please try again.',
+
+  [ERROR_CODES.DELETE_SESSION_ERROR]:
+    'Failed to delete session. Please try again.',
 };
 
 // ============================================================================

@@ -139,9 +139,11 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`:
 
 ### Verification
 
-See [docs/EPIC-1-VERIFICATION.md](docs/EPIC-1-VERIFICATION.md) for complete foundation verification checklist.
+- [Epic 1 Verification](docs/EPIC-1-VERIFICATION.md) - Project foundation checklist
+- [Epic 8 Verification](docs/EPIC-8-VERIFICATION.md) - User authentication verification checklist
+- [Epic 9 Verification](docs/EPIC-9-VERIFICATION.md) - Resume library verification checklist
 
-This document verifies that Epic 1 (Project Foundation) is complete and ready for feature development.
+These documents verify that their respective epics are complete and ready for the next phase.
 
 ## License
 

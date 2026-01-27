@@ -1,6 +1,6 @@
 # Story 9.4: Epic 9 Integration and Verification Testing
 
-Status: backlog
+Status: done
 
 ## Story
 
@@ -28,35 +28,35 @@ So that users can save up to 3 resumes and manage their resume collection.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Save Resume Verification** (AC: #1)
-  - [ ] Test saving resume after optimization
-  - [ ] Verify resume stored in database
-  - [ ] Verify save shows success message
-  - [ ] Test saving up to 3 resumes
-  - [ ] Test 4th save (should reject or replace oldest)
+- [x] **Task 1: Save Resume Verification** (AC: #1)
+  - [x] Test saving resume after optimization
+  - [x] Verify resume stored in database
+  - [x] Verify save shows success message
+  - [x] Test saving up to 3 resumes
+  - [x] Test 4th save (should reject or replace oldest)
 
-- [ ] **Task 2: Resume Selection Verification** (AC: #2)
-  - [ ] Verify library dropdown/selector shows saved resumes
-  - [ ] Test selecting resume from library
-  - [ ] Verify selected resume loads correctly
-  - [ ] Test resume content reloads properly
+- [x] **Task 2: Resume Selection Verification** (AC: #2)
+  - [x] Verify library dropdown/selector shows saved resumes
+  - [x] Test selecting resume from library
+  - [x] Verify selected resume loads correctly
+  - [x] Test resume content reloads properly
 
-- [ ] **Task 3: Resume Deletion Verification** (AC: #3)
-  - [ ] Test delete button removes resume from library
-  - [ ] Verify confirmation prompt before delete
-  - [ ] Test resume no longer appears in library
-  - [ ] Test database updated correctly
+- [x] **Task 3: Resume Deletion Verification** (AC: #3)
+  - [x] Test delete button removes resume from library
+  - [x] Verify confirmation prompt before delete
+  - [x] Test resume no longer appears in library
+  - [x] Test database updated correctly
 
-- [ ] **Task 4: Integration Verification** (AC: #4)
-  - [ ] Verify Epic 8 (auth) needed for library persistence
-  - [ ] Verify library data associated with user_id
-  - [ ] Verify each user has separate library
-  - [ ] Verify no data loss on reload
+- [x] **Task 4: Integration Verification** (AC: #4)
+  - [x] Verify Epic 8 (auth) needed for library persistence
+  - [x] Verify library data associated with user_id
+  - [x] Verify each user has separate library
+  - [x] Verify no data loss on reload
 
-- [ ] **Task 5: Create Verification Checklist** (AC: #4)
-  - [ ] Create `/docs/EPIC-9-VERIFICATION.md`
-  - [ ] Include CRUD test cases
-  - [ ] Update README with reference
+- [x] **Task 5: Create Verification Checklist** (AC: #4)
+  - [x] Create `/docs/EPIC-9-VERIFICATION.md`
+  - [x] Include CRUD test cases
+  - [x] Update README with reference
 
 ## Dev Notes
 
