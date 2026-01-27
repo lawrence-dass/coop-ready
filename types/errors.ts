@@ -77,6 +77,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.EMAIL_NOT_CONFIRMED]:
     'Please verify your email before logging in.',
+
+  [ERROR_CODES.SIGN_OUT_ERROR]:
+    'Failed to sign out. Please try again.',
 };
 
 // ============================================================================

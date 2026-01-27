@@ -55,6 +55,9 @@ export const ERROR_CODES = {
 
   /** Email not confirmed/verified */
   EMAIL_NOT_CONFIRMED: 'EMAIL_NOT_CONFIRMED',
+
+  /** Sign out failed */
+  SIGN_OUT_ERROR: 'SIGN_OUT_ERROR',
 } as const;
 
 /**

@@ -6,12 +6,14 @@
  * Main page where users upload resumes and get optimization suggestions.
  */
 
-import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay, SuggestionDisplay } from '@/components/shared';
+import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay, SuggestionDisplay, SignOutButton } from '@/components/shared';
 import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function Home() {
+  const { isAuthenticated, user } = useAuth();
   const pendingFile = useOptimizationStore(selectPendingFile);
   const fileError = useOptimizationStore(selectFileError);
   const resumeContent = useOptimizationStore((state) => state.resumeContent);
@@ -46,14 +48,24 @@ export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <main className="flex w-full max-w-3xl flex-col gap-8 p-8">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">
-            SubmitSmart
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Optimize your resume for ATS systems
-          </p>
+        {/* Header with Sign Out */}
+        <div className="flex items-center justify-between">
+          <div className="text-center flex-1">
+            <h1 className="text-3xl font-bold tracking-tight">
+              SubmitSmart
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Optimize your resume for ATS systems
+            </p>
+          </div>
+          {isAuthenticated && (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground" data-testid="user-email">
+                {user?.email}
+              </span>
+              <SignOutButton />
+            </div>
+          )}
         </div>
 
         {/* General Error Display - Above all content (Story 7.1 + 7.2) */}
