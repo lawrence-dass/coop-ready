@@ -108,7 +108,7 @@ development_status:
   # Epic 9: Resume Library (V1.0)
   epic-9: in-progress
   9-1-implement-save-resume-to-library: done
-  9-2-implement-resume-selection-from-library: backlog
+  9-2-implement-resume-selection-from-library: done
   9-3-implement-resume-deletion-from-library: backlog
   9-4-epic-9-integration-and-verification-testing: backlog
 

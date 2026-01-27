@@ -70,6 +70,15 @@ export const ERROR_CODES = {
 
   /** User has reached maximum of 3 saved resumes (Story 9-1) */
   RESUME_LIMIT_EXCEEDED: 'RESUME_LIMIT_EXCEEDED',
+
+  /** Failed to get user resumes list (Story 9-2) */
+  GET_RESUMES_ERROR: 'GET_RESUMES_ERROR',
+
+  /** Resume not found or user unauthorized (Story 9-2) */
+  RESUME_NOT_FOUND: 'RESUME_NOT_FOUND',
+
+  /** Failed to get resume content (Story 9-2) */
+  GET_RESUME_CONTENT_ERROR: 'GET_RESUME_CONTENT_ERROR',
 } as const;
 
 /**

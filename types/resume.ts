@@ -36,3 +36,23 @@ export interface SaveResumeResult {
   id: string;
   name: string;
 }
+
+/**
+ * UserResumeOption - Minimal resume info for selection list (Story 9-2)
+ */
+export interface UserResumeOption {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+/**
+ * ResumeContentResult - Result of fetching resume content (Story 9-2)
+ *
+ * Specific type instead of Partial<UserResume> to ensure required fields are present.
+ */
+export interface ResumeContentResult {
+  id: string;
+  name: string;
+  resumeContent: string;
+}
