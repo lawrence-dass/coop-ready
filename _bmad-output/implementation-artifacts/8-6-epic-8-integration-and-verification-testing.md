@@ -1,6 +1,6 @@
 # Story 8.6: Epic 8 Integration and Verification Testing
 
-Status: backlog
+Status: done
 
 ## Story
 
@@ -32,37 +32,37 @@ So that users can create accounts, log in, and access personalized features.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Email/Password Registration Verification** (AC: #1)
-  - [ ] Test registration with valid email/password
-  - [ ] Verify account created in Supabase Auth
-  - [ ] Verify user can log in after registration
-  - [ ] Test validation (weak password, invalid email)
-  - [ ] Test duplicate email handling
+- [x] **Task 1: Email/Password Registration Verification** (AC: #1)
+  - [x] Test registration with valid email/password
+  - [x] Verify account created in Supabase Auth
+  - [x] Verify user can log in after registration
+  - [x] Test validation (weak password, invalid email)
+  - [x] Test duplicate email handling
 
-- [ ] **Task 2: Email/Password Login Verification** (AC: #2)
-  - [ ] Test login with correct credentials
-  - [ ] Test login with incorrect password (error message)
-  - [ ] Test login with non-existent email (error message)
-  - [ ] Test session created after login
-  - [ ] Test user_id now available (instead of anonymous_id)
+- [x] **Task 2: Email/Password Login Verification** (AC: #2)
+  - [x] Test login with correct credentials
+  - [x] Test login with incorrect password (error message)
+  - [x] Test login with non-existent email (error message)
+  - [x] Test session created after login
+  - [x] Test user_id now available (instead of anonymous_id)
 
-- [ ] **Task 3: Google OAuth Verification** (AC: #3)
-  - [ ] Verify Google OAuth configured in Supabase
-  - [ ] Test OAuth flow and callback
-  - [ ] Verify account created on first Google login
-  - [ ] Test existing account recognized on subsequent Google login
+- [x] **Task 3: Google OAuth Verification** (AC: #3)
+  - [x] Verify Google OAuth configured in Supabase
+  - [x] Test OAuth flow and callback
+  - [x] Verify account created on first Google login
+  - [x] Test existing account recognized on subsequent Google login
 
-- [ ] **Task 4: Sign Out Verification** (AC: #4)
-  - [ ] Test sign out button clears session
-  - [ ] Verify user redirected to login
-  - [ ] Test authenticated routes require login
-  - [ ] Verify session data cleared
+- [x] **Task 4: Sign Out Verification** (AC: #4)
+  - [x] Test sign out button clears session
+  - [x] Verify user redirected to login
+  - [x] Test authenticated routes require login
+  - [x] Verify session data cleared
 
-- [ ] **Task 5: Create Verification Checklist** (AC: #5)
-  - [ ] Create `/docs/EPIC-8-VERIFICATION.md`
-  - [ ] Include auth flow test cases
-  - [ ] Include edge case tests
-  - [ ] Update README with reference
+- [x] **Task 5: Create Verification Checklist** (AC: #5)
+  - [x] Create `/docs/EPIC-8-VERIFICATION.md`
+  - [x] Include auth flow test cases
+  - [x] Include edge case tests
+  - [x] Update README with reference
 
 ## Dev Notes
 

@@ -127,7 +127,7 @@ export function OnboardingForm() {
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold tracking-tight">Welcome!</h1>
         <p className="text-muted-foreground">
-          Let's personalize your experience with a few quick questions.
+          Let&apos;s personalize your experience with a few quick questions.
         </p>
       </div>
 
@@ -136,7 +136,7 @@ export function OnboardingForm() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-base font-semibold">
-              What's your primary career goal right now?
+              What&apos;s your primary career goal right now?
             </Label>
             <p className="text-sm text-muted-foreground">Step 1 of 3</p>
           </div>
@@ -165,7 +165,7 @@ export function OnboardingForm() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-base font-semibold">
-              What's your professional experience level?
+              What&apos;s your professional experience level?
             </Label>
             <p className="text-sm text-muted-foreground">Step 2 of 3</p>
           </div>

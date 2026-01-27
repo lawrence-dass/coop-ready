@@ -97,13 +97,13 @@ development_status:
   7-5-epic-7-integration-and-verification-testing: done
 
   # Epic 8: User Authentication (V1.0)
-  epic-8: in-progress
+  epic-8: done
   8-1-implement-email-password-registration: done
   8-2-implement-email-password-login: done
   8-3-implement-google-oauth: done
   8-4-implement-sign-out: done
   8-5-implement-onboarding-flow: done
-  8-6-epic-8-integration-and-verification-testing: backlog
+  8-6-epic-8-integration-and-verification-testing: done
 
   # Epic 9: Resume Library (V1.0)
   epic-9: backlog
