@@ -21,10 +21,11 @@ import {
 } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { LibraryBig, Loader2 } from 'lucide-react';
+import { LibraryBig, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getUserResumes } from '@/actions/resume/get-user-resumes';
 import { getResumeContent } from '@/actions/resume/get-resume-content';
+import { deleteResume } from '@/actions/resume/delete-resume';
 import { useOptimizationStore } from '@/store';
 import type { UserResumeOption } from '@/types';
 
@@ -44,8 +45,14 @@ export function SelectResumeButton({
   const [selectedId, setSelectedId] = useState<string>('');
   const [isFetchingList, setIsFetchingList] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [resumeToDelete, setResumeToDelete] = useState<UserResumeOption | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const setResumeContent = useOptimizationStore((state) => state.setResumeContent);
+  const selectedResumeId = useOptimizationStore((state) => state.selectedResumeId);
+  const setSelectedResumeId = useOptimizationStore((state) => state.setSelectedResumeId);
+  const clearSelectedResume = useOptimizationStore((state) => state.clearSelectedResume);
 
   // Fetch resumes every time the dialog opens (ensures fresh data)
   useEffect(() => {
@@ -93,6 +100,7 @@ export function SelectResumeButton({
           rawText: data.resumeContent,
           filename: data.name,
         });
+        setSelectedResumeId(data.id); // Track selected resume
         toast.success(`Resume "${data.name}" loaded successfully!`);
         setIsOpen(false);
 
@@ -109,6 +117,53 @@ export function SelectResumeButton({
     if (!open) {
       setSelectedId(''); // Reset selection when closing
     }
+  };
+
+  const handleDeleteClick = (resume: UserResumeOption, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selection when clicking delete
+    setResumeToDelete(resume);
+    setIsConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!resumeToDelete) return;
+
+    setIsDeleting(true);
+
+    const { error } = await deleteResume(resumeToDelete.id);
+
+    if (error) {
+      toast.error(error.message);
+      setIsDeleting(false);
+      return;
+    }
+
+    // Success - update UI
+    toast.success('Resume deleted');
+
+    // If deleted resume was currently selected in store, clear selection
+    if (selectedResumeId === resumeToDelete.id) {
+      clearSelectedResume();
+      setResumeContent(null);
+    }
+
+    // Clear local radio selection if deleted resume was selected in dialog
+    if (selectedId === resumeToDelete.id) {
+      setSelectedId('');
+    }
+
+    // Update local list by removing deleted resume
+    setResumes((prev) => prev.filter((r) => r.id !== resumeToDelete.id));
+
+    // Close confirmation dialog
+    setIsConfirmDeleteOpen(false);
+    setResumeToDelete(null);
+    setIsDeleting(false);
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmDeleteOpen(false);
+    setResumeToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -128,6 +183,7 @@ export function SelectResumeButton({
   const isSelectDisabled = !selectedId || isPending || disabled;
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
@@ -173,7 +229,7 @@ export function SelectResumeButton({
               {resumes.map((resume) => (
                 <div
                   key={resume.id}
-                  className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors"
+                  className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors group"
                   data-testid={`resume-option-${resume.id}`}
                 >
                   <RadioGroupItem
@@ -190,6 +246,16 @@ export function SelectResumeButton({
                       Created: {formatDate(resume.created_at)}
                     </p>
                   </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleDeleteClick(resume, e)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    data-testid={`delete-resume-${resume.id}`}
+                    title="Delete this resume"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
               ))}
             </RadioGroup>
@@ -222,5 +288,55 @@ export function SelectResumeButton({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Delete Confirmation Dialog */}
+    <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+      <DialogContent data-testid="confirm-delete-dialog" className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete Resume?</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to permanently delete this resume? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+
+        {resumeToDelete && (
+          <div className="py-4">
+            <p className="text-sm font-medium">
+              Resume: {resumeToDelete.name}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Created: {formatDate(resumeToDelete.created_at)}
+            </p>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={handleCancelDelete}
+            disabled={isDeleting}
+            data-testid="cancel-delete-button"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleConfirmDelete}
+            disabled={isDeleting}
+            data-testid="confirm-delete-button"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }

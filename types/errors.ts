@@ -101,6 +101,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.GET_RESUME_CONTENT_ERROR]:
     'Failed to load resume content. Please try again.',
+
+  [ERROR_CODES.DELETE_RESUME_ERROR]:
+    'Failed to delete resume. Please try again.',
 };
 
 // ============================================================================

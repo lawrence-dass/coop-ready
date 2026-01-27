@@ -79,6 +79,9 @@ export const ERROR_CODES = {
 
   /** Failed to get resume content (Story 9-2) */
   GET_RESUME_CONTENT_ERROR: 'GET_RESUME_CONTENT_ERROR',
+
+  /** Failed to delete resume (Story 9-3) */
+  DELETE_RESUME_ERROR: 'DELETE_RESUME_ERROR',
 } as const;
 
 /**

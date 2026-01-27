@@ -109,7 +109,7 @@ development_status:
   epic-9: in-progress
   9-1-implement-save-resume-to-library: done
   9-2-implement-resume-selection-from-library: done
-  9-3-implement-resume-deletion-from-library: ready-for-dev
+  9-3-implement-resume-deletion-from-library: done
   9-4-epic-9-integration-and-verification-testing: backlog
 
   # Epic 10: Optimization History (V1.0)
