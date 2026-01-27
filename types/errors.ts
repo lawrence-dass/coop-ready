@@ -69,6 +69,14 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.USER_EXISTS]:
     'An account with this email already exists. Sign in instead?',
+
+  [ERROR_CODES.INVALID_CREDENTIALS]: 'Email or password is incorrect.',
+
+  [ERROR_CODES.USER_NOT_FOUND]:
+    'No account found with this email address.',
+
+  [ERROR_CODES.EMAIL_NOT_CONFIRMED]:
+    'Please verify your email before logging in.',
 };
 
 // ============================================================================
