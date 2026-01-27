@@ -81,6 +81,43 @@ describe('Story 3.3: Store Extraction State', () => {
     expect(useOptimizationStore.getState().isExtracting).toBe(false);
   });
 
+  test('[P0] 3.3-UNIT-015: should have isParsing field with default false', () => {
+    // GIVEN: Fresh store
+    const state = useOptimizationStore.getState();
+
+    // THEN: isParsing should default to false
+    expect(state.isParsing).toBe(false);
+  });
+
+  test('[P0] 3.3-UNIT-016: should update isParsing state', () => {
+    // GIVEN: Store with default state
+    const store = useOptimizationStore.getState();
+
+    // WHEN: Setting isParsing to true
+    store.setIsParsing(true);
+
+    // THEN: State should be updated
+    expect(useOptimizationStore.getState().isParsing).toBe(true);
+
+    // WHEN: Setting back to false
+    store.setIsParsing(false);
+
+    // THEN: State should be updated
+    expect(useOptimizationStore.getState().isParsing).toBe(false);
+  });
+
+  test('[P0] 3.3-UNIT-017: should reset isParsing when store is reset', () => {
+    // GIVEN: Store with isParsing true
+    useOptimizationStore.getState().setIsParsing(true);
+    expect(useOptimizationStore.getState().isParsing).toBe(true);
+
+    // WHEN: Resetting the store
+    useOptimizationStore.getState().reset();
+
+    // THEN: isParsing should be back to false
+    expect(useOptimizationStore.getState().isParsing).toBe(false);
+  });
+
   test('[P1] 3.3-UNIT-014: should maintain resumeContent after extraction completes', () => {
     // GIVEN: Complete extraction flow simulation
     const mockFile = new File(['content'], 'resume.pdf', { type: 'application/pdf' });

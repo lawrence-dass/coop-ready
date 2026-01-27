@@ -71,7 +71,7 @@ So that we can confidently deliver Epic 3 functionality.
 - ✅ Story 3.4: DOCX Text Extraction (PR #63)
 - ✅ Story 3.5: Resume Section Parsing (PR #64)
 
-**Test Coverage:** 72 tests passing
+**Test Coverage:** 87 tests passing (12 files)
 **Build Status:** ✅ Production build succeeds
 **TypeScript:** ✅ No compilation errors
 
@@ -87,6 +87,9 @@ Epic 3 successfully delivers complete resume upload and parsing functionality.
 - 2026-01-25: Created integration verification story
 - 2026-01-25: All tasks verified complete
 - 2026-01-25: Epic 3 marked as done
+- 2026-01-27: Re-verification via epic-integration workflow (TR + TA)
+- 2026-01-27: Added 15 new tests (useResumeExtraction hook, isParsing store)
+- 2026-01-27: Total: 87 tests, build clean, gate CONCERNS (non-blocking)
 
 ## Dev Agent Record
 
