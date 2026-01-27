@@ -10,6 +10,11 @@ import userEvent from '@testing-library/user-event';
 import { LoginForm } from '@/components/forms/LoginForm';
 import { ERROR_CODES } from '@/types';
 
+// Mock Google OAuth action (imported by LoginForm)
+vi.mock('@/actions/auth/google', () => ({
+  signInWithGoogle: vi.fn(),
+}));
+
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(() => ({
@@ -129,7 +134,7 @@ describe('LoginForm', () => {
     await waitFor(() => {
       expect(login).toHaveBeenCalledWith('test@example.com', 'Password123!');
       expect(toast.success).toHaveBeenCalledWith('Logged in successfully!');
-      expect(mockPush).toHaveBeenCalledWith('/optimize');
+      expect(mockPush).toHaveBeenCalledWith('/');
     });
   });
 
