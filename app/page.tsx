@@ -8,6 +8,7 @@
 
 import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay, SuggestionDisplay, SignOutButton } from '@/components/shared';
 import { SaveResumeButton } from '@/components/resume/SaveResumeButton';
+import { SelectResumeButton } from '@/components/resume/SelectResumeButton';
 import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
@@ -91,7 +92,16 @@ export default function Home() {
 
         {/* Resume Upload Section */}
         <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold">Upload Resume</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Upload Resume</h2>
+            {/* Select from Library Button - Only visible when authenticated */}
+            {isAuthenticated && (
+              <SelectResumeButton
+                isAuthenticated={isAuthenticated}
+                disabled={isLoading}
+              />
+            )}
+          </div>
           <ResumeUploader
             onFileSelect={(file) => {
               setPendingFile(file);

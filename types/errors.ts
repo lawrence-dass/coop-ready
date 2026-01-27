@@ -92,6 +92,15 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.RESUME_LIMIT_EXCEEDED]:
     'You have reached the maximum of 3 saved resumes. Please delete one before saving a new resume.',
+
+  [ERROR_CODES.GET_RESUMES_ERROR]:
+    'Failed to load your saved resumes. Please try again.',
+
+  [ERROR_CODES.RESUME_NOT_FOUND]:
+    'Resume not found. It may have been deleted.',
+
+  [ERROR_CODES.GET_RESUME_CONTENT_ERROR]:
+    'Failed to load resume content. Please try again.',
 };
 
 // ============================================================================
