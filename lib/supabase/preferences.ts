@@ -8,8 +8,8 @@
  */
 
 import { createClient } from './server';
-import type { ActionResponse, OptimizationPreferences, DEFAULT_PREFERENCES } from '@/types';
-import { DEFAULT_PREFERENCES as DEFAULTS } from '@/types';
+import type { ActionResponse, OptimizationPreferences } from '@/types';
+import { DEFAULT_PREFERENCES as DEFAULTS, validatePreferences } from '@/types';
 
 /**
  * Get optimization preferences for the current authenticated user
@@ -127,6 +127,18 @@ export async function updateUserPreferences(
         data: null,
         error: {
           message: 'User must be authenticated to save preferences',
+          code: 'VALIDATION_ERROR',
+        },
+      };
+    }
+
+    // Runtime validation of preference values
+    const validationError = validatePreferences(preferences);
+    if (validationError) {
+      return {
+        data: null,
+        error: {
+          message: validationError,
           code: 'VALIDATION_ERROR',
         },
       };

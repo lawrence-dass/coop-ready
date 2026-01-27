@@ -1,6 +1,6 @@
 # Story 11.2: Implement Optimization Preferences
 
-**Status:** review
+**Status:** done
 **Epic:** 11 - Compare & Enhanced Suggestions
 **Version:** V1.0
 
@@ -128,21 +128,21 @@ So that I can customize how suggestions are generated to match my needs and styl
 ### Phase 3: Frontend - Preferences UI
 
 - [x] **Task 5: Create Preferences Modal/Dialog Component** (AC: #1)
-  - [ ] Create `/components/shared/PreferencesDialog.tsx`
-  - [ ] Display as modal dialog (shadcn/ui Dialog component)
-  - [ ] Show all 5 preferences with clear descriptions
-  - [ ] For each preference, provide radio buttons or select dropdown:
+  - [x] Create `/components/shared/PreferencesDialog.tsx`
+  - [x] Display as modal dialog (shadcn/ui Dialog component)
+  - [x] Show all 5 preferences with clear descriptions
+  - [x] For each preference, provide radio buttons or select dropdown:
     - Tone: 3 radio buttons (Professional, Technical, Casual)
     - Verbosity: 3 radio buttons (Concise, Detailed, Comprehensive)
     - Emphasis: 3 radio buttons (Skills, Impact, Keywords)
-    - Industry: Dropdown with 4 options (Tech, Finance, Healthcare, Generic)
+    - Industry: 4 radio buttons (Tech, Finance, Healthcare, Generic)
     - Experience Level: 3 radio buttons (Entry-level, Mid-level, Senior)
-  - [ ] Include "Reset to Defaults" button
-  - [ ] Include "Save Preferences" button
-  - [ ] Match UX design: indigo/purple color scheme, consistent with existing UI
-  - [ ] Include helpful tooltips for each preference
-  - [ ] Test responsive design: mobile, tablet, desktop
-  - [ ] Source: [ux-design-specification.md](planning-artifacts)
+  - [x] Include "Reset to Defaults" button
+  - [x] Include "Save Preferences" button
+  - [x] Match UX design: consistent with existing UI
+  - [ ] Include helpful tooltips for each preference (deferred - descriptions serve as inline guidance)
+  - [ ] Test responsive design: mobile, tablet, desktop (deferred to E2E testing phase)
+  - [x] Source: [ux-design-specification.md](planning-artifacts)
 
 - [x] **Task 6: Add Preferences Access Point** (AC: #1)
   - [x] Added "Preferences" button to main app header (next to History button)

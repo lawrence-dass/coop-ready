@@ -118,6 +118,51 @@ export const DEFAULT_PREFERENCES: OptimizationPreferences = {
  *
  * Used in the PreferencesDialog UI to help users understand each choice.
  */
+// ============================================================================
+// VALID VALUES (for runtime validation)
+// ============================================================================
+
+export const VALID_TONES: readonly TonePreference[] = ['professional', 'technical', 'casual'];
+export const VALID_VERBOSITIES: readonly VerbosityPreference[] = ['concise', 'detailed', 'comprehensive'];
+export const VALID_EMPHASES: readonly EmphasisPreference[] = ['skills', 'impact', 'keywords'];
+export const VALID_INDUSTRIES: readonly IndustryPreference[] = ['tech', 'finance', 'healthcare', 'generic'];
+export const VALID_EXPERIENCE_LEVELS: readonly ExperienceLevelPreference[] = ['entry', 'mid', 'senior'];
+
+/**
+ * Validate that a preferences object contains only valid values
+ *
+ * @returns null if valid, error message string if invalid
+ */
+export function validatePreferences(prefs: unknown): string | null {
+  if (!prefs || typeof prefs !== 'object') {
+    return 'Preferences must be a non-null object';
+  }
+
+  const p = prefs as Record<string, unknown>;
+
+  if (!VALID_TONES.includes(p.tone as TonePreference)) {
+    return `Invalid tone: ${String(p.tone)}. Must be one of: ${VALID_TONES.join(', ')}`;
+  }
+  if (!VALID_VERBOSITIES.includes(p.verbosity as VerbosityPreference)) {
+    return `Invalid verbosity: ${String(p.verbosity)}. Must be one of: ${VALID_VERBOSITIES.join(', ')}`;
+  }
+  if (!VALID_EMPHASES.includes(p.emphasis as EmphasisPreference)) {
+    return `Invalid emphasis: ${String(p.emphasis)}. Must be one of: ${VALID_EMPHASES.join(', ')}`;
+  }
+  if (!VALID_INDUSTRIES.includes(p.industry as IndustryPreference)) {
+    return `Invalid industry: ${String(p.industry)}. Must be one of: ${VALID_INDUSTRIES.join(', ')}`;
+  }
+  if (!VALID_EXPERIENCE_LEVELS.includes(p.experienceLevel as ExperienceLevelPreference)) {
+    return `Invalid experienceLevel: ${String(p.experienceLevel)}. Must be one of: ${VALID_EXPERIENCE_LEVELS.join(', ')}`;
+  }
+
+  return null;
+}
+
+// ============================================================================
+// PREFERENCE DISPLAY METADATA
+// ============================================================================
+
 export const PREFERENCE_METADATA = {
   tone: {
     label: 'Tone',

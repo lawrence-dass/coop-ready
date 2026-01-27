@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PREFERENCES,
   PREFERENCE_METADATA,
+  validatePreferences,
   type OptimizationPreferences,
   type TonePreference,
   type VerbosityPreference,
@@ -176,6 +177,56 @@ describe('Optimization Preferences', () => {
       expect(levelOptions.entry).toBeDefined();
       expect(levelOptions.mid).toBeDefined();
       expect(levelOptions.senior).toBeDefined();
+    });
+  });
+
+  describe('validatePreferences', () => {
+    it('should return null for valid DEFAULT_PREFERENCES', () => {
+      expect(validatePreferences(DEFAULT_PREFERENCES)).toBeNull();
+    });
+
+    it('should return null for valid custom preferences', () => {
+      const prefs: OptimizationPreferences = {
+        tone: 'casual',
+        verbosity: 'comprehensive',
+        emphasis: 'keywords',
+        industry: 'finance',
+        experienceLevel: 'senior',
+      };
+      expect(validatePreferences(prefs)).toBeNull();
+    });
+
+    it('should reject null input', () => {
+      expect(validatePreferences(null)).toBe('Preferences must be a non-null object');
+    });
+
+    it('should reject non-object input', () => {
+      expect(validatePreferences('string')).toBe('Preferences must be a non-null object');
+    });
+
+    it('should reject invalid tone value', () => {
+      const prefs = { ...DEFAULT_PREFERENCES, tone: 'invalid' };
+      expect(validatePreferences(prefs)).toContain('Invalid tone');
+    });
+
+    it('should reject invalid verbosity value', () => {
+      const prefs = { ...DEFAULT_PREFERENCES, verbosity: 'verbose' };
+      expect(validatePreferences(prefs)).toContain('Invalid verbosity');
+    });
+
+    it('should reject invalid emphasis value', () => {
+      const prefs = { ...DEFAULT_PREFERENCES, emphasis: 'speed' };
+      expect(validatePreferences(prefs)).toContain('Invalid emphasis');
+    });
+
+    it('should reject invalid industry value', () => {
+      const prefs = { ...DEFAULT_PREFERENCES, industry: 'education' };
+      expect(validatePreferences(prefs)).toContain('Invalid industry');
+    });
+
+    it('should reject invalid experienceLevel value', () => {
+      const prefs = { ...DEFAULT_PREFERENCES, experienceLevel: 'intern' };
+      expect(validatePreferences(prefs)).toContain('Invalid experienceLevel');
     });
   });
 

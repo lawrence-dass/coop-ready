@@ -622,6 +622,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         isLoadingHistory: false,
         currentSession: null,
         suggestionSortBy: 'points-high',
+        userPreferences: null,
       }),
   })
 );
