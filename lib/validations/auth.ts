@@ -61,7 +61,6 @@ export type SignupFormData = z.infer<typeof signupSchema>;
 
 /**
  * Login form validation schema
- * (Placeholder for Story 8.2)
  */
 export const loginSchema = z.object({
   email: z
