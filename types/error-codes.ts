@@ -61,6 +61,15 @@ export const ERROR_CODES = {
 
   /** Onboarding save failed (Story 8-5) */
   ONBOARDING_SAVE_ERROR: 'ONBOARDING_SAVE_ERROR',
+
+  /** User not authenticated (Story 9-1) */
+  UNAUTHORIZED: 'UNAUTHORIZED',
+
+  /** Failed to save resume to library (Story 9-1) */
+  SAVE_RESUME_ERROR: 'SAVE_RESUME_ERROR',
+
+  /** User has reached maximum of 3 saved resumes (Story 9-1) */
+  RESUME_LIMIT_EXCEEDED: 'RESUME_LIMIT_EXCEEDED',
 } as const;
 
 /**
