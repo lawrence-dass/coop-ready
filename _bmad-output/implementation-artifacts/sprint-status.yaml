@@ -98,7 +98,7 @@ development_status:
 
   # Epic 8: User Authentication (V1.0)
   epic-8: in-progress
-  8-1-implement-email-password-registration: review
+  8-1-implement-email-password-registration: done
   8-2-implement-email-password-login: ready-for-dev
   8-3-implement-google-oauth: backlog
   8-4-implement-sign-out: backlog

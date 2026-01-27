@@ -19,10 +19,9 @@ import { z } from 'zod';
  * - At least 8 characters
  * - At least 1 uppercase letter
  * - At least 1 number
- * - At least 1 special character
+ * - At least 1 special character (any non-alphanumeric)
  */
-const PASSWORD_REGEX =
-  /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 /**
  * Signup form validation schema

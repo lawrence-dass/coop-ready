@@ -17,10 +17,11 @@
 
 'use server';
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import type { ActionResponse } from '@/types';
 import type { SignupResult } from '@/types/auth';
 import { ERROR_CODES } from '@/types';
+import { signupSchema } from '@/lib/validations/auth';
 
 /**
  * Signs up a new user with email and password
@@ -44,7 +45,38 @@ export async function signup(
   email: string,
   password: string
 ): Promise<ActionResponse<SignupResult>> {
-  const supabase = createClient();
+  // Server-side input validation (defense in depth)
+  const validation = signupSchema.safeParse({
+    email,
+    password,
+    confirmPassword: password,
+    acceptTerms: true,
+  });
+
+  if (!validation.success) {
+    const firstIssue = validation.error.issues[0];
+    const field = firstIssue.path[0];
+
+    if (field === 'email') {
+      return {
+        data: null,
+        error: {
+          message: 'Please enter a valid email address.',
+          code: ERROR_CODES.INVALID_EMAIL,
+        },
+      };
+    }
+
+    return {
+      data: null,
+      error: {
+        message: firstIssue.message,
+        code: ERROR_CODES.VALIDATION_ERROR,
+      },
+    };
+  }
+
+  const supabase = await createClient();
 
   try {
     // Step 1: Get current anonymous session (for migration)

@@ -17,6 +17,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -60,7 +61,7 @@ function calculatePasswordStrength(password: string): number {
   // Character variety
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
   if (/\d/.test(password)) strength++;
-  if (/[@$!%*?&]/.test(password)) strength++;
+  if (/[^A-Za-z\d]/.test(password)) strength++;
 
   return Math.min(strength, 4);
 }
@@ -88,6 +89,7 @@ function getPasswordStrengthInfo(strength: number): {
 }
 
 export function SignupForm({ onSuccess, onVerificationRequired }: SignupFormProps) {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -121,7 +123,11 @@ export function SignupForm({ onSuccess, onVerificationRequired }: SignupFormProp
         onVerificationRequired?.(data.email);
       } else {
         toast.success('Account created successfully!');
-        onSuccess?.(data.userId, data.email);
+        if (onSuccess) {
+          onSuccess(data.userId, data.email);
+        } else {
+          router.push('/optimize');
+        }
       }
     });
   }

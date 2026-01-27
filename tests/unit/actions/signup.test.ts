@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { signup } from '@/actions/auth/signup';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 
-// Mock Supabase client
-vi.mock('@/lib/supabase/client', () => ({
+// Mock Supabase server client
+vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
 
@@ -24,7 +24,7 @@ describe('signup', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (createClient as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
+    (createClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
   });
 
   it('should successfully create a new account', async () => {
@@ -46,38 +46,23 @@ describe('signup', () => {
       error: null,
     });
 
-    // Mock sessions table queries
-    const mockSelectChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({
+    // Create properly structured mock chain for Supabase query builder
+    // Uses a factory to avoid circular reference issues
+    function createMockChain() {
+      const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+      chain.select = vi.fn().mockReturnValue(chain);
+      chain.eq = vi.fn().mockReturnValue(chain);
+      chain.update = vi.fn().mockReturnValue(chain);
+      chain.maybeSingle = vi.fn().mockResolvedValue({
         data: {
           id: 'session-123',
           resume_content: '{"rawText": "test resume"}',
           jd_content: '"test job description"',
         },
         error: null,
-      }),
-      update: vi.fn().mockReturnThis(),
-    };
-
-    // Create chain that returns itself for method chaining
-    const createMockChain = () => {
-      const chain = {
-        select: vi.fn().mockReturnValue(chain),
-        eq: vi.fn().mockReturnValue(chain),
-        update: vi.fn().mockReturnValue(chain),
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: {
-            id: 'session-123',
-            resume_content: '{"rawText": "test resume"}',
-            jd_content: '"test job description"',
-          },
-          error: null,
-        }),
-      };
+      });
       return chain;
-    };
+    }
 
     mockSupabase.from.mockImplementation(() => createMockChain());
 
@@ -89,6 +74,9 @@ describe('signup', () => {
       email: 'test@example.com',
       requiresVerification: false,
     });
+
+    // Verify session migration was attempted
+    expect(mockSupabase.from).toHaveBeenCalledWith('sessions');
   });
 
   it('should return error when email already exists', async () => {
@@ -115,7 +103,19 @@ describe('signup', () => {
     });
   });
 
-  it('should return error for weak password', async () => {
+  it('should return validation error for weak password (server-side validation)', async () => {
+    // 'weak' fails Zod schema before reaching Supabase
+    const result = await signup('test@example.com', 'weak');
+
+    expect(result.data).toBeNull();
+    expect(result.error?.code).toBe('VALIDATION_ERROR');
+
+    // Supabase should never be called
+    expect(mockSupabase.auth.signUp).not.toHaveBeenCalled();
+  });
+
+  it('should map Supabase weak_password error correctly', async () => {
+    // Password passes Zod but Supabase rejects it
     mockSupabase.auth.getSession.mockResolvedValue({
       data: { session: null },
       error: null,
@@ -129,7 +129,7 @@ describe('signup', () => {
       },
     });
 
-    const result = await signup('test@example.com', 'weak');
+    const result = await signup('test@example.com', 'Password1!');
 
     expect(result.data).toBeNull();
     expect(result.error).toEqual({
@@ -139,7 +139,19 @@ describe('signup', () => {
     });
   });
 
-  it('should return error for invalid email', async () => {
+  it('should return validation error for invalid email (server-side validation)', async () => {
+    // 'not-an-email' fails Zod schema before reaching Supabase
+    const result = await signup('not-an-email', 'Password123!');
+
+    expect(result.data).toBeNull();
+    expect(result.error?.code).toBe('INVALID_EMAIL');
+
+    // Supabase should never be called
+    expect(mockSupabase.auth.signUp).not.toHaveBeenCalled();
+  });
+
+  it('should map Supabase invalid_email error correctly', async () => {
+    // Email passes Zod but Supabase rejects it
     mockSupabase.auth.getSession.mockResolvedValue({
       data: { session: null },
       error: null,
@@ -153,7 +165,7 @@ describe('signup', () => {
       },
     });
 
-    const result = await signup('not-an-email', 'Password123!');
+    const result = await signup('looks-valid@example.com', 'Password123!');
 
     expect(result.data).toBeNull();
     expect(result.error).toEqual({
@@ -199,5 +211,16 @@ describe('signup', () => {
       message: 'Signup failed: Connection failed',
       code: 'AUTH_ERROR',
     });
+  });
+
+  it('should validate inputs server-side before calling Supabase', async () => {
+    // Empty email should fail validation before hitting Supabase
+    const result = await signup('', 'Password123!');
+
+    expect(result.data).toBeNull();
+    expect(result.error?.code).toBe('INVALID_EMAIL');
+
+    // Supabase should never be called
+    expect(mockSupabase.auth.signUp).not.toHaveBeenCalled();
   });
 });

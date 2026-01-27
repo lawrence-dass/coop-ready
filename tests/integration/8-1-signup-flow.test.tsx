@@ -15,6 +15,19 @@ import userEvent from '@testing-library/user-event';
 import { SignupForm } from '@/components/forms/SignupForm';
 import { signup } from '@/actions/auth/signup';
 
+// Mock next/navigation
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+}));
+
 // Mock the signup action
 vi.mock('@/actions/auth/signup', () => ({
   signup: vi.fn(),

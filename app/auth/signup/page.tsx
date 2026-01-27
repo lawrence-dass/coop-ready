@@ -2,18 +2,14 @@
  * Signup Page
  *
  * Email/password registration with session migration.
+ * Server component - client interactivity is in SignupForm.
  */
 
-'use client';
-
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SignupForm } from '@/components/forms/SignupForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function SignupPage() {
-  const router = useRouter();
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
       <Card className="w-full max-w-md">
@@ -24,17 +20,7 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <SignupForm
-            onSuccess={() => {
-              // Redirect to dashboard after successful signup
-              router.push('/optimize');
-            }}
-            onVerificationRequired={(email) => {
-              // Could redirect to a verification waiting page
-              // For now, stay on page with toast notification
-              console.log('Verification email sent to:', email);
-            }}
-          />
+          <SignupForm />
 
           <div className="mt-6 text-center text-sm">
             Already have an account?{' '}

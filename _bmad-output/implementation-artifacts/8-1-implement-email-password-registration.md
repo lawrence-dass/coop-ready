@@ -1,6 +1,6 @@
 # Story 8.1: Implement Email/Password Registration
 
-**Status:** review
+**Status:** done
 **Epic:** 8 - User Authentication (V1.0)
 **Version:** 8.1
 **Date Created:** 2026-01-26
@@ -354,10 +354,10 @@ This story requires:
 
 **Test Coverage:**
 - 11 validation tests (Zod schema)
-- 6 signup action unit tests (mocked Supabase)
+- 9 signup action unit tests (mocked Supabase + server-side validation)
 - 7 integration tests (form + action E2E)
-- Total: 24 new tests
-- All 618 tests passing (611 existing + 7 new integration)
+- Total: 27 new tests
+- All 621 tests passing
 - Build successful, no TypeScript errors
 
 **Acceptance Criteria Met:**
@@ -377,7 +377,7 @@ This story requires:
 - `components/forms/SignupForm.tsx` - Signup form component with password strength
 - `app/auth/signup/page.tsx` - Signup page
 - `tests/unit/lib/validations/auth.test.ts` - Validation schema tests (11 tests)
-- `tests/unit/actions/signup.test.ts` - Signup action tests (6 tests)
+- `tests/unit/actions/signup.test.ts` - Signup action tests (9 tests)
 - `tests/integration/8-1-signup-flow.test.tsx` - Integration tests (7 tests)
 - `components/ui/input.tsx` - shadcn input component
 - `components/ui/label.tsx` - shadcn label component
@@ -394,6 +394,15 @@ This story requires:
 ## Change Log
 
 - **2026-01-26:** Story 8-1 completed - Email/password registration with UI, validation, Supabase Auth integration, session migration, and email verification handling. All 5 tasks complete, 24 new tests added, 618 total tests passing.
+- **2026-01-26:** Code review fixes applied (8 issues found: 3 HIGH, 3 MEDIUM, 2 LOW):
+  - [H1] Fixed: Server action now uses server Supabase client (`@/lib/supabase/server`) instead of browser client
+  - [H2] Reverted: `signUp()` is the correct method for this Supabase version (not `signUpWithPassword`)
+  - [H3] Fixed: Unit test mock chain circular reference bug; migration now properly tested
+  - [M1] Fixed: Password regex broadened to accept any non-alphanumeric special character
+  - [M2] Fixed: Signup page converted to server component; client routing moved to SignupForm
+  - [M3] Fixed: Added server-side Zod validation in signup action (defense in depth)
+  - [L2] Fixed: Removed console.log from production code
+  - 3 new unit tests added for server-side validation; total 27 new tests, 621 passing
 
 ---
 
