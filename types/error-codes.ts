@@ -46,6 +46,15 @@ export const ERROR_CODES = {
 
   /** User already exists with this email */
   USER_EXISTS: 'USER_EXISTS',
+
+  /** Invalid login credentials (wrong email or password) */
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+
+  /** User not found in database */
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+
+  /** Email not confirmed/verified */
+  EMAIL_NOT_CONFIRMED: 'EMAIL_NOT_CONFIRMED',
 } as const;
 
 /**
