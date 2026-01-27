@@ -12,7 +12,7 @@
 
 'use server';
 
-import type { ActionResponse } from '@/types';
+import type { ActionResponse, OptimizationPreferences } from '@/types';
 import type {
   SummarySuggestion,
   SkillsSuggestion,
@@ -42,6 +42,8 @@ interface GenerateAllRequest {
   jobDescription: string;
   /** Pre-extracted keywords for summary context */
   keywords?: string[];
+  /** User optimization preferences (Story 11.2) */
+  preferences?: OptimizationPreferences | null;
 }
 
 export interface GenerateAllResult {
@@ -120,26 +122,28 @@ export async function generateAllSuggestions(
       resumeContent,
       jobDescription,
       keywords,
+      preferences,
     } = validation.data;
 
     console.log(
       '[SS:generateAll] Starting suggestion generation for session:',
-      sessionId.slice(0, 8) + '...'
+      sessionId.slice(0, 8) + '...',
+      preferences ? `with preferences (tone: ${preferences.tone})` : 'with default preferences'
     );
 
-    // Fire all 3 generation calls in parallel
+    // Fire all 3 generation calls in parallel (Story 11.2: pass preferences)
     const [summaryResult, skillsResult, experienceResult] =
       await Promise.allSettled([
         resumeSummary && resumeSummary.trim().length > 0
-          ? generateSummarySuggestion(resumeSummary, jobDescription, keywords)
+          ? generateSummarySuggestion(resumeSummary, jobDescription, keywords, preferences)
           : Promise.resolve({ data: null, error: { code: 'VALIDATION_ERROR', message: 'No summary section found in resume' } } as ActionResponse<SummarySuggestion>),
 
         resumeSkills && resumeSkills.trim().length > 0
-          ? generateSkillsSuggestion(resumeSkills, jobDescription, resumeContent)
+          ? generateSkillsSuggestion(resumeSkills, jobDescription, resumeContent, preferences)
           : Promise.resolve({ data: null, error: { code: 'VALIDATION_ERROR', message: 'No skills section found in resume' } } as ActionResponse<SkillsSuggestion>),
 
         resumeExperience && resumeExperience.trim().length > 0
-          ? generateExperienceSuggestion(resumeExperience, jobDescription, resumeContent)
+          ? generateExperienceSuggestion(resumeExperience, jobDescription, resumeContent, preferences)
           : Promise.resolve({ data: null, error: { code: 'VALIDATION_ERROR', message: 'No experience section found in resume' } } as ActionResponse<ExperienceSuggestion>),
       ]);
 

@@ -180,7 +180,8 @@ describe('/api/suggestions/experience', () => {
       expect(generateExperienceSuggestion).toHaveBeenCalledWith(
         'Experience section',
         'Job description',
-        'Full resume'
+        'Full resume',
+        undefined // preferences parameter (Story 11.2, optional)
       );
       expect(updateSession).toHaveBeenCalledWith('sess-123', {
         experienceSuggestion: mockSuggestion,

@@ -10,9 +10,10 @@
  */
 
 import { ChatAnthropic } from '@langchain/anthropic';
-import { ActionResponse } from '@/types';
+import { ActionResponse, OptimizationPreferences } from '@/types';
 import { SummarySuggestion } from '@/types/suggestions';
 import { detectAITellPhrases } from './detectAITellPhrases';
+import { buildPreferencePrompt } from './preferences';
 
 // ============================================================================
 // MAIN FUNCTION
@@ -25,6 +26,7 @@ import { detectAITellPhrases } from './detectAITellPhrases';
  * - Incorporates 2-3 relevant keywords from JD
  * - Reframes existing experience (no fabrication)
  * - Detects AI-tell phrases in original and suggested
+ * - Applies user optimization preferences
  * - Returns structured ActionResponse
  *
  * **Security:**
@@ -34,12 +36,14 @@ import { detectAITellPhrases } from './detectAITellPhrases';
  * @param resumeSummary - User's current professional summary
  * @param jobDescription - Job description text
  * @param keywords - Extracted keywords from JD (optional for context)
+ * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSummarySuggestion(
   resumeSummary: string,
   jobDescription: string,
-  keywords?: string[]
+  keywords?: string[],
+  preferences?: OptimizationPreferences | null
 ): Promise<ActionResponse<SummarySuggestion>> {
   try {
     console.log('[SS:genSummary] Generating summary suggestion (' + resumeSummary?.length + ' chars summary, ' + jobDescription?.length + ' chars JD)');
@@ -90,6 +94,8 @@ export async function generateSummarySuggestion(
     });
 
     // Build prompt with XML-wrapped user content (prompt injection defense)
+    const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
+
     const prompt = `You are a resume optimization expert specializing in professional summaries.
 
 Your task is to optimize a professional summary by incorporating relevant keywords from a job description.
@@ -103,7 +109,7 @@ ${processedJD}
 </job_description>
 
 ${keywords && keywords.length > 0 ? `<extracted_keywords>\n${keywords.join(', ')}\n</extracted_keywords>` : ''}
-
+${preferenceSection}
 **Instructions:**
 1. Analyze the job description and identify 2-3 most relevant keywords that align with the summary
 2. Reframe the summary to naturally incorporate these keywords

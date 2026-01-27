@@ -12,7 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import type { ActionResponse } from '@/types';
+import type { ActionResponse, OptimizationPreferences } from '@/types';
 import type { SummarySuggestion } from '@/types/suggestions';
 import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
@@ -29,6 +29,7 @@ interface SummarySuggestionRequest {
   jd_content: string;
   current_summary: string;
   keywords?: string[]; // Optional: pre-extracted keywords for context
+  preferences?: OptimizationPreferences | null; // Optional: user preferences (Story 11.2)
 }
 
 // ============================================================================
@@ -119,11 +120,12 @@ async function runSuggestionGeneration(
   request: SummarySuggestionRequest
 ): Promise<ActionResponse<SummarySuggestion>> {
   try {
-    // Generate suggestion using LLM
+    // Generate suggestion using LLM (Story 11.2: pass preferences)
     const suggestionResult = await generateSummarySuggestion(
       request.current_summary,
       request.jd_content,
-      request.keywords
+      request.keywords,
+      request.preferences
     );
 
     if (suggestionResult.error) {

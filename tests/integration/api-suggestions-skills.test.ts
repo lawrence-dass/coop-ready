@@ -174,11 +174,12 @@ describe('POST /api/suggestions/skills', () => {
       expect(data.data.matched_keywords).toContain('Python');
       expect(data.data.skill_additions).toContain('Docker');
 
-      // Verify LLM was called with correct args
+      // Verify LLM was called with correct args (Story 11.2: added preferences param)
       expect(generateSkillsSuggestion).toHaveBeenCalledWith(
         validRequestBody.current_skills,
         validRequestBody.jd_content,
-        validRequestBody.resume_content
+        validRequestBody.resume_content,
+        undefined // preferences parameter (optional)
       );
 
       // Verify session was updated

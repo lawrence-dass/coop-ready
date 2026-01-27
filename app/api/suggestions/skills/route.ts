@@ -12,7 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import type { ActionResponse } from '@/types';
+import type { ActionResponse, OptimizationPreferences } from '@/types';
 import type { SkillsSuggestion } from '@/types/suggestions';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
@@ -28,6 +28,7 @@ interface SkillsSuggestionRequest {
   resume_content: string;
   jd_content: string;
   current_skills: string;
+  preferences?: OptimizationPreferences | null; // Optional: user preferences (Story 11.2)
 }
 
 // ============================================================================
@@ -118,11 +119,12 @@ async function runSuggestionGeneration(
   request: SkillsSuggestionRequest
 ): Promise<ActionResponse<SkillsSuggestion>> {
   try {
-    // Generate suggestion using LLM
+    // Generate suggestion using LLM (Story 11.2: pass preferences)
     const suggestionResult = await generateSkillsSuggestion(
       request.current_skills,
       request.jd_content,
-      request.resume_content
+      request.resume_content,
+      request.preferences
     );
 
     if (suggestionResult.error) {

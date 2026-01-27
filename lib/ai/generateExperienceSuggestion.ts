@@ -11,8 +11,9 @@
  */
 
 import { ChatAnthropic } from '@langchain/anthropic';
-import { ActionResponse } from '@/types';
+import { ActionResponse, OptimizationPreferences } from '@/types';
 import { ExperienceSuggestion } from '@/types/suggestions';
+import { buildPreferencePrompt } from './preferences';
 
 // ============================================================================
 // MAIN FUNCTION
@@ -27,6 +28,7 @@ import { ExperienceSuggestion } from '@/types/suggestions';
  * - Identifies where quantification can be added (inferred, not fabricated)
  * - Maintains authenticity (reframe only, no fabrication)
  * - Handles multiple job entries gracefully
+ * - Applies user optimization preferences
  * - Returns structured ActionResponse
  *
  * **Security:**
@@ -36,12 +38,14 @@ import { ExperienceSuggestion } from '@/types/suggestions';
  * @param resumeExperience - User's current experience section
  * @param jobDescription - Job description text
  * @param resumeContent - Full resume content for context
+ * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateExperienceSuggestion(
   resumeExperience: string,
   jobDescription: string,
-  resumeContent: string
+  resumeContent: string,
+  preferences?: OptimizationPreferences | null
 ): Promise<ActionResponse<ExperienceSuggestion>> {
   try {
     // Validation
@@ -106,6 +110,8 @@ export async function generateExperienceSuggestion(
     });
 
     // Build prompt with XML-wrapped user content (prompt injection defense)
+    const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
+
     const prompt = `You are a resume optimization expert specializing in experience section enhancement.
 
 Your task is to optimize professional experience bullets by incorporating relevant keywords from a job description and adding quantification where possible.
@@ -121,7 +127,7 @@ ${processedJD}
 <user_content>
 ${processedResume}
 </user_content>
-
+${preferenceSection}
 **Instructions:**
 1. Extract each work experience entry with company, role, dates, and bullets
 2. For each bullet, reframe to incorporate relevant keywords from the JD naturally

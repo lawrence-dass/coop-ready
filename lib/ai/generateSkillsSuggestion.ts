@@ -11,8 +11,9 @@
  */
 
 import { ChatAnthropic } from '@langchain/anthropic';
-import { ActionResponse } from '@/types';
+import { ActionResponse, OptimizationPreferences } from '@/types';
 import { SkillsSuggestion } from '@/types/suggestions';
+import { buildPreferencePrompt } from './preferences';
 
 // ============================================================================
 // MAIN FUNCTION
@@ -26,6 +27,7 @@ import { SkillsSuggestion } from '@/types/suggestions';
  * - Identifies matched and missing skills
  * - Suggests additions based on user's experience
  * - Recommends removals for less relevant skills
+ * - Applies user optimization preferences
  * - Returns structured ActionResponse
  *
  * **Security:**
@@ -35,12 +37,14 @@ import { SkillsSuggestion } from '@/types/suggestions';
  * @param resumeSkills - User's current skills section
  * @param jobDescription - Job description text
  * @param resumeContent - Full resume content for context
+ * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSkillsSuggestion(
   resumeSkills: string,
   jobDescription: string,
-  resumeContent?: string
+  resumeContent?: string,
+  preferences?: OptimizationPreferences | null
 ): Promise<ActionResponse<SkillsSuggestion>> {
   try {
     // Validation
@@ -95,6 +99,8 @@ export async function generateSkillsSuggestion(
     });
 
     // Build prompt with XML-wrapped user content (prompt injection defense)
+    const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
+
     const prompt = `You are a resume optimization expert specializing in skills sections.
 
 Your task is to analyze a skills section and optimize it for a specific job description.
@@ -108,7 +114,7 @@ ${processedJD}
 </job_description>
 
 ${processedResume ? `<user_content>\n${processedResume}\n</user_content>` : ''}
-
+${preferenceSection}
 **Instructions:**
 1. Extract all skills from the current skills section
 2. Identify skills from the job description that match existing skills
