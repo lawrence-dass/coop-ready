@@ -58,3 +58,4 @@ export * from './errors';
 export * from './optimization';
 export * from './resume';
 export * from './store';
+export * from './history';

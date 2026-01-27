@@ -106,15 +106,15 @@ development_status:
   8-6-epic-8-integration-and-verification-testing: done
 
   # Epic 9: Resume Library (V1.0)
-  epic-9: in-progress
+  epic-9: done
   9-1-implement-save-resume-to-library: done
   9-2-implement-resume-selection-from-library: done
   9-3-implement-resume-deletion-from-library: done
-  9-4-epic-9-integration-and-verification-testing: backlog
+  9-4-epic-9-integration-and-verification-testing: done
 
   # Epic 10: Optimization History (V1.0)
-  epic-10: backlog
-  10-1-implement-history-list-view: backlog
+  epic-10: in-progress
+  10-1-implement-history-list-view: done
   10-2-implement-session-reload: backlog
   10-3-implement-history-deletion: backlog
   10-4-epic-10-integration-and-verification-testing: backlog

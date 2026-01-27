@@ -104,6 +104,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.DELETE_RESUME_ERROR]:
     'Failed to delete resume. Please try again.',
+
+  [ERROR_CODES.GET_HISTORY_ERROR]:
+    'Failed to load optimization history. Please try again.',
 };
 
 // ============================================================================
