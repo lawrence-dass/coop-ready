@@ -12,7 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import type { ActionResponse } from '@/types';
+import type { ActionResponse, OptimizationPreferences } from '@/types';
 import type { ExperienceSuggestion } from '@/types/suggestions';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
@@ -28,6 +28,7 @@ interface ExperienceSuggestionRequest {
   resume_content: string;
   jd_content: string;
   current_experience: string;
+  preferences?: OptimizationPreferences | null; // Optional: user preferences (Story 11.2)
 }
 
 // ============================================================================
@@ -117,12 +118,13 @@ function validateRequest(
 async function runSuggestionGeneration(
   request: ExperienceSuggestionRequest
 ): Promise<ActionResponse<ExperienceSuggestion>> {
-  // Generate suggestion using LLM
+  // Generate suggestion using LLM (Story 11.2: pass preferences)
   // Note: generateExperienceSuggestion never throws - it returns ActionResponse
   const suggestionResult = await generateExperienceSuggestion(
     request.current_experience,
     request.jd_content,
-    request.resume_content
+    request.resume_content,
+    request.preferences
   );
 
   if (suggestionResult.error) {

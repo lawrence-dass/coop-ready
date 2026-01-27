@@ -148,17 +148,20 @@ describe('generateAllSuggestions', () => {
       expect(generateSummary.generateSummarySuggestion).toHaveBeenCalledWith(
         validRequest.resumeSummary,
         validRequest.jobDescription,
-        validRequest.keywords
+        validRequest.keywords,
+        undefined // preferences parameter (Story 11.2, optional)
       );
       expect(generateSkills.generateSkillsSuggestion).toHaveBeenCalledWith(
         validRequest.resumeSkills,
         validRequest.jobDescription,
-        validRequest.resumeContent
+        validRequest.resumeContent,
+        undefined // preferences parameter (Story 11.2, optional)
       );
       expect(generateExperience.generateExperienceSuggestion).toHaveBeenCalledWith(
         validRequest.resumeExperience,
         validRequest.jobDescription,
-        validRequest.resumeContent
+        validRequest.resumeContent,
+        undefined // preferences parameter (Story 11.2, optional)
       );
     });
 

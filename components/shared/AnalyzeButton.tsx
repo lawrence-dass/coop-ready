@@ -45,6 +45,7 @@ export function AnalyzeButton({
   const setLoading = useOptimizationStore((state) => state.setLoading);
   const resumeContent = useOptimizationStore((state) => state.resumeContent);
   const jobDescription = useOptimizationStore((state) => state.jobDescription);
+  const userPreferences = useOptimizationStore((state) => state.userPreferences);
 
   // Don't show button if resume or JD is missing
   if (!hasResume || !hasJobDescription) {
@@ -100,6 +101,7 @@ export function AnalyzeButton({
               resumeContent: resumeContent.rawText,
               jobDescription: jobDescription || '',
               keywords: data.keywordAnalysis?.matched?.map((k: { keyword: string }) => k.keyword),
+              preferences: userPreferences, // Story 11.2: Pass user preferences
             });
 
             if (suggestionsResult.data) {

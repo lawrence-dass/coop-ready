@@ -33,6 +33,7 @@ import type { OptimizationStore } from '@/types/store';
 import type { OptimizationSession, SuggestionFeedback } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
 import type { HistorySession } from '@/types/history';
+import type { OptimizationPreferences } from '@/types/preferences';
 import { calculateBackoffDelay, delay, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
 import { analyzeResume } from '@/actions/analyzeResume';
 import { fetchWithTimeout, TIMEOUT_MS } from '@/lib/timeoutUtils';
@@ -115,6 +116,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Sort order for experience suggestions (Story 11.1) */
   suggestionSortBy: SuggestionSortBy;
 
+  /** User optimization preferences (Story 11.2) - null until loaded */
+  userPreferences: OptimizationPreferences | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -141,6 +145,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
 
   /** Set suggestion sort order (Story 11.1) */
   setSuggestionSortBy: (sortBy: SuggestionSortBy) => void;
+
+  /** Set user preferences (Story 11.2) */
+  setUserPreferences: (preferences: OptimizationPreferences | null) => void;
 
   /** Set pending file before parsing */
   setPendingFile: (file: File | null) => void;
@@ -261,6 +268,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     isLoadingHistory: false,
     currentSession: null,
     suggestionSortBy: 'points-high',
+    userPreferences: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -323,6 +331,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     setSuggestionSortBy: (sortBy) =>
       set({ suggestionSortBy: sortBy }),
+
+    setUserPreferences: (preferences) =>
+      set({ userPreferences: preferences }),
 
     setPendingFile: (file) =>
       set({ pendingFile: file, error: null, fileError: null }),

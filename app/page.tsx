@@ -9,12 +9,15 @@
 import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay, SuggestionDisplay, SignOutButton } from '@/components/shared';
 import { SaveResumeButton } from '@/components/resume/SaveResumeButton';
 import { SelectResumeButton } from '@/components/resume/SelectResumeButton';
+import { PreferencesDialog } from '@/components/shared/PreferencesDialog';
 import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import { CheckCircle2, Loader2, History as HistoryIcon } from 'lucide-react';
+import { CheckCircle2, Loader2, History as HistoryIcon, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { getPreferences } from '@/actions/preferences';
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
@@ -40,6 +43,22 @@ export default function Home() {
   const experienceSuggestion = useOptimizationStore((state) => state.experienceSuggestion);
   const isLoading = useOptimizationStore((state) => state.isLoading);
   const loadingStep = useOptimizationStore((state) => state.loadingStep);
+  const userPreferences = useOptimizationStore((state) => state.userPreferences);
+  const setUserPreferences = useOptimizationStore((state) => state.setUserPreferences);
+
+  // Preferences dialog state
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+
+  // Load user preferences on mount (for authenticated users)
+  useEffect(() => {
+    if (isAuthenticated && !userPreferences) {
+      getPreferences().then(({ data }) => {
+        if (data) {
+          setUserPreferences(data);
+        }
+      });
+    }
+  }, [isAuthenticated, userPreferences, setUserPreferences]);
 
   const handleFileError = (error: { code: string; message: string }) => {
     // Only set file error for known error codes
@@ -64,6 +83,15 @@ export default function Home() {
           </div>
           {isAuthenticated && (
             <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsPreferencesOpen(true)}
+              >
+                <Settings className="h-4 w-4" />
+                Preferences
+              </Button>
               <Link href="/history" passHref>
                 <Button variant="outline" size="sm" className="gap-2">
                   <HistoryIcon className="h-4 w-4" />
@@ -186,6 +214,14 @@ export default function Home() {
           <SuggestionDisplay />
         )}
       </main>
+
+      {/* Preferences Dialog (Story 11.2) */}
+      <PreferencesDialog
+        open={isPreferencesOpen}
+        onOpenChange={setIsPreferencesOpen}
+        initialPreferences={userPreferences}
+        onSaveSuccess={(prefs) => setUserPreferences(prefs)}
+      />
     </div>
   );
 }

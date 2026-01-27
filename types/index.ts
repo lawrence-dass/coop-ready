@@ -56,6 +56,7 @@ export type ActionResponse<T> =
 export * from './error-codes';
 export * from './errors';
 export * from './optimization';
+export * from './preferences';
 export * from './resume';
 export * from './store';
 export * from './history';
