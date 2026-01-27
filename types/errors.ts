@@ -5,8 +5,8 @@
  * for working with ActionResponse errors.
  */
 
-import type { ErrorCode, ActionResponse } from './index';
-import { ERROR_CODES } from './index';
+import { ERROR_CODES, type ErrorCode } from './error-codes';
+import type { ActionResponse } from './index';
 
 // ============================================================================
 // ERROR TYPES
