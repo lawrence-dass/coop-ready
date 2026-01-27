@@ -27,6 +27,7 @@ export interface SummarySuggestion {
   suggested: string; // Optimized version with keywords
   ats_keywords_added: string[]; // Keywords from JD that were incorporated
   ai_tell_phrases_rewritten: AITellRewrite[]; // AI language that was fixed
+  point_value?: number; // Estimated ATS score improvement (0-100)
 }
 
 // ============================================================================
@@ -39,6 +40,7 @@ export interface SummarySuggestion {
 export interface SkillItem {
   skill: string; // The skill name
   reason?: string; // Why this skill is relevant or suggested
+  point_value?: number; // Estimated ATS score improvement for this skill (0-100)
 }
 
 /**
@@ -66,6 +68,9 @@ export interface SkillsSuggestion {
 
   /** Summary of the analysis */
   summary: string;
+
+  /** Total estimated point value improvement for all skill additions */
+  total_point_value?: number;
 }
 
 // ============================================================================
@@ -87,6 +92,9 @@ export interface BulletSuggestion {
 
   /** Keywords from JD incorporated into this bullet */
   keywords_incorporated: string[];
+
+  /** Estimated ATS score improvement for this bullet (0-100) */
+  point_value?: number;
 }
 
 /**
@@ -122,4 +130,7 @@ export interface ExperienceSuggestion {
 
   /** Summary of the optimization */
   summary: string;
+
+  /** Total estimated point value improvement for all experience optimizations */
+  total_point_value?: number;
 }

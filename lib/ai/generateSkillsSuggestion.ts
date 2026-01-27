@@ -115,7 +115,17 @@ ${processedResume ? `<user_content>\n${processedResume}\n</user_content>` : ''}
 3. Find skills from the JD that are missing but relevant based on the user's experience
 4. Suggest specific skills to add (only if user has experience with them based on resume)
 5. Identify skills that might be less relevant for this role (if any)
-6. Provide a brief summary
+6. Calculate point values for each missing skill addition
+7. Provide a brief summary with total point value
+
+**Point Value Calculation:**
+For each missing skill addition, estimate point impact:
+- High-priority skill explicitly in JD = 4-7 points
+- Medium-priority skill related to JD = 2-4 points
+- Nice-to-have skill tangentially related = 1-2 points
+- Skills section has moderate impact (not as high as experience bullets)
+
+Total point value = sum of all skill additions. Realistic range: 10-25 points for skills section.
 
 **Critical Rules:**
 - ONLY suggest adding skills the user likely has based on their resume content
@@ -123,19 +133,21 @@ ${processedResume ? `<user_content>\n${processedResume}\n</user_content>` : ''}
 - Do NOT suggest skills unrelated to the job description
 - Skills can be technical (languages, frameworks), tools (AWS, Docker), or soft skills (Leadership)
 - Be specific with skill names (e.g., "React.js" not just "front-end")
+- Point values must be realistic and conservative
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {
   "existing_skills": ["skill1", "skill2"],
   "matched_keywords": ["matched_skill1", "matched_skill2"],
   "missing_but_relevant": [
-    { "skill": "Docker", "reason": "Job requires containerization; you have DevOps experience" }
+    { "skill": "Docker", "reason": "Job requires containerization; you have DevOps experience", "point_value": 5 }
   ],
   "skill_additions": ["Docker", "Kubernetes"],
   "skill_removals": [
     { "skill": "SkillName", "reason": "Lower priority for this role" }
   ],
-  "summary": "You have 8/12 key skills. Consider adding Docker and Kubernetes based on your DevOps background."
+  "total_point_value": 12,
+  "summary": "You have 8/12 key skills. Consider adding Docker and Kubernetes based on your DevOps background. Total improvement: +12 points."
 }`;
 
     // Invoke LLM (timeout enforced at the route level)
@@ -146,9 +158,10 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     let parsed: {
       existing_skills: string[];
       matched_keywords: string[];
-      missing_but_relevant: Array<{ skill: string; reason: string }>;
+      missing_but_relevant: Array<{ skill: string; reason: string; point_value?: number }>;
       skill_additions: string[];
       skill_removals: Array<{ skill: string; reason: string }>;
+      total_point_value?: number;
       summary: string;
     };
 
@@ -205,13 +218,24 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       };
     }
 
-    // Normalize missing_but_relevant items to ensure { skill, reason } structure
+    // Normalize missing_but_relevant items to ensure { skill, reason, point_value } structure
     const normalizedMissing = Array.isArray(parsed.missing_but_relevant)
-      ? parsed.missing_but_relevant.map((item) =>
-          typeof item === 'string'
-            ? { skill: item, reason: '' }
-            : { skill: String(item.skill || ''), reason: String(item.reason || '') }
-        )
+      ? parsed.missing_but_relevant.map((item) => {
+          if (typeof item === 'string') {
+            return { skill: item, reason: '', point_value: undefined };
+          }
+          const pointValue = item.point_value;
+          // Validate point_value if present
+          const validPointValue =
+            typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
+              ? pointValue
+              : undefined;
+          return {
+            skill: String(item.skill || ''),
+            reason: String(item.reason || ''),
+            point_value: validPointValue
+          };
+        })
       : [];
 
     // Normalize skill_removals items to ensure { skill, reason } structure
@@ -223,8 +247,20 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
         )
       : [];
 
+    // Validate total_point_value if present
+    // Note: total can exceed 100 since it sums individual skill values (each 0-100)
+    const totalPointValue =
+      typeof parsed.total_point_value === 'number' &&
+      parsed.total_point_value >= 0
+        ? parsed.total_point_value
+        : undefined;
+
+    if (parsed.total_point_value !== undefined && totalPointValue === undefined) {
+      console.warn('[SS:genSkills] Invalid total_point_value from LLM, ignoring:', parsed.total_point_value);
+    }
+
     // Return suggestion
-    console.log('[SS:genSkills] Skills generated:', parsed.matched_keywords.length, 'matched,', parsed.skill_additions.length, 'additions');
+    console.log('[SS:genSkills] Skills generated:', parsed.matched_keywords.length, 'matched,', parsed.skill_additions.length, 'additions, total_point_value:', totalPointValue);
     return {
       data: {
         original: resumeSkills, // Return full original, not truncated
@@ -233,6 +269,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
         missing_but_relevant: normalizedMissing,
         skill_additions: parsed.skill_additions,
         skill_removals: normalizedRemovals,
+        total_point_value: totalPointValue,
         summary: parsed.summary,
       },
       error: null,

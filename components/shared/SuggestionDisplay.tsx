@@ -1,8 +1,9 @@
 'use client';
 
 import { useOptimizationStore } from '@/store/useOptimizationStore';
+import type { SuggestionSortBy } from '@/store/useOptimizationStore';
 import { SuggestionSection } from './SuggestionSection';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowUpDown } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { regenerateSuggestions } from '@/actions/regenerateSuggestions';
@@ -50,6 +51,10 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
   const jobDescription = useOptimizationStore((state) => state.jobDescription);
   const sessionId = useOptimizationStore((state) => state.sessionId);
   const keywordAnalysis = useOptimizationStore((state) => state.keywordAnalysis);
+
+  // Sort state (Story 11.1)
+  const suggestionSortBy = useOptimizationStore((state) => state.suggestionSortBy);
+  const setSuggestionSortBy = useOptimizationStore((state) => state.setSuggestionSortBy);
 
   // Determine if suggestions are being generated
   const isGenerating = isLoading && loadingStep === 'generating-suggestions';
@@ -103,6 +108,46 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
     skillsSuggestion !== null ||
     experienceSuggestion !== null;
 
+  // Calculate total point value from all suggestions
+  const calculateTotalPoints = (): number | null => {
+    let total = 0;
+    let hasAnyPoints = false;
+
+    if (summarySuggestion?.point_value !== undefined) {
+      total += summarySuggestion.point_value;
+      hasAnyPoints = true;
+    }
+
+    if (skillsSuggestion?.total_point_value !== undefined) {
+      total += skillsSuggestion.total_point_value;
+      hasAnyPoints = true;
+    }
+
+    if (experienceSuggestion?.total_point_value !== undefined) {
+      total += experienceSuggestion.total_point_value;
+      hasAnyPoints = true;
+    } else if (experienceSuggestion?.experience_entries) {
+      // Sum individual bullet point values if total is not available
+      experienceSuggestion.experience_entries.forEach((entry) => {
+        entry.suggested_bullets.forEach((bullet) => {
+          if (bullet.point_value !== undefined) {
+            total += bullet.point_value;
+            hasAnyPoints = true;
+          }
+        });
+      });
+    }
+
+    return hasAnyPoints ? total : null;
+  };
+
+  const totalPoints = calculateTotalPoints();
+
+  // Check if experience bullets have point values (for sort control visibility)
+  const hasExperiencePointValues = experienceSuggestion?.experience_entries?.some(
+    (entry) => entry.suggested_bullets.some((b) => b.point_value !== undefined)
+  ) ?? false;
+
   // Empty state (not loading and no suggestions)
   if (!hasSuggestions && !isGenerating) {
     return (
@@ -124,6 +169,49 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
   // Render sections that have data (or show loading state during generation)
   return (
     <div className={`space-y-8 ${className ?? ''}`} data-testid="suggestions-display">
+      {/* Total Improvement Banner */}
+      {totalPoints !== null && totalPoints > 0 && (
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-1">
+                Total Potential Improvement
+              </h3>
+              <p className="text-sm text-gray-600">
+                Estimated ATS score increase if you apply all suggestions
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-indigo-600">
+                +{totalPoints}
+              </div>
+              <div className="text-sm text-gray-600 font-medium">points</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sort Control (Story 11.1) */}
+      {hasExperiencePointValues && (
+        <div className="flex items-center justify-end gap-2" data-testid="sort-control">
+          <ArrowUpDown className="h-4 w-4 text-gray-500" />
+          <label htmlFor="suggestion-sort" className="text-sm text-gray-600">
+            Sort experience by:
+          </label>
+          <select
+            id="suggestion-sort"
+            value={suggestionSortBy}
+            onChange={(e) => setSuggestionSortBy(e.target.value as SuggestionSortBy)}
+            className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            data-testid="sort-select"
+          >
+            <option value="points-high">Points: High → Low</option>
+            <option value="points-low">Points: Low → High</option>
+            <option value="relevance">Relevance (LLM order)</option>
+          </select>
+        </div>
+      )}
+
       {(summarySuggestion || isGenerating) && (
         <SuggestionSection
           section="summary"
@@ -166,6 +254,7 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
               ? () => handleRegenerate('experience', experienceSuggestion.original)
               : undefined
           }
+          sortBy={suggestionSortBy}
         />
       )}
     </div>

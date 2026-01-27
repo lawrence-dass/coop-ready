@@ -3,6 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { CopyButton } from './CopyButton';
 import { FeedbackButtons } from './FeedbackButtons';
@@ -83,12 +84,26 @@ export function SuggestionCard({
       className={cn('shadow-sm border-gray-200', className)}
     >
       <CardContent className="p-6">
-        {/* Point Badge */}
+        {/* Point Badge with color coding: 1-3 gray, 4-7 blue, 8+ green */}
         {points !== undefined && (
           <div className="mb-4">
-            <Badge variant="default" className="bg-indigo-600 text-white">
-              +{points} pts
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="default"
+                  className={cn(
+                    'text-white',
+                    points <= 3 && 'bg-gray-500',
+                    points >= 4 && points <= 7 && 'bg-blue-600',
+                    points >= 8 && 'bg-green-600'
+                  )}
+                  aria-label={`Estimated ${points} point ATS score improvement`}
+                >
+                  +{points} pts
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>Estimated point gain if you apply this suggestion</TooltipContent>
+            </Tooltip>
           </div>
         )}
 
