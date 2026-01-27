@@ -130,6 +130,16 @@ ${processedResume}
 5. Prioritize impact, results, and quantifiable outcomes
 6. Start each bullet with a strong action verb (Led, Developed, Improved, etc.)
 7. Focus on achievements, not just tasks
+8. Calculate point value for each bullet optimization
+
+**Point Value Calculation:**
+For each bullet suggestion, estimate point impact:
+- Major reframe with multiple keywords + metrics = 6-10 points
+- Keyword incorporation with minor metrics = 4-6 points
+- Simple keyword addition without metrics = 2-4 points
+- Experience bullets have HIGH impact (most important section for ATS)
+
+Total point value = sum of all bullet optimizations. Realistic range: 20-40 points for experience section.
 
 **Critical Rules:**
 - Do NOT add specific metrics you cannot reasonably infer from the context
@@ -137,6 +147,7 @@ ${processedResume}
 - Make bullet improvements sound natural and human-written
 - If no metrics can be reasonably inferred, focus on keyword incorporation
 - Maintain chronological context and job progression
+- Point values must be realistic and reflect actual ATS impact
 
 **Authenticity Examples:**
 ✓ "Managed project" → "Led cross-functional team to deliver project, reducing deployment time by 30%" (if context suggests efficiency gains)
@@ -156,12 +167,14 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           "original": "Managed project",
           "suggested": "Led cross-functional team to deliver 3-month project, incorporating [keyword], reducing deployment time by 30%",
           "metrics_added": ["3-month", "30%"],
-          "keywords_incorporated": ["keyword", "cross-functional"]
+          "keywords_incorporated": ["keyword", "cross-functional"],
+          "point_value": 8
         }
       ]
     }
   ],
-  "summary": "Reframed 8 bullets across 3 roles, added metrics to 5, incorporated 6 keywords"
+  "total_point_value": 35,
+  "summary": "Reframed 8 bullets across 3 roles, added metrics to 5, incorporated 6 keywords. Total improvement: +35 points."
 }`;
 
     // Invoke LLM (timeout enforced at the route level)
@@ -188,8 +201,10 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           suggested: string;
           metrics_added: string[];
           keywords_incorporated: string[];
+          point_value?: number;
         }>;
       }>;
+      total_point_value?: number;
       summary: string;
     };
 
@@ -253,20 +268,42 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     const normalizedEntries = parsed.experience_entries.map((entry) => ({
       ...entry,
       original_bullets: entry.original_bullets || [],
-      suggested_bullets: (entry.suggested_bullets || []).map((bullet) => ({
-        original: String(bullet.original || ''),
-        suggested: String(bullet.suggested || ''),
-        metrics_added: Array.isArray(bullet.metrics_added) ? bullet.metrics_added : [],
-        keywords_incorporated: Array.isArray(bullet.keywords_incorporated) ? bullet.keywords_incorporated : [],
-      })),
+      suggested_bullets: (entry.suggested_bullets || []).map((bullet) => {
+        const pointValue = bullet.point_value;
+        // Validate point_value if present
+        const validPointValue =
+          typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
+            ? pointValue
+            : undefined;
+        return {
+          original: String(bullet.original || ''),
+          suggested: String(bullet.suggested || ''),
+          metrics_added: Array.isArray(bullet.metrics_added) ? bullet.metrics_added : [],
+          keywords_incorporated: Array.isArray(bullet.keywords_incorporated) ? bullet.keywords_incorporated : [],
+          point_value: validPointValue,
+        };
+      }),
     }));
 
+    // Validate total_point_value if present
+    // Note: total can exceed 100 since it sums individual bullet values (each 0-100)
+    const totalPointValue =
+      typeof parsed.total_point_value === 'number' &&
+      parsed.total_point_value >= 0
+        ? parsed.total_point_value
+        : undefined;
+
+    if (parsed.total_point_value !== undefined && totalPointValue === undefined) {
+      console.warn('[SS:genExp] Invalid total_point_value from LLM, ignoring:', parsed.total_point_value);
+    }
+
     // Return suggestion
-    console.log('[SS:genExp] Experience generated:', normalizedEntries.length, 'entries');
+    console.log('[SS:genExp] Experience generated:', normalizedEntries.length, 'entries, total_point_value:', totalPointValue);
     return {
       data: {
         original: resumeExperience, // Return full original, not truncated
         experience_entries: normalizedEntries,
+        total_point_value: totalPointValue,
         summary: parsed.summary,
       },
       error: null,

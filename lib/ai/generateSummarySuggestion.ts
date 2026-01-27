@@ -111,16 +111,28 @@ ${keywords && keywords.length > 0 ? `<extracted_keywords>\n${keywords.join(', ')
 4. Make the language sound natural and professional (avoid AI-tell phrases)
 5. Keep the summary concise (2-4 sentences, 50-150 words)
 6. Maintain the user's voice and authenticity
+7. Estimate the point value this summary optimization would add to the ATS score
+
+**Point Value Calculation:**
+Consider:
+- Keyword relevance to JD (high relevance = higher points)
+- Summary is a high-impact section (baseline: 5-12 points)
+- Magnitude of change (small keyword addition = 5-7 points, major reframe with multiple keywords = 10-12 points)
+- Realistic ATS impact (be conservative, not overly optimistic)
+
+Assign point value as integer 1-12 for summary changes.
 
 **Critical Rules:**
 - Do NOT add skills or experiences not present in the original
 - Do NOT use phrases like "I have the pleasure", "leverage my expertise", "synergize"
 - Make it sound like a human wrote it, not an AI
+- Point values must be realistic for actual ATS systems
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {
   "suggested": "Your optimized summary text here",
-  "keywords_added": ["keyword1", "keyword2", "keyword3"]
+  "keywords_added": ["keyword1", "keyword2", "keyword3"],
+  "point_value": 8
 }`;
 
     // Invoke LLM (timeout enforced at the route level)
@@ -128,7 +140,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     const content = response.content as string;
 
     // Parse JSON response
-    let parsed: { suggested: string; keywords_added: string[] };
+    let parsed: { suggested: string; keywords_added: string[]; point_value?: number };
     try {
       parsed = JSON.parse(content);
     } catch (parseError) {
@@ -162,11 +174,17 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       };
     }
 
+    // Validate point_value if present (optional field for backwards compatibility)
+    if (parsed.point_value !== undefined && (typeof parsed.point_value !== 'number' || parsed.point_value < 0 || parsed.point_value > 100)) {
+      console.warn('[SS:genSummary] Invalid point_value from LLM, ignoring:', parsed.point_value);
+      parsed.point_value = undefined;
+    }
+
     // Detect AI-tell phrases in suggested summary
     const suggestedAITellPhrases = detectAITellPhrases(parsed.suggested);
 
     // Return suggestion
-    console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added);
+    console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added, ', point_value:', parsed.point_value);
     return {
       data: {
         original: resumeSummary, // Return full original, not truncated
@@ -176,6 +194,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           ...originalAITellPhrases,
           ...suggestedAITellPhrases,
         ],
+        point_value: parsed.point_value,
       },
       error: null,
     };
