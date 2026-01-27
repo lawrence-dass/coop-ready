@@ -107,6 +107,15 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   [ERROR_CODES.GET_HISTORY_ERROR]:
     'Failed to load optimization history. Please try again.',
+
+  [ERROR_CODES.SESSION_NOT_FOUND]:
+    'Session not found. It may have been deleted.',
+
+  [ERROR_CODES.GET_SESSION_ERROR]:
+    'Failed to load session details. Please try again.',
+
+  [ERROR_CODES.DELETE_SESSION_ERROR]:
+    'Failed to delete session. Please try again.',
 };
 
 // ============================================================================

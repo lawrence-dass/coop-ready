@@ -127,6 +127,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Clear current session (Story 10-2) */
   clearCurrentSession: () => void;
 
+  /** Remove a history item by session ID (Story 10-3) */
+  removeHistoryItem: (sessionId: string) => void;
+
   /** Set pending file before parsing */
   setPendingFile: (file: File | null) => void;
 
@@ -299,6 +302,11 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     clearCurrentSession: () =>
       set({ currentSession: null }),
+
+    removeHistoryItem: (sessionId) =>
+      set((state) => ({
+        historyItems: state.historyItems.filter((item) => item.id !== sessionId),
+      })),
 
     setPendingFile: (file) =>
       set({ pendingFile: file, error: null, fileError: null }),

@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Calendar, Briefcase, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FileText, Calendar, Briefcase, TrendingUp, Trash2 } from 'lucide-react';
 import { useOptimizationStore } from '@/store/useOptimizationStore';
 import { getOptimizationHistory } from '@/actions/history/get-optimization-history';
+import { DeleteSessionDialog } from '@/components/shared/DeleteSessionDialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { HistorySession } from '@/types/history';
@@ -106,7 +108,11 @@ export function HistoryListView() {
   return (
     <div className="space-y-4" data-testid="history-list">
       {historyItems.map((session) => (
-        <HistorySessionCard key={session.id} session={session} onClick={() => router.push(`/history/${session.id}`)} />
+        <HistorySessionCard
+          key={session.id}
+          session={session}
+          onViewClick={() => router.push(`/history/${session.id}`)}
+        />
       ))}
     </div>
   );
@@ -117,13 +123,18 @@ export function HistoryListView() {
  *
  * Displays a single optimization session in the history list.
  * Shows metadata and visual indicators for the session.
+ *
+ * Story 10.3: Added delete button and confirmation dialog
  */
 interface HistorySessionCardProps {
   session: HistorySession;
-  onClick: () => void;
+  onViewClick: () => void;
 }
 
-function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
+function HistorySessionCard({ session, onViewClick }: HistorySessionCardProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const removeHistoryItem = useOptimizationStore((state) => state.removeHistoryItem);
+
   // Format date for display (e.g., "Jan 24, 2:30 PM")
   const formattedDate = new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -133,12 +144,24 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
     hour12: true,
   }).format(session.createdAt);
 
+  const handleDeleteSuccess = () => {
+    // Remove from store (optimistic update)
+    removeHistoryItem(session.id);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    // Prevent card click event from firing
+    e.stopPropagation();
+    setShowDeleteDialog(true);
+  };
+
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-testid="history-session-card" onClick={onClick}>
+    <>
+      <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-testid="history-session-card" onClick={onViewClick}>
       <CardContent className="p-6">
-        {/* Header: Resume Name + ATS Score */}
+        {/* Header: Resume Name + Delete Button + ATS Score */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-gray-900 mb-1">
               {session.resumeName || 'Untitled Resume'}
             </h3>
@@ -155,11 +178,25 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
             )}
           </div>
 
-          {/* ATS Score Badge */}
-          {session.atsScore !== null && session.atsScore !== undefined && (
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-indigo-600" />
-              <Badge
+          {/* Delete Button + ATS Score Badge */}
+          <div className="flex items-center gap-3 ml-4">
+            {/* Delete Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDeleteClick}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              aria-label="Delete session"
+              data-testid="delete-session-button"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+
+            {/* ATS Score Badge */}
+            {session.atsScore !== null && session.atsScore !== undefined && (
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-indigo-600" />
+                <Badge
                 variant="default"
                 className={cn(
                   'text-sm font-semibold',
@@ -170,10 +207,11 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
                       : 'bg-red-600'
                 )}
               >
-                {session.atsScore}
-              </Badge>
-            </div>
-          )}
+                  {session.atsScore}
+                </Badge>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Preview Text */}
@@ -198,5 +236,16 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
         </div>
       </CardContent>
     </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteSessionDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        sessionId={session.id}
+        sessionDate={session.createdAt}
+        resumeName={session.resumeName}
+        onDeleteSuccess={handleDeleteSuccess}
+      />
+    </>
   );
 }
