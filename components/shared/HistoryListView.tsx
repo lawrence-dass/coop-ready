@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ import type { HistorySession } from '@/types/history';
  * ```
  */
 export function HistoryListView() {
+  const router = useRouter();
   const historyItems = useOptimizationStore((state) => state.historyItems);
   const isLoadingHistory = useOptimizationStore((state) => state.isLoadingHistory);
   const setHistoryItems = useOptimizationStore((state) => state.setHistoryItems);
@@ -104,7 +106,7 @@ export function HistoryListView() {
   return (
     <div className="space-y-4" data-testid="history-list">
       {historyItems.map((session) => (
-        <HistorySessionCard key={session.id} session={session} />
+        <HistorySessionCard key={session.id} session={session} onClick={() => router.push(`/history/${session.id}`)} />
       ))}
     </div>
   );
@@ -118,9 +120,10 @@ export function HistoryListView() {
  */
 interface HistorySessionCardProps {
   session: HistorySession;
+  onClick: () => void;
 }
 
-function HistorySessionCard({ session }: HistorySessionCardProps) {
+function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
   // Format date for display (e.g., "Jan 24, 2:30 PM")
   const formattedDate = new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -131,7 +134,7 @@ function HistorySessionCard({ session }: HistorySessionCardProps) {
   }).format(session.createdAt);
 
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-testid="history-session-card">
+    <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-testid="history-session-card" onClick={onClick}>
       <CardContent className="p-6">
         {/* Header: Resume Name + ATS Score */}
         <div className="flex items-start justify-between mb-4">

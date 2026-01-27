@@ -103,6 +103,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Loading state for history fetch (Story 10-1) */
   isLoadingHistory: boolean;
 
+  /** Currently loaded session details (Story 10-2) */
+  currentSession: OptimizationSession | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -117,6 +120,12 @@ interface ExtendedOptimizationStore extends OptimizationStore {
 
   /** Set loading history state (Story 10-1) */
   setLoadingHistory: (loading: boolean) => void;
+
+  /** Set current session (Story 10-2) */
+  setCurrentSession: (session: OptimizationSession | null) => void;
+
+  /** Clear current session (Story 10-2) */
+  clearCurrentSession: () => void;
 
   /** Set pending file before parsing */
   setPendingFile: (file: File | null) => void;
@@ -235,6 +244,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     selectedResumeId: null,
     historyItems: [],
     isLoadingHistory: false,
+    currentSession: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -283,6 +293,12 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     setLoadingHistory: (loading) =>
       set({ isLoadingHistory: loading }),
+
+    setCurrentSession: (session) =>
+      set({ currentSession: session }),
+
+    clearCurrentSession: () =>
+      set({ currentSession: null }),
 
     setPendingFile: (file) =>
       set({ pendingFile: file, error: null, fileError: null }),
@@ -569,6 +585,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         selectedResumeId: null,
         historyItems: [],
         isLoadingHistory: false,
+        currentSession: null,
       }),
   })
 );

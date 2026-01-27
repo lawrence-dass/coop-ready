@@ -308,3 +308,61 @@ export async function updateSession(
     };
   }
 }
+
+/**
+ * Retrieves a single session by ID with user authorization check
+ *
+ * **When to use:** When loading session details for a specific session (Story 10-2).
+ *
+ * **Security:** Verifies that the requesting user owns the session via user_id check.
+ *
+ * @param sessionId - The session's UUID
+ * @param userId - The authenticated user's ID (for authorization)
+ * @returns ActionResponse with the session or null if not found/unauthorized
+ */
+export async function getSessionById(
+  sessionId: string,
+  userId: string
+): Promise<ActionResponse<OptimizationSession | null>> {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: `Failed to get session: ${error.message}`,
+          code: 'GET_SESSION_ERROR',
+        },
+      };
+    }
+
+    if (!data) {
+      return {
+        data: null,
+        error: null,
+      };
+    }
+
+    return {
+      data: toOptimizationSession(data as SessionRow),
+      error: null,
+    };
+  } catch (err) {
+    return {
+      data: null,
+      error: {
+        message:
+          err instanceof Error ? err.message : 'Unknown error getting session',
+        code: 'GET_SESSION_ERROR',
+      },
+    };
+  }
+}
