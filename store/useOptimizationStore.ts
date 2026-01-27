@@ -93,8 +93,17 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Suggestion feedback state (Story 7.4) - Map<suggestionId, helpful> */
   suggestionFeedback: Map<string, boolean>;
 
+  /** Currently selected resume ID from library (Story 9-2) */
+  selectedResumeId: string | null;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
+
+  /** Set selected resume ID (Story 9-2) */
+  setSelectedResumeId: (id: string | null) => void;
+
+  /** Clear selected resume ID (Story 9-3) */
+  clearSelectedResume: () => void;
 
   /** Set pending file before parsing */
   setPendingFile: (file: File | null) => void;
@@ -210,6 +219,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     isRetrying: false,
     lastError: null,
     suggestionFeedback: new Map(),
+    selectedResumeId: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -246,6 +256,12 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     setSessionId: (id) =>
       set({ sessionId: id }),
+
+    setSelectedResumeId: (id) =>
+      set({ selectedResumeId: id }),
+
+    clearSelectedResume: () =>
+      set({ selectedResumeId: null }),
 
     setPendingFile: (file) =>
       set({ pendingFile: file, error: null, fileError: null }),
@@ -529,6 +545,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         isRetrying: false,
         lastError: null,
         suggestionFeedback: new Map(),
+        selectedResumeId: null,
       }),
   })
 );
