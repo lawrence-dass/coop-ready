@@ -699,3 +699,6 @@ export const selectHistoryItems = (state: ExtendedOptimizationStore) =>
 
 export const selectIsLoadingHistory = (state: ExtendedOptimizationStore) =>
   state.isLoadingHistory;
+
+export const selectCurrentSession = (state: ExtendedOptimizationStore) =>
+  state.currentSession;
