@@ -80,6 +80,18 @@ export const ERROR_CODES = {
 
   /** ATS score calculation failed (Story 5.2) */
   SCORE_CALCULATION_ERROR: 'SCORE_CALCULATION_ERROR',
+
+  /** Authentication error (generic) */
+  AUTH_ERROR: 'AUTH_ERROR',
+
+  /** Invalid email address */
+  INVALID_EMAIL: 'INVALID_EMAIL',
+
+  /** Weak password (doesn't meet requirements) */
+  WEAK_PASSWORD: 'WEAK_PASSWORD',
+
+  /** User already exists with this email */
+  USER_EXISTS: 'USER_EXISTS',
 } as const;
 
 /**
