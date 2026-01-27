@@ -23,3 +23,4 @@ export { PriorityFilterChips, type PriorityFilter } from './PriorityFilterChips'
 export { MissingKeywordItem } from './MissingKeywordItem';
 export { SuggestionDisplay } from './SuggestionDisplay';
 export { SignOutButton } from './SignOutButton';
+export { HistoryListView } from './HistoryListView';

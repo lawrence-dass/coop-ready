@@ -12,7 +12,9 @@ import { SelectResumeButton } from '@/components/resume/SelectResumeButton';
 import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2, History as HistoryIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
@@ -62,6 +64,12 @@ export default function Home() {
           </div>
           {isAuthenticated && (
             <div className="flex items-center gap-4">
+              <Link href="/history" passHref>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <HistoryIcon className="h-4 w-4" />
+                  History
+                </Button>
+              </Link>
               <span className="text-sm text-muted-foreground" data-testid="user-email">
                 {user?.email}
               </span>

@@ -82,6 +82,9 @@ export const ERROR_CODES = {
 
   /** Failed to delete resume (Story 9-3) */
   DELETE_RESUME_ERROR: 'DELETE_RESUME_ERROR',
+
+  /** Failed to fetch optimization history (Story 10-1) */
+  GET_HISTORY_ERROR: 'GET_HISTORY_ERROR',
 } as const;
 
 /**

@@ -32,6 +32,7 @@ import { create } from 'zustand';
 import type { OptimizationStore } from '@/types/store';
 import type { OptimizationSession, SuggestionFeedback } from '@/types/optimization';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
+import type { HistorySession } from '@/types/history';
 import { calculateBackoffDelay, delay, MAX_RETRY_ATTEMPTS } from '@/lib/retryUtils';
 import { analyzeResume } from '@/actions/analyzeResume';
 import { fetchWithTimeout, TIMEOUT_MS } from '@/lib/timeoutUtils';
@@ -96,6 +97,12 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Currently selected resume ID from library (Story 9-2) */
   selectedResumeId: string | null;
 
+  /** Optimization history items (Story 10-1) */
+  historyItems: HistorySession[];
+
+  /** Loading state for history fetch (Story 10-1) */
+  isLoadingHistory: boolean;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
 
@@ -104,6 +111,12 @@ interface ExtendedOptimizationStore extends OptimizationStore {
 
   /** Clear selected resume ID (Story 9-3) */
   clearSelectedResume: () => void;
+
+  /** Set history items (Story 10-1) */
+  setHistoryItems: (items: HistorySession[]) => void;
+
+  /** Set loading history state (Story 10-1) */
+  setLoadingHistory: (loading: boolean) => void;
 
   /** Set pending file before parsing */
   setPendingFile: (file: File | null) => void;
@@ -220,6 +233,8 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     lastError: null,
     suggestionFeedback: new Map(),
     selectedResumeId: null,
+    historyItems: [],
+    isLoadingHistory: false,
 
     // ============================================================================
     // DATA ACTIONS
@@ -262,6 +277,12 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     clearSelectedResume: () =>
       set({ selectedResumeId: null }),
+
+    setHistoryItems: (items) =>
+      set({ historyItems: items }),
+
+    setLoadingHistory: (loading) =>
+      set({ isLoadingHistory: loading }),
 
     setPendingFile: (file) =>
       set({ pendingFile: file, error: null, fileError: null }),
@@ -546,6 +567,8 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         lastError: null,
         suggestionFeedback: new Map(),
         selectedResumeId: null,
+        historyItems: [],
+        isLoadingHistory: false,
       }),
   })
 );
@@ -643,3 +666,9 @@ export const selectSuggestionFeedback = (state: ExtendedOptimizationStore) =>
 
 export const selectFeedbackForSuggestion = (suggestionId: string) => (state: ExtendedOptimizationStore) =>
   state.getFeedbackForSuggestion(suggestionId);
+
+export const selectHistoryItems = (state: ExtendedOptimizationStore) =>
+  state.historyItems;
+
+export const selectIsLoadingHistory = (state: ExtendedOptimizationStore) =>
+  state.isLoadingHistory;
