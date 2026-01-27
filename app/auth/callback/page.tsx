@@ -41,6 +41,18 @@ export default async function CallbackPage({
     redirect('/auth/error?message=OAuth authentication failed');
   }
 
+  // Check if user needs onboarding (Story 8-5)
+  // New users (no profile or onboarding_complete=false) should complete onboarding
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('onboarding_complete')
+    .eq('user_id', data.session.user.id)
+    .single();
+
+  if (!profile || !profile.onboarding_complete) {
+    redirect('/auth/onboarding');
+  }
+
   // Success - redirect to main app
-  redirect('/');
+  redirect('/optimize');
 }
