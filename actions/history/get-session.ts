@@ -12,6 +12,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getSessionById } from '@/lib/supabase/sessions';
+import { ERROR_CODES } from '@/types';
 import type { ActionResponse, OptimizationSession } from '@/types';
 
 /**
@@ -46,7 +47,7 @@ export async function getOptimizationSession(
         data: null,
         error: {
           message: 'Invalid session ID format',
-          code: 'VALIDATION_ERROR',
+          code: ERROR_CODES.VALIDATION_ERROR,
         },
       };
     }
@@ -63,7 +64,7 @@ export async function getOptimizationSession(
         data: null,
         error: {
           message: 'You must be logged in to view session history',
-          code: 'UNAUTHORIZED',
+          code: ERROR_CODES.UNAUTHORIZED,
         },
       };
     }
@@ -87,7 +88,7 @@ export async function getOptimizationSession(
         data: null,
         error: {
           message: 'Session not found or you do not have access to it',
-          code: 'SESSION_NOT_FOUND',
+          code: ERROR_CODES.SESSION_NOT_FOUND,
         },
       };
     }
@@ -104,7 +105,7 @@ export async function getOptimizationSession(
           err instanceof Error
             ? err.message
             : 'Failed to fetch session details',
-        code: 'GET_SESSION_ERROR',
+        code: ERROR_CODES.GET_SESSION_ERROR,
       },
     };
   }
