@@ -87,8 +87,8 @@ export function calculateProjectedScore(
   // Calculate total improvement
   const totalImprovement = summaryPoints + skillsPoints + experiencePoints;
 
-  // Calculate projected score (capped at 100)
-  const projectedScore = Math.min(100, originalScore + totalImprovement);
+  // Calculate projected score (capped at 100, floored at original)
+  const projectedScore = Math.min(100, Math.max(originalScore, originalScore + totalImprovement));
 
   return projectedScore;
 }

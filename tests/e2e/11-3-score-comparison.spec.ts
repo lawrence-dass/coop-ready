@@ -155,15 +155,23 @@ test.describe('Score Comparison Feature', () => {
     if (await firstButton.isVisible()) {
       await firstButton.click();
 
-      // Wait for regeneration to complete
-      await page.waitForTimeout(5000); // Give time for LLM to respond
+      // Wait for regeneration to complete by watching for loading state to appear and resolve
+      await page.waitForSelector('[data-testid="score-loading"], [data-testid="projected-score-skeleton"]', { timeout: 10000 }).catch(() => {
+        // Loading state may be too fast to catch, continue
+      });
 
-      // Verify projected score is still visible (may have changed)
-      await expect(projectedScore).toBeVisible();
+      // Wait for projected score to stabilize with a valid number
+      await expect(projectedScore).toBeVisible({ timeout: 90000 });
       const newScore = await projectedScore.textContent();
 
       // Score should still be a valid number
       expect(newScore).toMatch(/^\d+$/);
+
+      // Score may have changed after regeneration (verify it's different or same is acceptable)
+      // The key validation is that the component properly recalculated
+      const newScoreNum = parseInt(newScore || '0', 10);
+      expect(newScoreNum).toBeGreaterThanOrEqual(0);
+      expect(newScoreNum).toBeLessThanOrEqual(100);
     }
   });
 

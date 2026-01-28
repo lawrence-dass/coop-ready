@@ -255,4 +255,54 @@ describe('ScoreComparison', () => {
     expect(screen.getByText('Projected Score')).toBeInTheDocument();
     expect(screen.getByText('point improvement')).toBeInTheDocument();
   });
+
+  it('should show loading state when isLoading is true', () => {
+    const suggestions: AllSuggestions = {
+      summary: mockSummarySuggestion,
+      skills: null,
+      experience: null,
+    };
+
+    render(<ScoreComparison originalScore={70} suggestions={suggestions} isLoading={true} />);
+
+    // Should show loading indicator
+    expect(screen.getByTestId('score-loading')).toBeInTheDocument();
+    expect(screen.getByText('Calculating projected score...')).toBeInTheDocument();
+
+    // Should show skeleton for projected score
+    expect(screen.getByTestId('projected-score-skeleton')).toBeInTheDocument();
+  });
+
+  it('should show error state when hasError is true', () => {
+    const suggestions: AllSuggestions = {
+      summary: null,
+      skills: null,
+      experience: null,
+    };
+
+    render(<ScoreComparison originalScore={70} suggestions={suggestions} hasError={true} />);
+
+    // Should show error indicator
+    expect(screen.getByTestId('score-error')).toBeInTheDocument();
+    expect(screen.getByText('Could not calculate projected score')).toBeInTheDocument();
+
+    // Original score should still be visible
+    expect(screen.getByTestId('original-score')).toHaveTextContent('70');
+  });
+
+  it('should have aria-labels on score values', () => {
+    const suggestions: AllSuggestions = {
+      summary: mockSummarySuggestion,
+      skills: null,
+      experience: null,
+    };
+
+    render(<ScoreComparison originalScore={70} suggestions={suggestions} />);
+
+    const originalScore = screen.getByTestId('original-score');
+    expect(originalScore).toHaveAttribute('aria-label', 'Original Score: 70 out of 100');
+
+    const projectedScore = screen.getByTestId('projected-score');
+    expect(projectedScore).toHaveAttribute('aria-label', 'Projected Score: 75 out of 100');
+  });
 });

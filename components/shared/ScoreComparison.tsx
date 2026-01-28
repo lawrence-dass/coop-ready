@@ -8,7 +8,7 @@
  * showing the improvement and breakdown by category.
  */
 
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, AlertCircle } from 'lucide-react';
 import {
   calculateProjectedScore,
   calculateScoreDelta,
@@ -27,6 +27,12 @@ export interface ScoreComparisonProps {
   /** All available suggestions */
   suggestions: AllSuggestions;
 
+  /** Whether suggestions are currently being regenerated */
+  isLoading?: boolean;
+
+  /** Whether an error occurred during suggestion generation */
+  hasError?: boolean;
+
   /** Additional className */
   className?: string;
 }
@@ -38,6 +44,8 @@ export interface ScoreComparisonProps {
 export function ScoreComparison({
   originalScore,
   suggestions,
+  isLoading = false,
+  hasError = false,
   className,
 }: ScoreComparisonProps) {
   // Calculate projected score and delta
@@ -74,6 +82,7 @@ export function ScoreComparison({
             <div
               className="text-5xl font-bold text-gray-700"
               data-testid="original-score"
+              aria-label={`Original Score: ${originalScore} out of 100`}
             >
               {originalScore}
             </div>
@@ -82,12 +91,23 @@ export function ScoreComparison({
 
           {/* Delta (Improvement) */}
           <div className="flex flex-col items-center justify-center">
-            {hasImprovement ? (
+            {isLoading ? (
+              <div data-testid="score-loading" className="text-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-indigo-600 mx-auto mb-2" />
+                <div className="text-sm text-gray-500">Calculating projected score...</div>
+              </div>
+            ) : hasError ? (
+              <div data-testid="score-error" className="text-center">
+                <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                <div className="text-sm text-red-500">Could not calculate projected score</div>
+              </div>
+            ) : hasImprovement ? (
               <>
-                <TrendingUp className="h-8 w-8 text-green-600 mb-2" />
+                <TrendingUp className="h-8 w-8 text-green-600 mb-2" aria-hidden="true" />
                 <div
                   className="text-3xl font-bold text-green-600"
                   data-testid="score-delta"
+                  aria-label={`${delta} point improvement`}
                 >
                   +{delta}
                 </div>
@@ -97,7 +117,7 @@ export function ScoreComparison({
               </>
             ) : (
               <>
-                <div className="text-2xl font-bold text-gray-400">—</div>
+                <div className="text-2xl font-bold text-gray-400" aria-hidden="true">—</div>
                 <div className="text-sm text-gray-500 mt-1">No change</div>
               </>
             )}
@@ -108,12 +128,25 @@ export function ScoreComparison({
             <div className="text-sm text-gray-600 font-medium mb-2">
               Projected Score
             </div>
-            <div
-              className={`text-5xl font-bold ${hasImprovement ? 'text-green-600' : 'text-gray-700'}`}
-              data-testid="projected-score"
-            >
-              {projectedScore}
-            </div>
+            {isLoading ? (
+              <div className="h-12 w-20 mx-auto bg-gray-200 rounded animate-pulse" data-testid="projected-score-skeleton" />
+            ) : hasError ? (
+              <div
+                className="text-5xl font-bold text-gray-400"
+                data-testid="projected-score"
+                aria-label="Projected score unavailable"
+              >
+                —
+              </div>
+            ) : (
+              <div
+                className={`text-5xl font-bold ${hasImprovement ? 'text-green-600' : 'text-gray-700'}`}
+                data-testid="projected-score"
+                aria-label={`Projected Score: ${projectedScore} out of 100`}
+              >
+                {projectedScore}
+              </div>
+            )}
             <div className="text-xs text-gray-500 mt-1">out of 100</div>
           </div>
         </div>

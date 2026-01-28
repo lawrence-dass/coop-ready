@@ -207,7 +207,7 @@ describe('calculateProjectedScore', () => {
     expect(result).toBe(100);
   });
 
-  it('should handle negative point values gracefully', () => {
+  it('should not go below original score with negative point values', () => {
     const originalScore = 70;
     const suggestions: AllSuggestions = {
       summary: { ...mockSummarySuggestion, point_value: -5 },
@@ -217,8 +217,8 @@ describe('calculateProjectedScore', () => {
 
     const result = calculateProjectedScore(originalScore, suggestions);
 
-    // 70 + (-5) = 65
-    expect(result).toBe(65);
+    // Projected score must be >= original score
+    expect(result).toBe(70);
   });
 });
 

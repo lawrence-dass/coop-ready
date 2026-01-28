@@ -4,6 +4,7 @@ import { useOptimizationStore } from '@/store/useOptimizationStore';
 import type { SuggestionSortBy } from '@/store/useOptimizationStore';
 import { SuggestionSection } from './SuggestionSection';
 import { ScoreComparison } from './ScoreComparison';
+import { calculateCategoryDeltas } from '@/lib/utils/scoreCalculation';
 import { AlertCircle, ArrowUpDown } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
@@ -112,40 +113,14 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
     skillsSuggestion !== null ||
     experienceSuggestion !== null;
 
-  // Calculate total point value from all suggestions
-  const calculateTotalPoints = (): number | null => {
-    let total = 0;
-    let hasAnyPoints = false;
-
-    if (summarySuggestion?.point_value !== undefined) {
-      total += summarySuggestion.point_value;
-      hasAnyPoints = true;
-    }
-
-    if (skillsSuggestion?.total_point_value !== undefined) {
-      total += skillsSuggestion.total_point_value;
-      hasAnyPoints = true;
-    }
-
-    if (experienceSuggestion?.total_point_value !== undefined) {
-      total += experienceSuggestion.total_point_value;
-      hasAnyPoints = true;
-    } else if (experienceSuggestion?.experience_entries) {
-      // Sum individual bullet point values if total is not available
-      experienceSuggestion.experience_entries.forEach((entry) => {
-        entry.suggested_bullets.forEach((bullet) => {
-          if (bullet.point_value !== undefined) {
-            total += bullet.point_value;
-            hasAnyPoints = true;
-          }
-        });
-      });
-    }
-
-    return hasAnyPoints ? total : null;
-  };
-
-  const totalPoints = calculateTotalPoints();
+  // Calculate total point value using shared utility
+  const categoryDeltas = calculateCategoryDeltas({
+    summary: summarySuggestion,
+    skills: skillsSuggestion,
+    experience: experienceSuggestion,
+  });
+  const totalPoints = categoryDeltas.summary + categoryDeltas.skills + categoryDeltas.experience;
+  const hasTotalPoints = totalPoints > 0;
 
   // Check if experience bullets have point values (for sort control visibility)
   const hasExperiencePointValues = experienceSuggestion?.experience_entries?.some(
@@ -182,11 +157,12 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
             skills: skillsSuggestion,
             experience: experienceSuggestion,
           }}
+          isLoading={Object.values(isRegeneratingSection).some(Boolean)}
         />
       )}
 
       {/* Total Improvement Banner */}
-      {totalPoints !== null && totalPoints > 0 && (
+      {hasTotalPoints && (
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>

@@ -1,6 +1,6 @@
 # Story 11.3: Implement Score Comparison
 
-**Status:** review
+**Status:** done
 **Epic:** 11 - Compare & Enhanced Suggestions
 **Version:** V1.0
 
@@ -484,9 +484,9 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - ✅ Score calculation helpers (`scoreCalculation.ts`) with 21 passing unit tests
 - ✅ ScoreComparison component with inline sub-components (ScoreCard, ScoreDelta, ScoreBreakdown)
 - ✅ Integration with SuggestionDisplay component
-- ✅ 11 component tests (100% passing)
+- ✅ 14 component tests (100% passing)
 - ✅ 5 E2E tests for complete user flow
-- ✅ All 918 unit tests passing (no regressions)
+- ✅ All 921 tests passing (no regressions)
 - ✅ Build successful with no TypeScript errors
 
 **Key Decisions:**
@@ -497,13 +497,13 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 **Files Created:**
 - `/lib/utils/scoreCalculation.ts` - Core calculation logic
-- `/components/shared/ScoreComparison.tsx` - Main component
+- `/components/shared/ScoreComparison.tsx` - Main component with loading/error states
 - `/tests/unit/utils/scoreCalculation.test.ts` - Unit tests (21 tests)
-- `/tests/unit/components/score-comparison.test.tsx` - Component tests (11 tests)
+- `/tests/unit/components/score-comparison.test.tsx` - Component tests (14 tests)
 - `/tests/e2e/11-3-score-comparison.spec.ts` - E2E tests (5 tests)
 
 **Files Modified:**
-- `/components/shared/SuggestionDisplay.tsx` - Added ScoreComparison integration
+- `/components/shared/SuggestionDisplay.tsx` - Added ScoreComparison integration, deduplicated point calculation
 - `/components/shared/index.ts` - Added ScoreComparison export
 - `/CLAUDE.md` - Added feature documentation
 
@@ -511,9 +511,11 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - ✅ No suggestions yet
 - ✅ Missing point values (backward compatibility)
 - ✅ Score cap at 100
-- ✅ Negative point values
+- ✅ Negative point values (projected score floored at original)
 - ✅ Empty categories
 - ✅ Mobile responsive layout
+- ✅ Loading state during regeneration
+- ✅ Error state for failed calculations
 
 **Verification:**
 - ✅ Story 11-1: Point values integrate correctly
@@ -550,4 +552,5 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 - **2026-01-27**: Story 11-3 created with comprehensive developer context. 18 tasks defined across 7 phases covering calculation logic, components, integration, testing, and polish. Ready for implementation.
 - **2026-01-27**: Story 11-3 implementation completed. All 18 tasks completed. 37 new tests added (21 unit, 11 component, 5 E2E). All tests passing. No regressions. Build successful. Ready for review.
+- **2026-01-27**: Code review completed. 10 issues found (3 HIGH, 4 MEDIUM, 3 LOW). All HIGH and MEDIUM issues fixed: Added loading/error states to ScoreComparison (H1+H2), enforced projected score >= original (H3), deduplicated point calculation in SuggestionDisplay (M7), fixed E2E test anti-patterns (M5+M6), added ARIA labels (L8 also fixed). 40 tests now (21 unit, 14 component, 5 E2E). All 921 tests passing.
 
