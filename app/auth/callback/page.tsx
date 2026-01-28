@@ -54,5 +54,5 @@ export default async function CallbackPage({
   }
 
   // Success - redirect to main app
-  redirect('/optimize');
+  redirect('/');
 }

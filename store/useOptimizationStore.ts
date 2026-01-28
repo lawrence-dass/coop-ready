@@ -218,6 +218,9 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Clear feedback for a specific suggestion (Story 7.4) */
   clearFeedback: (suggestionId: string) => void;
 
+  /** Clear resume content and all downstream results (Issue #117) */
+  clearResumeAndResults: () => void;
+
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
 }
@@ -549,6 +552,27 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
       updated.delete(suggestionId);
       set({ suggestionFeedback: updated });
     },
+
+    /**
+     * Clear resume content and all downstream results (Issue #117)
+     * Resets the uploader so user can load a new resume.
+     */
+    clearResumeAndResults: () =>
+      set({
+        resumeContent: null,
+        pendingFile: null,
+        fileError: null,
+        keywordAnalysis: null,
+        atsScore: null,
+        summarySuggestion: null,
+        skillsSuggestion: null,
+        experienceSuggestion: null,
+        generalError: null,
+        selectedResumeId: null,
+        suggestionFeedback: new Map(),
+        error: null,
+        retryCount: 0,
+      }),
 
     /**
      * Hydrate store from database session

@@ -30,7 +30,7 @@ export default async function OnboardingPage() {
     .single();
 
   if (profile?.onboarding_complete) {
-    redirect('/optimize');
+    redirect('/');
   }
 
   return (

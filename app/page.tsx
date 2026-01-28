@@ -13,7 +13,7 @@ import { PreferencesDialog } from '@/components/shared/PreferencesDialog';
 import { useOptimizationStore, selectPendingFile, selectFileError, selectJobDescription, selectKeywordAnalysis, selectATSScore, selectGeneralError, selectRetryCount, selectIsRetrying } from '@/store';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import { CheckCircle2, Loader2, History as HistoryIcon, Settings } from 'lucide-react';
+import { CheckCircle2, Loader2, History as HistoryIcon, Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -45,6 +45,7 @@ export default function Home() {
   const loadingStep = useOptimizationStore((state) => state.loadingStep);
   const userPreferences = useOptimizationStore((state) => state.userPreferences);
   const setUserPreferences = useOptimizationStore((state) => state.setUserPreferences);
+  const clearResumeAndResults = useOptimizationStore((state) => state.clearResumeAndResults);
 
   // Preferences dialog state
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
@@ -162,9 +163,18 @@ export default function Home() {
             <>
               <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800" data-testid="resume-parsed">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <p>
+                <p className="flex-1">
                   Resume extracted successfully ({resumeContent.rawText.length.toLocaleString()} characters)
                 </p>
+                <button
+                  type="button"
+                  onClick={clearResumeAndResults}
+                  className="ml-auto rounded-md p-1 text-green-600 hover:bg-green-100 hover:text-green-800"
+                  aria-label="Clear extracted resume"
+                  data-testid="clear-resume-btn"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
               {/* Save Resume Button - Only visible when authenticated */}
               <div className="flex justify-end">
