@@ -101,7 +101,8 @@ export function OnboardingForm() {
 
       if (data?.success) {
         toast.success('Welcome to SubmitSmart!');
-        router.push('/optimize');
+        // Full page load so AuthProvider reinitializes with the new session cookie
+        window.location.href = '/';
       }
     });
   };
@@ -117,7 +118,8 @@ export function OnboardingForm() {
       }
 
       if (data?.success) {
-        router.push('/optimize');
+        // Full page load so AuthProvider reinitializes with the new session cookie
+        window.location.href = '/';
       }
     });
   };

@@ -34,6 +34,8 @@ import { getSessionByAnonymousId, createSession } from '@/lib/supabase/sessions'
 interface UseSessionRestoreProps {
   /** Anonymous user ID from auth */
   anonymousId: string | null;
+  /** Whether auth is still loading */
+  authLoading: boolean;
 }
 
 interface UseSessionRestoreReturn {
@@ -56,6 +58,7 @@ interface UseSessionRestoreReturn {
  */
 export function useSessionRestore({
   anonymousId,
+  authLoading,
 }: UseSessionRestoreProps): UseSessionRestoreReturn {
   const [isRestoring, setIsRestoring] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +67,12 @@ export function useSessionRestore({
   const setSessionId = useOptimizationStore((state) => state.setSessionId);
 
   useEffect(() => {
-    // Skip if no anonymous ID yet
+    // Wait for auth to finish before deciding
+    if (authLoading) return;
+
+    // Auth done but no anonymous ID (e.g., anonymous sign-in failed)
     if (!anonymousId) {
+      setIsRestoring(false);
       return;
     }
 
@@ -127,7 +134,7 @@ export function useSessionRestore({
     }
 
     restoreSession();
-  }, [anonymousId, loadFromSession, setSessionId]);
+  }, [anonymousId, authLoading, loadFromSession, setSessionId]);
 
   return {
     isRestoring,

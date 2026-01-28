@@ -8,7 +8,6 @@
  */
 
 import { useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ import { signOut } from '@/actions/auth/sign-out';
 import { useOptimizationStore } from '@/store';
 
 export function SignOutButton() {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const handleSignOut = () => {
@@ -32,9 +30,8 @@ export function SignOutButton() {
         // Clear user-specific data from Zustand store
         useOptimizationStore.getState().reset();
 
-        // Force server revalidation to clear cached RSC payloads
-        router.refresh();
-        router.push('/');
+        // Full page load so AuthProvider reinitializes without the session
+        window.location.href = '/';
       } catch {
         // Unexpected error (should not happen with ActionResponse pattern)
         toast.error('An unexpected error occurred');
