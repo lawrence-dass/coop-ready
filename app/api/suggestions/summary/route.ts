@@ -14,7 +14,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ActionResponse, OptimizationPreferences } from '@/types';
 import type { SummarySuggestion } from '@/types/suggestions';
+import type { SuggestionContext } from '@/types/judge';
 import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
+import { judgeSuggestion } from '@/lib/ai/judgeSuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
 import { withTimeout } from '@/lib/utils/withTimeout';
 
@@ -37,6 +39,23 @@ interface SummarySuggestionRequest {
 // ============================================================================
 
 const TIMEOUT_MS = 60000; // 60 seconds
+
+/**
+ * Truncate text at a sentence boundary near the target length
+ */
+function truncateAtSentence(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  const truncated = text.substring(0, maxLength);
+  const lastSentenceEnd = Math.max(
+    truncated.lastIndexOf('. '),
+    truncated.lastIndexOf('.\n'),
+    truncated.lastIndexOf('! '),
+    truncated.lastIndexOf('? ')
+  );
+  return lastSentenceEnd > maxLength * 0.5
+    ? truncated.substring(0, lastSentenceEnd + 1)
+    : truncated;
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -132,9 +151,39 @@ async function runSuggestionGeneration(
       return suggestionResult;
     }
 
+    // Story 12.1: Judge the suggestion quality before returning to user
+    const suggestion = suggestionResult.data;
+    const judgeContext: SuggestionContext = {
+      original_text: request.current_summary,
+      suggested_text: suggestion.suggested,
+      jd_excerpt: truncateAtSentence(request.jd_content, 500),
+      section_type: 'summary',
+    };
+
+    const judgeResult = await judgeSuggestion(
+      suggestion.suggested,
+      judgeContext,
+      `summary-${request.session_id.substring(0, 8)}`
+    );
+
+    // Augment suggestion with judge scores (graceful degradation if judge fails)
+    if (judgeResult.data) {
+      suggestion.judge_score = judgeResult.data.quality_score;
+      suggestion.judge_passed = judgeResult.data.passed;
+      suggestion.judge_reasoning = judgeResult.data.reasoning;
+      suggestion.judge_criteria = judgeResult.data.criteria_breakdown;
+
+      console.log(
+        `[SS:summary] Judge scored ${judgeResult.data.quality_score}/100 (${judgeResult.data.passed ? 'PASS' : 'FAIL'})`
+      );
+    } else {
+      // Judge failed - log but continue without judge scores
+      console.warn('[SS:summary] Judge failed, returning suggestion without quality scores');
+    }
+
     // Save to session (graceful degradation - don't fail if session update fails)
     const sessionUpdateResult = await updateSession(request.session_id, {
-      summarySuggestion: suggestionResult.data,
+      summarySuggestion: suggestion,
     });
 
     if (sessionUpdateResult.error) {
@@ -145,7 +194,10 @@ async function runSuggestionGeneration(
       // Continue anyway - user still gets the suggestion
     }
 
-    return suggestionResult;
+    return {
+      data: suggestion,
+      error: null,
+    };
   } catch (error) {
     console.error('[summary-suggestion] Generation error:', error);
     return {
