@@ -130,5 +130,5 @@ development_status:
   # Epic 12: Quality Assurance (V1.0)
   epic-12: in-progress
   12-1-implement-llm-as-judge-pipeline-step: done
-  12-2-implement-quality-metrics-logging: backlog
+  12-2-implement-quality-metrics-logging: in-progress
   12-3-epic-12-integration-and-verification-testing: backlog

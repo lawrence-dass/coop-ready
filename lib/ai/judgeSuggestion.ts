@@ -16,6 +16,7 @@ import type {
 import { DEFAULT_QUALITY_THRESHOLD, BORDERLINE_THRESHOLD_LOW } from '@/types/judge';
 import { buildJudgePrompt } from './judgePrompt';
 import { withTimeout } from '@/lib/utils/withTimeout';
+import { logJudgeTrace } from '@/lib/metrics/judgeTrace';
 
 // ============================================================================
 // CONSTANTS
@@ -264,23 +265,28 @@ export async function judgeSuggestion(
       `[SS:judge] ${suggestionId} scored ${parsed.overall_score}/100 (${passed ? 'PASS' : 'FAIL'})`
     );
 
-    // Return judge result
-    return {
-      data: {
-        suggestion_id: suggestionId,
-        quality_score: parsed.overall_score,
-        passed,
-        reasoning: parsed.reasoning,
-        criteria_breakdown: {
-          authenticity: parsed.authenticity,
-          clarity: parsed.clarity,
-          ats_relevance: parsed.ats_relevance,
-          actionability: parsed.actionability,
-        },
-        recommendation,
+    // Build judge result
+    const judgeResult: JudgeResult = {
+      suggestion_id: suggestionId,
+      quality_score: parsed.overall_score,
+      passed,
+      reasoning: parsed.reasoning,
+      criteria_breakdown: {
+        authenticity: parsed.authenticity,
+        clarity: parsed.clarity,
+        ats_relevance: parsed.ats_relevance,
+        actionability: parsed.actionability,
       },
-      error: null,
+      recommendation,
     };
+
+    // Story 12.2: Detailed trace logging (enabled via DEBUG=judge)
+    logJudgeTrace(judgeResult, context.section_type, {
+      original_text: context.original_text,
+      suggested_text: suggestion,
+    });
+
+    return { data: judgeResult, error: null };
   } catch (error) {
     console.error(`[SS:judge] Error judging ${suggestionId}:`, error);
 
