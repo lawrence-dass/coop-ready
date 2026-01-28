@@ -1,6 +1,6 @@
 # Story 12.2: Implement Quality Metrics Logging
 
-**Status:** in-progress
+**Status:** done
 **Epic:** 12 - Quality Assurance
 **Version:** V1.0
 
