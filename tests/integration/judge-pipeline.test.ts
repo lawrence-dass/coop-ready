@@ -97,6 +97,57 @@ vi.mock('@/lib/supabase/sessions', () => ({
   }),
 }));
 
+// Mock metrics collection and logging (Story 12.2)
+vi.mock('@/lib/metrics/qualityMetrics', () => ({
+  collectQualityMetrics: vi.fn().mockImplementation((judgeResults, section, optimizationId) => {
+    const passed = judgeResults.filter((r: { passed: boolean }) => r.passed).length;
+    const avgScore = judgeResults.reduce((sum: number, r: { quality_score: number }) => sum + r.quality_score, 0) / judgeResults.length;
+
+    return {
+      timestamp: new Date().toISOString(),
+      optimization_id: optimizationId,
+      section,
+      total_evaluated: judgeResults.length,
+      passed,
+      failed: judgeResults.length - passed,
+      pass_rate: (passed / judgeResults.length) * 100,
+      avg_score: avgScore,
+      score_distribution: {
+        range_0_20: 0,
+        range_20_40: 0,
+        range_40_60: 0,
+        range_60_80: judgeResults.length,
+        range_80_100: 0,
+      },
+      criteria_avg: {
+        authenticity: 20,
+        clarity: 19,
+        ats_relevance: 18,
+        actionability: 18,
+      },
+      failure_breakdown: {
+        authenticity_failures: 0,
+        clarity_failures: 0,
+        ats_failures: 0,
+        actionability_failures: 0,
+      },
+      common_failures: [],
+    };
+  }),
+}));
+
+vi.mock('@/lib/metrics/metricsLogger', () => ({
+  logQualityMetrics: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/lib/metrics/judgeTrace', () => ({
+  logJudgeBatchTrace: vi.fn(),
+}));
+
+vi.mock('@/lib/utils/truncateAtSentence', () => ({
+  truncateAtSentence: vi.fn((text) => text.substring(0, 500)),
+}));
+
 describe('Judge Pipeline Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
