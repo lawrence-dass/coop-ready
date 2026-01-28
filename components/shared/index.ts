@@ -26,3 +26,7 @@ export { SignOutButton } from './SignOutButton';
 export { HistoryListView } from './HistoryListView';
 export { DeleteSessionDialog } from './DeleteSessionDialog';
 export { ScoreComparison } from './ScoreComparison';
+export { BeforeAfterComparison } from './BeforeAfterComparison';
+export type { ComparisonSection } from './BeforeAfterComparison';
+export { ComparisonCard } from './ComparisonCard';
+export { TextDiff, SideBySideDiff } from './TextDiff';

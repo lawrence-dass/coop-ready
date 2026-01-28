@@ -77,9 +77,9 @@ describe('SuggestionDisplay Integration', () => {
     render(<SuggestionDisplay />);
 
     // Verify all sections are rendered
-    expect(screen.getByText('Summary')).toBeInTheDocument();
-    expect(screen.getByText('Skills')).toBeInTheDocument();
-    expect(screen.getByText('Experience')).toBeInTheDocument();
+    expect(screen.getAllByText('Summary').length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Skills").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Experience").length).toBeGreaterThan(0);
 
     // Verify summary content (text appears in both desktop grid and mobile tabs)
     expect(
@@ -116,7 +116,7 @@ describe('SuggestionDisplay Integration', () => {
     render(<SuggestionDisplay />);
 
     // Only summary should render
-    expect(screen.getByText('Summary')).toBeInTheDocument();
+    expect(screen.getAllByText('Summary').length).toBeGreaterThan(0);
     expect(screen.queryByText('Skills')).not.toBeInTheDocument();
     expect(screen.queryByText('Experience')).not.toBeInTheDocument();
   });

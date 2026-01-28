@@ -4,9 +4,11 @@ import { useOptimizationStore } from '@/store/useOptimizationStore';
 import type { SuggestionSortBy } from '@/store/useOptimizationStore';
 import { SuggestionSection } from './SuggestionSection';
 import { ScoreComparison } from './ScoreComparison';
+import { BeforeAfterComparison } from './BeforeAfterComparison';
+import type { ComparisonSection } from './BeforeAfterComparison';
 import { calculateCategoryDeltas } from '@/lib/utils/scoreCalculation';
 import { AlertCircle, ArrowUpDown } from 'lucide-react';
-import { useTransition } from 'react';
+import { useTransition, useMemo } from 'react';
 import { toast } from 'sonner';
 import { regenerateSuggestions } from '@/actions/regenerateSuggestions';
 
@@ -127,6 +129,60 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
     (entry) => entry.suggested_bullets.some((b) => b.point_value !== undefined)
   ) ?? false;
 
+  // Prepare comparison sections (Story 11.4)
+  const comparisonSections = useMemo((): ComparisonSection[] => {
+    const sections: ComparisonSection[] = [];
+
+    if (summarySuggestion) {
+      sections.push({
+        title: 'Summary',
+        original: summarySuggestion.original,
+        suggestions: [{ text: summarySuggestion.suggested }],
+      });
+    }
+
+    if (skillsSuggestion) {
+      // Build the suggested skills list from existing + additions - removals
+      const removalNames = skillsSuggestion.skill_removals.map((r) => r.skill);
+      const suggestedSkills = [
+        ...skillsSuggestion.existing_skills.filter(
+          (s) => !removalNames.includes(s)
+        ),
+        ...skillsSuggestion.skill_additions,
+      ];
+      const suggestedText = suggestedSkills.length > 0
+        ? suggestedSkills.join(', ')
+        : skillsSuggestion.summary || 'Skills optimization available';
+
+      sections.push({
+        title: 'Skills',
+        original: skillsSuggestion.original,
+        suggestions: [{ text: suggestedText }],
+      });
+    }
+
+    if (experienceSuggestion) {
+      // For experience, we can show the full optimized experience or individual bullets
+      // For now, we'll create a combined suggested text from all entries
+      const suggestedExperience = experienceSuggestion.experience_entries
+        .map((entry) => {
+          const bullets = entry.suggested_bullets
+            .map((b) => `• ${b.suggested}`)
+            .join('\n');
+          return `${entry.company} - ${entry.role} (${entry.dates})\n${bullets}`;
+        })
+        .join('\n\n');
+
+      sections.push({
+        title: 'Experience',
+        original: experienceSuggestion.original,
+        suggestions: [{ text: suggestedExperience }],
+      });
+    }
+
+    return sections;
+  }, [summarySuggestion, skillsSuggestion, experienceSuggestion]);
+
   // Empty state (not loading and no suggestions)
   if (!hasSuggestions && !isGenerating) {
     return (
@@ -158,6 +214,14 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
             experience: experienceSuggestion,
           }}
           isLoading={Object.values(isRegeneratingSection).some(Boolean)}
+        />
+      )}
+
+      {/* Before/After Text Comparison (Story 11.4) */}
+      {hasSuggestions && comparisonSections.length > 0 && (
+        <BeforeAfterComparison
+          sections={comparisonSections}
+          initialCollapsed={false}
         />
       )}
 
