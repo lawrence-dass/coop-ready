@@ -3,6 +3,8 @@
 import { useOptimizationStore } from '@/store/useOptimizationStore';
 import type { SuggestionSortBy } from '@/store/useOptimizationStore';
 import { SuggestionSection } from './SuggestionSection';
+import { ScoreComparison } from './ScoreComparison';
+import { calculateCategoryDeltas } from '@/lib/utils/scoreCalculation';
 import { AlertCircle, ArrowUpDown } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
@@ -40,6 +42,9 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
   // Get loading state from store
   const isLoading = useOptimizationStore((state) => state.isLoading);
   const loadingStep = useOptimizationStore((state) => state.loadingStep);
+
+  // Get original ATS score for comparison (Story 11.3)
+  const atsScore = useOptimizationStore((state) => state.atsScore);
 
   // Get regenerating state (Story 6.7)
   const isRegeneratingSection = useOptimizationStore((state) => state.isRegeneratingSection) || {};
@@ -108,40 +113,14 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
     skillsSuggestion !== null ||
     experienceSuggestion !== null;
 
-  // Calculate total point value from all suggestions
-  const calculateTotalPoints = (): number | null => {
-    let total = 0;
-    let hasAnyPoints = false;
-
-    if (summarySuggestion?.point_value !== undefined) {
-      total += summarySuggestion.point_value;
-      hasAnyPoints = true;
-    }
-
-    if (skillsSuggestion?.total_point_value !== undefined) {
-      total += skillsSuggestion.total_point_value;
-      hasAnyPoints = true;
-    }
-
-    if (experienceSuggestion?.total_point_value !== undefined) {
-      total += experienceSuggestion.total_point_value;
-      hasAnyPoints = true;
-    } else if (experienceSuggestion?.experience_entries) {
-      // Sum individual bullet point values if total is not available
-      experienceSuggestion.experience_entries.forEach((entry) => {
-        entry.suggested_bullets.forEach((bullet) => {
-          if (bullet.point_value !== undefined) {
-            total += bullet.point_value;
-            hasAnyPoints = true;
-          }
-        });
-      });
-    }
-
-    return hasAnyPoints ? total : null;
-  };
-
-  const totalPoints = calculateTotalPoints();
+  // Calculate total point value using shared utility
+  const categoryDeltas = calculateCategoryDeltas({
+    summary: summarySuggestion,
+    skills: skillsSuggestion,
+    experience: experienceSuggestion,
+  });
+  const totalPoints = categoryDeltas.summary + categoryDeltas.skills + categoryDeltas.experience;
+  const hasTotalPoints = totalPoints > 0;
 
   // Check if experience bullets have point values (for sort control visibility)
   const hasExperiencePointValues = experienceSuggestion?.experience_entries?.some(
@@ -169,8 +148,21 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
   // Render sections that have data (or show loading state during generation)
   return (
     <div className={`space-y-8 ${className ?? ''}`} data-testid="suggestions-display">
+      {/* Score Comparison (Story 11.3) */}
+      {atsScore && hasSuggestions && (
+        <ScoreComparison
+          originalScore={atsScore.overall}
+          suggestions={{
+            summary: summarySuggestion,
+            skills: skillsSuggestion,
+            experience: experienceSuggestion,
+          }}
+          isLoading={Object.values(isRegeneratingSection).some(Boolean)}
+        />
+      )}
+
       {/* Total Improvement Banner */}
-      {totalPoints !== null && totalPoints > 0 && (
+      {hasTotalPoints && (
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>

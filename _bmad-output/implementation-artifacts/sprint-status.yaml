@@ -123,7 +123,7 @@ development_status:
   epic-11: in-progress
   11-1-implement-point-values-for-suggestions: done
   11-2-implement-optimization-preferences: done
-  11-3-implement-score-comparison: backlog
+  11-3-implement-score-comparison: done
   11-4-implement-before-after-text-comparison: backlog
   11-5-epic-11-integration-and-verification-testing: backlog
 

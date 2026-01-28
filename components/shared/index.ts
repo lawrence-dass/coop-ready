@@ -25,3 +25,4 @@ export { SuggestionDisplay } from './SuggestionDisplay';
 export { SignOutButton } from './SignOutButton';
 export { HistoryListView } from './HistoryListView';
 export { DeleteSessionDialog } from './DeleteSessionDialog';
+export { ScoreComparison } from './ScoreComparison';
