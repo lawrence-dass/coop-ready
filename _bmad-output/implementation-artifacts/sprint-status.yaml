@@ -131,4 +131,4 @@ development_status:
   epic-12: done
   12-1-implement-llm-as-judge-pipeline-step: done
   12-2-implement-quality-metrics-logging: done
-  12-3-epic-12-integration-and-verification-testing: review
+  12-3-epic-12-integration-and-verification-testing: done
