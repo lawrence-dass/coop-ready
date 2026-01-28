@@ -128,7 +128,8 @@ export function SignupForm({ onSuccess, onVerificationRequired }: SignupFormProp
         if (onSuccess) {
           onSuccess(data.userId, data.email);
         } else {
-          router.push('/');
+          // Full page load so AuthProvider reinitializes with the new session cookie
+          window.location.href = '/';
         }
       }
     });

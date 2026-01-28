@@ -42,7 +42,7 @@ interface SessionProviderProps {
  */
 export function SessionProvider({ children }: SessionProviderProps) {
   const { anonymousId, isLoading: authLoading } = useAuth();
-  const { isRestoring } = useSessionRestore({ anonymousId });
+  const { isRestoring } = useSessionRestore({ anonymousId, authLoading });
 
   // Enable auto-save (hook internally guards on sessionId being set)
   useSessionSync();

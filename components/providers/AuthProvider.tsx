@@ -89,13 +89,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Initialize auth state
     async function initAuth() {
       try {
-        // Check for existing session
+        // Check for existing user (getUser validates token with Supabase server)
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
+          data: { user: existingUser },
+        } = await supabase.auth.getUser();
 
-        if (session?.user) {
-          setUser(session.user);
+        if (existingUser) {
+          setUser(existingUser);
           setIsLoading(false);
         } else {
           // Auto sign-in anonymously

@@ -71,7 +71,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       if (onSuccess) {
         onSuccess(data.userId, data.email);
       } else {
-        router.push('/');
+        // Full page load so AuthProvider reinitializes with the new session cookie
+        window.location.href = '/';
       }
     });
   }
