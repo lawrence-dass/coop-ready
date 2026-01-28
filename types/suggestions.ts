@@ -3,7 +3,10 @@
  * Story 6.2: Implement Summary Section Suggestions
  * Story 6.3: Implement Skills Section Suggestions
  * Story 6.4: Implement Experience Section Suggestions
+ * Story 12.1: Add LLM-as-Judge fields
  */
+
+import type { JudgeCriteriaScores } from './judge';
 
 // ============================================================================
 // SUMMARY SUGGESTION TYPES
@@ -28,6 +31,12 @@ export interface SummarySuggestion {
   ats_keywords_added: string[]; // Keywords from JD that were incorporated
   ai_tell_phrases_rewritten: AITellRewrite[]; // AI language that was fixed
   point_value?: number; // Estimated ATS score improvement (0-100)
+
+  // Story 12.1: Judge fields (optional for backward compatibility)
+  judge_score?: number; // Quality score from LLM judge (0-100)
+  judge_passed?: boolean; // Whether suggestion passed validation
+  judge_reasoning?: string; // Brief explanation of the score
+  judge_criteria?: JudgeCriteriaScores; // Breakdown by criteria
 }
 
 // ============================================================================
@@ -41,6 +50,12 @@ export interface SkillItem {
   skill: string; // The skill name
   reason?: string; // Why this skill is relevant or suggested
   point_value?: number; // Estimated ATS score improvement for this skill (0-100)
+
+  // Story 12.1: Judge fields (optional for backward compatibility)
+  judge_score?: number; // Quality score from LLM judge (0-100)
+  judge_passed?: boolean; // Whether suggestion passed validation
+  judge_reasoning?: string; // Brief explanation of the score
+  judge_criteria?: JudgeCriteriaScores; // Breakdown by criteria
 }
 
 /**
@@ -95,6 +110,12 @@ export interface BulletSuggestion {
 
   /** Estimated ATS score improvement for this bullet (0-100) */
   point_value?: number;
+
+  // Story 12.1: Judge fields (optional for backward compatibility)
+  judge_score?: number; // Quality score from LLM judge (0-100)
+  judge_passed?: boolean; // Whether suggestion passed validation
+  judge_reasoning?: string; // Brief explanation of the score
+  judge_criteria?: JudgeCriteriaScores; // Breakdown by criteria
 }
 
 /**

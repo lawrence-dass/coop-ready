@@ -14,7 +14,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ActionResponse, OptimizationPreferences } from '@/types';
 import type { ExperienceSuggestion } from '@/types/suggestions';
+import type { SuggestionContext } from '@/types/judge';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
+import { judgeSuggestion } from '@/lib/ai/judgeSuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
 import { withTimeout } from '@/lib/utils/withTimeout';
 
@@ -36,6 +38,23 @@ interface ExperienceSuggestionRequest {
 // ============================================================================
 
 const TIMEOUT_MS = 60000; // 60 seconds
+
+/**
+ * Truncate text at a sentence boundary near the target length
+ */
+function truncateAtSentence(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  const truncated = text.substring(0, maxLength);
+  const lastSentenceEnd = Math.max(
+    truncated.lastIndexOf('. '),
+    truncated.lastIndexOf('.\n'),
+    truncated.lastIndexOf('! '),
+    truncated.lastIndexOf('? ')
+  );
+  return lastSentenceEnd > maxLength * 0.5
+    ? truncated.substring(0, lastSentenceEnd + 1)
+    : truncated;
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -131,9 +150,59 @@ async function runSuggestionGeneration(
     return suggestionResult;
   }
 
+  const suggestion = suggestionResult.data;
+
+  // Story 12.1: Judge each experience bullet suggestion in parallel
+  const bulletJudgePromises: {
+    entryIndex: number;
+    bulletIndex: number;
+    promise: ReturnType<typeof judgeSuggestion>;
+  }[] = [];
+
+  suggestion.experience_entries.forEach((entry, entryIndex) => {
+    entry.suggested_bullets.forEach((bullet, bulletIndex) => {
+      const judgeContext: SuggestionContext = {
+        original_text: bullet.original,
+        suggested_text: bullet.suggested,
+        jd_excerpt: truncateAtSentence(request.jd_content, 500),
+        section_type: 'experience',
+      };
+
+      bulletJudgePromises.push({
+        entryIndex,
+        bulletIndex,
+        promise: judgeSuggestion(
+          bullet.suggested,
+          judgeContext,
+          `bullet-${bullet.original.substring(0, 15)}`
+        ),
+      });
+    });
+  });
+
+  const bulletJudgeResults = await Promise.allSettled(
+    bulletJudgePromises.map((p) => p.promise)
+  );
+
+  bulletJudgeResults.forEach((result, i) => {
+    if (result.status === 'fulfilled' && result.value.data) {
+      const { entryIndex, bulletIndex } = bulletJudgePromises[i];
+      const bullet =
+        suggestion.experience_entries[entryIndex].suggested_bullets[bulletIndex];
+      bullet.judge_score = result.value.data.quality_score;
+      bullet.judge_passed = result.value.data.passed;
+      bullet.judge_reasoning = result.value.data.reasoning;
+      bullet.judge_criteria = result.value.data.criteria_breakdown;
+
+      console.log(
+        `[SS:exp] Bullet scored ${result.value.data.quality_score}/100 (${result.value.data.passed ? 'PASS' : 'FAIL'})`
+      );
+    }
+  });
+
   // Save to session (graceful degradation - don't fail if session update fails)
   const sessionUpdateResult = await updateSession(request.session_id, {
-    experienceSuggestion: suggestionResult.data,
+    experienceSuggestion: suggestion,
   });
 
   if (sessionUpdateResult.error) {
@@ -144,7 +213,10 @@ async function runSuggestionGeneration(
     // Continue anyway - user still gets the suggestion
   }
 
-  return suggestionResult;
+  return {
+    data: suggestion,
+    error: null,
+  };
 }
 
 // ============================================================================

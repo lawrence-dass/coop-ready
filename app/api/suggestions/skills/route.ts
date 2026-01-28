@@ -14,7 +14,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ActionResponse, OptimizationPreferences } from '@/types';
 import type { SkillsSuggestion } from '@/types/suggestions';
+import type { SuggestionContext } from '@/types/judge';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
+import { judgeSuggestion } from '@/lib/ai/judgeSuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
 import { withTimeout } from '@/lib/utils/withTimeout';
 
@@ -36,6 +38,23 @@ interface SkillsSuggestionRequest {
 // ============================================================================
 
 const TIMEOUT_MS = 60000; // 60 seconds
+
+/**
+ * Truncate text at a sentence boundary near the target length
+ */
+function truncateAtSentence(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  const truncated = text.substring(0, maxLength);
+  const lastSentenceEnd = Math.max(
+    truncated.lastIndexOf('. '),
+    truncated.lastIndexOf('.\n'),
+    truncated.lastIndexOf('! '),
+    truncated.lastIndexOf('? ')
+  );
+  return lastSentenceEnd > maxLength * 0.5
+    ? truncated.substring(0, lastSentenceEnd + 1)
+    : truncated;
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -131,9 +150,63 @@ async function runSuggestionGeneration(
       return suggestionResult;
     }
 
+    // Story 12.1: Judge the skills suggestion quality
+    // For skills, we judge the overall recommendation (additions/removals)
+    const suggestion = suggestionResult.data;
+    const suggestedText = `Add: ${suggestion.skill_additions.join(', ')}. Remove: ${suggestion.skill_removals.map(s => s.skill).join(', ')}.`;
+
+    const judgeContext: SuggestionContext = {
+      original_text: request.current_skills,
+      suggested_text: suggestedText,
+      jd_excerpt: truncateAtSentence(request.jd_content, 500),
+      section_type: 'skills',
+    };
+
+    const judgeResult = await judgeSuggestion(
+      suggestedText,
+      judgeContext,
+      `skills-${request.session_id.substring(0, 8)}`
+    );
+
+    // Judge each added skill item in parallel (avoid sequential N+1 calls)
+    if (judgeResult.data && suggestion.missing_but_relevant) {
+      const skillJudgePromises = suggestion.missing_but_relevant.map(
+        (skillItem) => {
+          const skillJudgeContext: SuggestionContext = {
+            original_text: request.current_skills,
+            suggested_text: `Add skill: ${skillItem.skill}. Reason: ${skillItem.reason || 'Relevant to JD'}`,
+            jd_excerpt: truncateAtSentence(request.jd_content, 500),
+            section_type: 'skills',
+          };
+
+          return judgeSuggestion(
+            `${skillItem.skill}: ${skillItem.reason || ''}`,
+            skillJudgeContext,
+            `skill-${skillItem.skill.substring(0, 10)}`
+          );
+        }
+      );
+
+      const skillJudgeResults = await Promise.allSettled(skillJudgePromises);
+
+      skillJudgeResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.data) {
+          const skillItem = suggestion.missing_but_relevant[index];
+          skillItem.judge_score = result.value.data.quality_score;
+          skillItem.judge_passed = result.value.data.passed;
+          skillItem.judge_reasoning = result.value.data.reasoning;
+          skillItem.judge_criteria = result.value.data.criteria_breakdown;
+        }
+      });
+    }
+
+    console.log(
+      `[SS:skills] Judge scored ${judgeResult.data?.quality_score}/100 (${judgeResult.data?.passed ? 'PASS' : 'FAIL'})`
+    );
+
     // Save to session (graceful degradation - don't fail if session update fails)
     const sessionUpdateResult = await updateSession(request.session_id, {
-      skillsSuggestion: suggestionResult.data,
+      skillsSuggestion: suggestion,
     });
 
     if (sessionUpdateResult.error) {
@@ -144,7 +217,10 @@ async function runSuggestionGeneration(
       // Continue anyway - user still gets the suggestion
     }
 
-    return suggestionResult;
+    return {
+      data: suggestion,
+      error: null,
+    };
   } catch (error) {
     console.error('[skills-suggestion] Generation error:', error);
     return {
