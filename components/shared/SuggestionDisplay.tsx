@@ -3,6 +3,7 @@
 import { useOptimizationStore } from '@/store/useOptimizationStore';
 import type { SuggestionSortBy } from '@/store/useOptimizationStore';
 import { SuggestionSection } from './SuggestionSection';
+import { ScoreComparison } from './ScoreComparison';
 import { AlertCircle, ArrowUpDown } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
@@ -40,6 +41,9 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
   // Get loading state from store
   const isLoading = useOptimizationStore((state) => state.isLoading);
   const loadingStep = useOptimizationStore((state) => state.loadingStep);
+
+  // Get original ATS score for comparison (Story 11.3)
+  const atsScore = useOptimizationStore((state) => state.atsScore);
 
   // Get regenerating state (Story 6.7)
   const isRegeneratingSection = useOptimizationStore((state) => state.isRegeneratingSection) || {};
@@ -169,6 +173,18 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
   // Render sections that have data (or show loading state during generation)
   return (
     <div className={`space-y-8 ${className ?? ''}`} data-testid="suggestions-display">
+      {/* Score Comparison (Story 11.3) */}
+      {atsScore && hasSuggestions && (
+        <ScoreComparison
+          originalScore={atsScore.overall}
+          suggestions={{
+            summary: summarySuggestion,
+            skills: skillsSuggestion,
+            experience: experienceSuggestion,
+          }}
+        />
+      )}
+
       {/* Total Improvement Banner */}
       {totalPoints !== null && totalPoints > 0 && (
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6">

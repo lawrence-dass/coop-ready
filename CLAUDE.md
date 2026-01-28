@@ -81,3 +81,14 @@ Use: `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `PARSE_ERROR`, `LLM_TIMEOUT`, `LLM_E
 - Sessions persist across refresh (Zustand + Supabase)
 
 ---
+
+## Features
+
+**Score Comparison (Story 11.3)**
+- Displays original ATS score vs. projected score after optimization
+- Shows improvement delta prominently with visual indicators
+- Breakdown by category (Summary, Skills, Experience)
+- Real-time calculation based on suggestion point values
+- Responsive design (mobile, tablet, desktop)
+
+---
