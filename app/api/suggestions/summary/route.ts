@@ -19,6 +19,9 @@ import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { judgeSuggestion } from '@/lib/ai/judgeSuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
 import { withTimeout } from '@/lib/utils/withTimeout';
+import { collectQualityMetrics } from '@/lib/metrics/qualityMetrics';
+import { logQualityMetrics } from '@/lib/metrics/metricsLogger';
+import { truncateAtSentence } from '@/lib/utils/truncateAtSentence';
 
 // ============================================================================
 // TYPES
@@ -39,23 +42,6 @@ interface SummarySuggestionRequest {
 // ============================================================================
 
 const TIMEOUT_MS = 60000; // 60 seconds
-
-/**
- * Truncate text at a sentence boundary near the target length
- */
-function truncateAtSentence(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  const truncated = text.substring(0, maxLength);
-  const lastSentenceEnd = Math.max(
-    truncated.lastIndexOf('. '),
-    truncated.lastIndexOf('.\n'),
-    truncated.lastIndexOf('! '),
-    truncated.lastIndexOf('? ')
-  );
-  return lastSentenceEnd > maxLength * 0.5
-    ? truncated.substring(0, lastSentenceEnd + 1)
-    : truncated;
-}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -176,6 +162,19 @@ async function runSuggestionGeneration(
       console.log(
         `[SS:summary] Judge scored ${judgeResult.data.quality_score}/100 (${judgeResult.data.passed ? 'PASS' : 'FAIL'})`
       );
+
+      // Story 12.2: Collect and log quality metrics
+      try {
+        const metrics = collectQualityMetrics(
+          [judgeResult.data],
+          'summary',
+          request.session_id
+        );
+        await logQualityMetrics(metrics);
+      } catch (metricsError) {
+        // Metrics failure should not break the pipeline
+        console.error('[SS:summary] Metrics collection failed:', metricsError);
+      }
     } else {
       // Judge failed - log but continue without judge scores
       console.warn('[SS:summary] Judge failed, returning suggestion without quality scores');

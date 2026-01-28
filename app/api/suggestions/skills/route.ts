@@ -14,11 +14,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ActionResponse, OptimizationPreferences } from '@/types';
 import type { SkillsSuggestion } from '@/types/suggestions';
-import type { SuggestionContext } from '@/types/judge';
+import type { SuggestionContext, JudgeResult } from '@/types/judge';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { judgeSuggestion } from '@/lib/ai/judgeSuggestion';
 import { updateSession } from '@/lib/supabase/sessions';
 import { withTimeout } from '@/lib/utils/withTimeout';
+import { collectQualityMetrics } from '@/lib/metrics/qualityMetrics';
+import { logQualityMetrics } from '@/lib/metrics/metricsLogger';
+import { truncateAtSentence } from '@/lib/utils/truncateAtSentence';
+import { logJudgeBatchTrace } from '@/lib/metrics/judgeTrace';
 
 // ============================================================================
 // TYPES
@@ -38,23 +42,6 @@ interface SkillsSuggestionRequest {
 // ============================================================================
 
 const TIMEOUT_MS = 60000; // 60 seconds
-
-/**
- * Truncate text at a sentence boundary near the target length
- */
-function truncateAtSentence(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  const truncated = text.substring(0, maxLength);
-  const lastSentenceEnd = Math.max(
-    truncated.lastIndexOf('. '),
-    truncated.lastIndexOf('.\n'),
-    truncated.lastIndexOf('! '),
-    truncated.lastIndexOf('? ')
-  );
-  return lastSentenceEnd > maxLength * 0.5
-    ? truncated.substring(0, lastSentenceEnd + 1)
-    : truncated;
-}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -168,6 +155,11 @@ async function runSuggestionGeneration(
       `skills-${request.session_id.substring(0, 8)}`
     );
 
+    const allJudgeResults: JudgeResult[] = [];
+    if (judgeResult.data) {
+      allJudgeResults.push(judgeResult.data);
+    }
+
     // Judge each added skill item in parallel (avoid sequential N+1 calls)
     if (judgeResult.data && suggestion.missing_but_relevant) {
       const skillJudgePromises = suggestion.missing_but_relevant.map(
@@ -196,13 +188,30 @@ async function runSuggestionGeneration(
           skillItem.judge_passed = result.value.data.passed;
           skillItem.judge_reasoning = result.value.data.reasoning;
           skillItem.judge_criteria = result.value.data.criteria_breakdown;
+
+          // Collect for metrics
+          allJudgeResults.push(result.value.data);
         }
       });
     }
 
-    console.log(
-      `[SS:skills] Judge scored ${judgeResult.data?.quality_score}/100 (${judgeResult.data?.passed ? 'PASS' : 'FAIL'})`
-    );
+    // Story 12.2: Batch trace logging + collect and log quality metrics
+    logJudgeBatchTrace(allJudgeResults, 'skills');
+    if (allJudgeResults.length > 0) {
+      console.log(
+        `[SS:skills] Judge scored ${judgeResult.data?.quality_score}/100 (${judgeResult.data?.passed ? 'PASS' : 'FAIL'}) + ${allJudgeResults.length - (judgeResult.data ? 1 : 0)} skill items`
+      );
+      try {
+        const metrics = collectQualityMetrics(
+          allJudgeResults,
+          'skills',
+          request.session_id
+        );
+        await logQualityMetrics(metrics);
+      } catch (metricsError) {
+        console.error('[SS:skills] Metrics collection failed:', metricsError);
+      }
+    }
 
     // Save to session (graceful degradation - don't fail if session update fails)
     const sessionUpdateResult = await updateSession(request.session_id, {
