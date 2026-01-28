@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { getUserResumes } from '@/actions/resume/get-user-resumes';
 import { getResumeContent } from '@/actions/resume/get-resume-content';
 import { deleteResume } from '@/actions/resume/delete-resume';
+import { parseResumeText } from '@/actions/parseResumeText';
 import { useOptimizationStore } from '@/store';
 import type { UserResumeOption } from '@/types';
 
@@ -98,10 +99,22 @@ export function SelectResumeButton({
 
       // Load content into Zustand store as Resume object
       if (data.resumeContent) {
-        setResumeContent({
-          rawText: data.resumeContent,
+        // Parse raw text into structured sections (summary, skills, experience, education)
+        const parseResult = await parseResumeText(data.resumeContent, {
           filename: data.name,
         });
+
+        if (parseResult.error || !parseResult.data) {
+          // Fallback: store raw text without sections (suggestions may not work)
+          console.warn('[SS:select] Failed to parse resume sections, storing raw text only:', parseResult.error?.message);
+          setResumeContent({
+            rawText: data.resumeContent,
+            filename: data.name,
+          });
+        } else {
+          setResumeContent(parseResult.data);
+        }
+
         setSelectedResumeId(data.id); // Track selected resume
         toast.success(`Resume "${data.name}" loaded successfully!`);
         setIsOpen(false);
