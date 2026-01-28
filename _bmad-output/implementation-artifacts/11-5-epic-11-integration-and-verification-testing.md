@@ -1,6 +1,6 @@
 # Story 11.5: Epic 11 Integration and Verification Testing
 
-Status: backlog
+Status: done
 
 ## Story
 
@@ -32,38 +32,38 @@ So that users can configure optimization preferences and compare results.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Point Values Verification** (AC: #1)
-  - [ ] Generate suggestions
-  - [ ] Verify each suggestion shows point value
-  - [ ] Verify point values reflect impact (higher = more important)
-  - [ ] Test sorting by point value
+- [x] **Task 1: Point Values Verification** (AC: #1)
+  - [x] Generate suggestions
+  - [x] Verify each suggestion shows point value
+  - [x] Verify point values reflect impact (higher = more important)
+  - [x] Test sorting by point value
 
-- [ ] **Task 2: Optimization Preferences Verification** (AC: #2)
-  - [ ] Access preferences panel
-  - [ ] Verify 5 preference options available
-  - [ ] Test saving preferences
-  - [ ] Verify preferences affect suggestion generation
-  - [ ] Test resetting to defaults
+- [x] **Task 2: Optimization Preferences Verification** (AC: #2)
+  - [x] Access preferences panel
+  - [x] Verify 5 preference options available
+  - [x] Test saving preferences
+  - [x] Verify preferences affect suggestion generation
+  - [x] Test resetting to defaults
 
-- [ ] **Task 3: Score Comparison Verification** (AC: #3)
-  - [ ] Generate suggestions and apply
-  - [ ] View comparison view
-  - [ ] Verify original score shown
-  - [ ] Verify new score calculated
-  - [ ] Verify score improvement percentage
+- [x] **Task 3: Score Comparison Verification** (AC: #3)
+  - [x] Generate suggestions and apply
+  - [x] View comparison view
+  - [x] Verify original score shown
+  - [x] Verify new score calculated
+  - [x] Verify score improvement percentage
 
-- [ ] **Task 4: Before/After Comparison Verification** (AC: #4)
-  - [ ] View before/after text comparison
-  - [ ] Verify original text visible
-  - [ ] Verify suggested text visible
-  - [ ] Verify differences highlighted/visible
-  - [ ] Test across multiple sections
+- [x] **Task 4: Before/After Comparison Verification** (AC: #4)
+  - [x] View before/after text comparison
+  - [x] Verify original text visible
+  - [x] Verify suggested text visible
+  - [x] Verify differences highlighted/visible
+  - [x] Test across multiple sections
 
-- [ ] **Task 5: Create Verification Checklist** (AC: #5)
-  - [ ] Create `/docs/EPIC-11-VERIFICATION.md`
-  - [ ] Include preference configurations
-  - [ ] Include comparison views test cases
-  - [ ] Update README with reference
+- [x] **Task 5: Create Verification Checklist** (AC: #5)
+  - [x] Create `/docs/EPIC-11-VERIFICATION.md`
+  - [x] Include preference configurations
+  - [x] Include comparison views test cases
+  - [x] Update README with reference
 
 ## Dev Notes
 
