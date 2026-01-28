@@ -124,7 +124,7 @@ development_status:
   11-1-implement-point-values-for-suggestions: done
   11-2-implement-optimization-preferences: done
   11-3-implement-score-comparison: done
-  11-4-implement-before-after-text-comparison: backlog
+  11-4-implement-before-after-text-comparison: done
   11-5-epic-11-integration-and-verification-testing: backlog
 
   # Epic 12: Quality Assurance (V1.0)

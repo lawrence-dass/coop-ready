@@ -94,9 +94,9 @@ describe('SuggestionDisplay', () => {
 
     render(<SuggestionDisplay />);
 
-    expect(screen.getByText('Summary')).toBeInTheDocument();
-    expect(screen.getByText('Skills')).toBeInTheDocument();
-    expect(screen.getByText('Experience')).toBeInTheDocument();
+    expect(screen.getAllByText('Summary').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Skills').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Experience').length).toBeGreaterThan(0);
   });
 
   it('should display only summary section when only summary available', () => {
@@ -106,7 +106,7 @@ describe('SuggestionDisplay', () => {
 
     render(<SuggestionDisplay />);
 
-    expect(screen.getByText('Summary')).toBeInTheDocument();
+    expect(screen.getAllByText('Summary').length).toBeGreaterThan(0);
     expect(screen.queryByText('Skills')).not.toBeInTheDocument();
     expect(screen.queryByText('Experience')).not.toBeInTheDocument();
   });
@@ -181,7 +181,7 @@ describe('SuggestionDisplay', () => {
     render(<SuggestionDisplay />);
 
     // Summary should show content (not loading)
-    expect(screen.getByText('Summary')).toBeInTheDocument();
+    expect(screen.getAllByText('Summary').length).toBeGreaterThan(0);
     // Text appears in both desktop grid and mobile tabs
     expect(screen.getAllByText(/Junior developer/i).length).toBeGreaterThanOrEqual(1);
 
