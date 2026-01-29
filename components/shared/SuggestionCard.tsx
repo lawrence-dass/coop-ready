@@ -9,6 +9,7 @@ import { CopyButton } from './CopyButton';
 import { FeedbackButtons } from './FeedbackButtons';
 import { useOptimizationStore } from '@/store/useOptimizationStore';
 import { toast } from 'sonner';
+import { Lightbulb } from 'lucide-react';
 
 export interface SuggestionCardProps {
   /** Unique ID for this suggestion */
@@ -32,6 +33,9 @@ export interface SuggestionCardProps {
   /** Section type for styling context */
   sectionType: 'summary' | 'skills' | 'experience';
 
+  /** Why this works explanation (optional) */
+  explanation?: string;
+
   /** Additional className */
   className?: string;
 }
@@ -44,6 +48,7 @@ export interface SuggestionCardProps {
  *
  * Story 6.5: Implement Suggestion Display UI
  * Story 7.4: Added feedback buttons
+ * Story 14.3: Added "Why this works" explanation section
  */
 export function SuggestionCard({
   suggestionId,
@@ -53,6 +58,7 @@ export function SuggestionCard({
   keywords = [],
   metrics = [],
   sectionType,
+  explanation,
   className,
 }: SuggestionCardProps) {
   // Get feedback state and actions from store
@@ -145,6 +151,23 @@ export function SuggestionCard({
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Explanation: Why this works */}
+        {explanation && explanation.trim() !== '' && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+            <div className="flex gap-2 items-start">
+              <Lightbulb className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-blue-900 mb-1">
+                  Why this works
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {explanation}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Metadata: Keywords and Metrics */}
         {(keywords.length > 0 || metrics.length > 0) && (
