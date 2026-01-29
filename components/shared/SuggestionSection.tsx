@@ -135,6 +135,7 @@ function SummaryBody({ suggestion }: { suggestion: SummarySuggestion }) {
         suggested={suggestion.suggested}
         keywords={suggestion.ats_keywords_added}
         points={suggestion.point_value}
+        explanation={suggestion.explanation}
         sectionType="summary"
       />
     </div>
@@ -150,6 +151,7 @@ function SkillsBody({ suggestion }: { suggestion: SkillsSuggestion }) {
         suggested={suggestion.summary}
         keywords={suggestion.matched_keywords}
         points={suggestion.total_point_value}
+        explanation={suggestion.explanation}
         sectionType="skills"
       />
 
@@ -231,6 +233,7 @@ function ExperienceBody({
                   keywords={bullet.keywords_incorporated}
                   metrics={bullet.metrics_added}
                   points={bullet.point_value}
+                  explanation={bullet.explanation}
                   sectionType="experience"
                 />
               );
