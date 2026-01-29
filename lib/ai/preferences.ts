@@ -25,7 +25,9 @@ import type { OptimizationPreferences } from '@/types';
  *   verbosity: 'concise',
  *   emphasis: 'keywords',
  *   industry: 'tech',
- *   experienceLevel: 'senior'
+ *   experienceLevel: 'senior',
+ *   jobType: 'fulltime',
+ *   modificationLevel: 'moderate'
  * };
  *
  * const promptSection = buildPreferencePrompt(prefs);
@@ -86,6 +88,32 @@ export function buildPreferencePrompt(preferences: OptimizationPreferences): str
   } else if (preferences.experienceLevel === 'senior') {
     lines.push('- **Experience Level:** Frame for senior-level (emphasize strategy, mentorship, business impact, innovation)');
     lines.push('  - Use language like: "Drove...", "Architected...", "Established...", "Mentored..."');
+  }
+
+  // Job type preference
+  if (preferences.jobType === 'coop') {
+    lines.push('- **Job Type:** Target is co-op/internship position (learning-focused opportunity)');
+    lines.push('  - Use language like: "Contributed to...", "Developed...", "Learned...", "Gained experience in..."');
+    lines.push('  - Emphasize growth, development, and learning opportunities');
+  } else if (preferences.jobType === 'fulltime') {
+    lines.push('- **Job Type:** Target is full-time career position (impact-focused)');
+    lines.push('  - Use language like: "Led...", "Drove...", "Owned...", "Delivered..."');
+    lines.push('  - Emphasize impact, delivery, and ownership');
+  }
+
+  // Modification level preference
+  if (preferences.modificationLevel === 'conservative') {
+    lines.push('- **Modification Level:** Make CONSERVATIVE changes (15-25% modification)');
+    lines.push('  - Only add keywords, make minimal restructuring');
+    lines.push('  - Preserve the original writing style and voice');
+  } else if (preferences.modificationLevel === 'moderate') {
+    lines.push('- **Modification Level:** Make MODERATE changes (35-50% modification)');
+    lines.push('  - Restructure for impact while preserving intent');
+    lines.push('  - Balance improvements with maintaining authenticity');
+  } else if (preferences.modificationLevel === 'aggressive') {
+    lines.push('- **Modification Level:** Make AGGRESSIVE changes (60-75% modification)');
+    lines.push('  - Full rewrite for maximum impact');
+    lines.push('  - Significant reorganization and transformation allowed');
   }
 
   lines.push('');

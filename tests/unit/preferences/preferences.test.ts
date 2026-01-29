@@ -9,16 +9,20 @@ import {
   type EmphasisPreference,
   type IndustryPreference,
   type ExperienceLevelPreference,
+  type JobTypePreference,
+  type ModificationLevelPreference,
 } from '@/types';
 
 describe('Optimization Preferences', () => {
   describe('DEFAULT_PREFERENCES', () => {
-    it('should have all 5 required preferences', () => {
+    it('should have all 7 required preferences', () => {
       expect(DEFAULT_PREFERENCES).toHaveProperty('tone');
       expect(DEFAULT_PREFERENCES).toHaveProperty('verbosity');
       expect(DEFAULT_PREFERENCES).toHaveProperty('emphasis');
       expect(DEFAULT_PREFERENCES).toHaveProperty('industry');
       expect(DEFAULT_PREFERENCES).toHaveProperty('experienceLevel');
+      expect(DEFAULT_PREFERENCES).toHaveProperty('jobType');
+      expect(DEFAULT_PREFERENCES).toHaveProperty('modificationLevel');
     });
 
     it('should use sensible default values', () => {
@@ -27,6 +31,8 @@ describe('Optimization Preferences', () => {
       expect(DEFAULT_PREFERENCES.emphasis).toBe('impact');
       expect(DEFAULT_PREFERENCES.industry).toBe('generic');
       expect(DEFAULT_PREFERENCES.experienceLevel).toBe('mid');
+      expect(DEFAULT_PREFERENCES.jobType).toBe('fulltime');
+      expect(DEFAULT_PREFERENCES.modificationLevel).toBe('moderate');
     });
 
     it('should be a valid OptimizationPreferences object', () => {
@@ -91,6 +97,24 @@ describe('Optimization Preferences', () => {
         expect(level).toBeDefined();
       });
     });
+
+    it('should accept valid job type values', () => {
+      const validJobTypes: JobTypePreference[] = ['coop', 'fulltime'];
+      validJobTypes.forEach((jobType) => {
+        expect(jobType).toBeDefined();
+      });
+    });
+
+    it('should accept valid modification level values', () => {
+      const validLevels: ModificationLevelPreference[] = [
+        'conservative',
+        'moderate',
+        'aggressive',
+      ];
+      validLevels.forEach((level) => {
+        expect(level).toBeDefined();
+      });
+    });
   });
 
   describe('Custom Preferences', () => {
@@ -101,6 +125,8 @@ describe('Optimization Preferences', () => {
         emphasis: 'keywords',
         industry: 'tech',
         experienceLevel: 'senior',
+        jobType: 'coop',
+        modificationLevel: 'aggressive',
       };
 
       expect(customPrefs.tone).toBe('technical');
@@ -108,6 +134,8 @@ describe('Optimization Preferences', () => {
       expect(customPrefs.emphasis).toBe('keywords');
       expect(customPrefs.industry).toBe('tech');
       expect(customPrefs.experienceLevel).toBe('senior');
+      expect(customPrefs.jobType).toBe('coop');
+      expect(customPrefs.modificationLevel).toBe('aggressive');
     });
 
     it('should allow partial updates to preferences', () => {
@@ -116,6 +144,7 @@ describe('Optimization Preferences', () => {
         ...basePrefs,
         tone: 'casual',
         industry: 'finance',
+        jobType: 'coop',
       };
 
       expect(updatedPrefs.tone).toBe('casual');
@@ -123,16 +152,20 @@ describe('Optimization Preferences', () => {
       expect(updatedPrefs.emphasis).toBe('impact'); // unchanged
       expect(updatedPrefs.industry).toBe('finance');
       expect(updatedPrefs.experienceLevel).toBe('mid'); // unchanged
+      expect(updatedPrefs.jobType).toBe('coop');
+      expect(updatedPrefs.modificationLevel).toBe('moderate'); // unchanged
     });
   });
 
   describe('PREFERENCE_METADATA', () => {
-    it('should have metadata for all 5 preferences', () => {
+    it('should have metadata for all 7 preferences', () => {
       expect(PREFERENCE_METADATA).toHaveProperty('tone');
       expect(PREFERENCE_METADATA).toHaveProperty('verbosity');
       expect(PREFERENCE_METADATA).toHaveProperty('emphasis');
       expect(PREFERENCE_METADATA).toHaveProperty('industry');
       expect(PREFERENCE_METADATA).toHaveProperty('experienceLevel');
+      expect(PREFERENCE_METADATA).toHaveProperty('jobType');
+      expect(PREFERENCE_METADATA).toHaveProperty('modificationLevel');
     });
 
     it('should have labels and descriptions for each preference', () => {
@@ -178,6 +211,19 @@ describe('Optimization Preferences', () => {
       expect(levelOptions.mid).toBeDefined();
       expect(levelOptions.senior).toBeDefined();
     });
+
+    it('should have options for job type preference', () => {
+      const jobTypeOptions = PREFERENCE_METADATA.jobType.options;
+      expect(jobTypeOptions.coop).toBeDefined();
+      expect(jobTypeOptions.fulltime).toBeDefined();
+    });
+
+    it('should have options for modification level preference', () => {
+      const modLevelOptions = PREFERENCE_METADATA.modificationLevel.options;
+      expect(modLevelOptions.conservative).toBeDefined();
+      expect(modLevelOptions.moderate).toBeDefined();
+      expect(modLevelOptions.aggressive).toBeDefined();
+    });
   });
 
   describe('validatePreferences', () => {
@@ -192,6 +238,8 @@ describe('Optimization Preferences', () => {
         emphasis: 'keywords',
         industry: 'finance',
         experienceLevel: 'senior',
+        jobType: 'coop',
+        modificationLevel: 'aggressive',
       };
       expect(validatePreferences(prefs)).toBeNull();
     });
@@ -227,6 +275,16 @@ describe('Optimization Preferences', () => {
     it('should reject invalid experienceLevel value', () => {
       const prefs = { ...DEFAULT_PREFERENCES, experienceLevel: 'intern' };
       expect(validatePreferences(prefs)).toContain('Invalid experienceLevel');
+    });
+
+    it('should reject invalid jobType value', () => {
+      const prefs = { ...DEFAULT_PREFERENCES, jobType: 'parttime' };
+      expect(validatePreferences(prefs)).toContain('Invalid jobType');
+    });
+
+    it('should reject invalid modificationLevel value', () => {
+      const prefs = { ...DEFAULT_PREFERENCES, modificationLevel: 'extreme' };
+      expect(validatePreferences(prefs)).toContain('Invalid modificationLevel');
     });
   });
 

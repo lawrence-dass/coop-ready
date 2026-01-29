@@ -53,7 +53,7 @@ describe('PreferencesDialog', () => {
       expect(screen.getByText('Optimization Preferences')).toBeInTheDocument();
     });
 
-    it('should render all 5 preference sections', () => {
+    it('should render all 5 original preference sections (Job Type and Modification Level added in Story 13.3)', () => {
       render(
         <PreferencesDialog
           open={true}
@@ -217,6 +217,8 @@ describe('PreferencesDialog', () => {
         emphasis: 'keywords' as const,
         industry: 'tech' as const,
         experienceLevel: 'senior' as const,
+        jobType: 'coop' as const,
+        modificationLevel: 'aggressive' as const,
       };
 
       render(

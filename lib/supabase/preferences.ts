@@ -73,6 +73,8 @@ export async function getUserPreferences(): Promise<
       emphasis: userPrefs.emphasis ?? DEFAULTS.emphasis,
       industry: userPrefs.industry ?? DEFAULTS.industry,
       experienceLevel: userPrefs.experienceLevel ?? DEFAULTS.experienceLevel,
+      jobType: userPrefs.jobType ?? DEFAULTS.jobType,
+      modificationLevel: userPrefs.modificationLevel ?? DEFAULTS.modificationLevel,
     };
 
     return {

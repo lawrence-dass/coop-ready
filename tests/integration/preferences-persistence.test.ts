@@ -33,6 +33,8 @@ describe('Preferences Persistence Integration (11.2-AC3)', () => {
     emphasis: 'keywords',
     industry: 'tech',
     experienceLevel: 'senior',
+    jobType: 'coop',
+    modificationLevel: 'aggressive',
   };
 
   const authenticatedUser = {
@@ -170,7 +172,7 @@ describe('Preferences Persistence Integration (11.2-AC3)', () => {
   });
 
   describe('Round-Trip: Save then Load', () => {
-    it('should preserve all 5 preference fields through save/load cycle', async () => {
+    it('should preserve all 7 preference fields through save/load cycle', async () => {
       // Setup: authenticated user
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: authenticatedUser },
