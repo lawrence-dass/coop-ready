@@ -32,3 +32,6 @@ export { ComparisonCard } from './ComparisonCard';
 export { TextDiff, SideBySideDiff } from './TextDiff';
 export { PrivacyConsentDialog } from './PrivacyConsentDialog';
 export { PreferencesDialog } from './PreferencesDialog';
+export { Sidebar } from './Sidebar';
+export { Header } from './Header';
+export { MobileNav } from './MobileNav';

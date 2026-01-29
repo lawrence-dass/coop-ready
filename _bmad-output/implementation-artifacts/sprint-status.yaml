@@ -162,7 +162,7 @@ development_status:
 
   # Epic 16: Dashboard UI Architecture (V0.5)
   epic-16: in-progress
-  16-1-create-dashboard-layout-foundation: ready-for-dev
+  16-1-create-dashboard-layout-foundation: done
   16-2-implement-dashboard-home-page: backlog
   16-3-implement-new-scan-page: backlog
   16-4-implement-scan-results-page: backlog
