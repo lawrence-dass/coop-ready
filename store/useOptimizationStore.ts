@@ -119,8 +119,23 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** User optimization preferences (Story 11.2) - null until loaded */
   userPreferences: OptimizationPreferences | null;
 
+  /** Privacy consent status (Story 15.3) - undefined until loaded, null if user not auth */
+  privacyAccepted: boolean | null | undefined;
+
+  /** Privacy consent timestamp (Story 15.3) */
+  privacyAcceptedAt: Date | null | undefined;
+
+  /** Show privacy consent dialog (Story 15.3) */
+  showPrivacyDialog: boolean;
+
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
+
+  /** Set privacy consent status (Story 15.3) */
+  setPrivacyAccepted: (accepted: boolean | null, acceptedAt: Date | null) => void;
+
+  /** Set show privacy dialog state (Story 15.3) */
+  setShowPrivacyDialog: (show: boolean) => void;
 
   /** Set selected resume ID (Story 9-2) */
   setSelectedResumeId: (id: string | null) => void;
@@ -272,6 +287,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     currentSession: null,
     suggestionSortBy: 'points-high',
     userPreferences: null,
+    privacyAccepted: undefined, // undefined = not loaded, null = not authenticated
+    privacyAcceptedAt: undefined,
+    showPrivacyDialog: false,
 
     // ============================================================================
     // DATA ACTIONS
@@ -337,6 +355,12 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     setUserPreferences: (preferences) =>
       set({ userPreferences: preferences }),
+
+    setPrivacyAccepted: (accepted, acceptedAt) =>
+      set({ privacyAccepted: accepted, privacyAcceptedAt: acceptedAt }),
+
+    setShowPrivacyDialog: (show) =>
+      set({ showPrivacyDialog: show }),
 
     setPendingFile: (file) =>
       set({ pendingFile: file, error: null, fileError: null }),
@@ -647,6 +671,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         currentSession: null,
         suggestionSortBy: 'points-high',
         userPreferences: null,
+        privacyAccepted: undefined,
+        privacyAcceptedAt: undefined,
+        showPrivacyDialog: false,
       }),
   })
 );
