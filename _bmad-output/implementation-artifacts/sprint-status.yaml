@@ -164,7 +164,7 @@ development_status:
   epic-16: in-progress
   16-1-create-dashboard-layout-foundation: done
   16-2-implement-dashboard-home-page: done
-  16-3-implement-new-scan-page: ready-for-dev
+  16-3-implement-new-scan-page: done
   16-4-implement-scan-results-page: backlog
   16-5-implement-suggestions-page: backlog
   16-6-migrate-history-and-settings: backlog
