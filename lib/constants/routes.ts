@@ -30,6 +30,7 @@ export const ROUTES = {
     DASHBOARD: '/app/dashboard',
     SCAN: {
       NEW: '/app/scan/new',
+      SESSION: (id: string) => `/app/scan/${id}` as const,
     },
     HISTORY: '/app/history',
     SETTINGS: '/app/settings',
