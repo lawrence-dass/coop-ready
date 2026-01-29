@@ -147,8 +147,8 @@ development_status:
   13-5-epic-13-integration-and-verification-testing: done
 
   # Epic 14: Explanation Output (V0.5)
-  epic-14: backlog
-  14-1-add-explanation-types-and-schema: backlog
+  epic-14: in-progress
+  14-1-add-explanation-types-and-schema: done
   14-2-update-llm-prompts-for-explanations: backlog
   14-3-render-explanations-in-ui: backlog
   14-4-epic-14-integration-and-verification-testing: backlog
