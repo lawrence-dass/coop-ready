@@ -312,3 +312,170 @@ describe('buildPreferencePrompt Integration', () => {
     expect(casualPrompt).toContain('CONSERVATIVE');
   });
 });
+
+/**
+ * Story 13.4: Job Type and Modification Level Prompt Template Tests
+ * Verifies specific AC requirements for language patterns and percentages
+ */
+describe('Story 13.4: Job Type Prompt Templates', () => {
+  it('AC3: Co-op/Internship prompts use learning-focused language', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const coopPrompt = buildPreferencePrompt({
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'entry',
+      jobType: 'coop',
+      modificationLevel: 'moderate',
+    });
+
+    // AC3: Verify learning-focused language patterns
+    expect(coopPrompt).toContain('Contributed to');
+    expect(coopPrompt).toContain('Developed');
+    expect(coopPrompt).toContain('Learned');
+    expect(coopPrompt).toContain('Gained experience');
+    expect(coopPrompt).toContain('learning-focused');
+    expect(coopPrompt).toContain('growth');
+    expect(coopPrompt).toContain('development');
+  });
+
+  it('AC4: Full-time prompts use impact-focused language', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const fulltimePrompt = buildPreferencePrompt({
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'mid',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
+    });
+
+    // AC4: Verify impact-focused language patterns
+    expect(fulltimePrompt).toContain('Led');
+    expect(fulltimePrompt).toContain('Drove');
+    expect(fulltimePrompt).toContain('Owned');
+    expect(fulltimePrompt).toContain('Delivered');
+    expect(fulltimePrompt).toContain('impact-focused');
+    expect(fulltimePrompt).toContain('delivery');
+    expect(fulltimePrompt).toContain('ownership');
+  });
+});
+
+describe('Story 13.4: Modification Level Prompt Templates', () => {
+  it('AC5: Conservative level instructs 15-25% change', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const conservativePrompt = buildPreferencePrompt({
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'mid',
+      jobType: 'fulltime',
+      modificationLevel: 'conservative',
+    });
+
+    // AC5: Verify conservative 15-25% change instruction
+    expect(conservativePrompt).toContain('15-25%');
+    expect(conservativePrompt).toContain('CONSERVATIVE');
+    expect(conservativePrompt).toContain('minimal');
+    expect(conservativePrompt).toContain('Preserve');
+    expect(conservativePrompt).toContain('original');
+  });
+
+  it('AC6: Moderate level instructs 35-50% change', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const moderatePrompt = buildPreferencePrompt({
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'mid',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
+    });
+
+    // AC6: Verify moderate 35-50% change instruction
+    expect(moderatePrompt).toContain('35-50%');
+    expect(moderatePrompt).toContain('MODERATE');
+    expect(moderatePrompt).toContain('Restructure');
+    expect(moderatePrompt).toContain('Balance');
+    expect(moderatePrompt).toContain('authenticity');
+  });
+
+  it('AC7: Aggressive level instructs 60-75% change', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const aggressivePrompt = buildPreferencePrompt({
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'mid',
+      jobType: 'fulltime',
+      modificationLevel: 'aggressive',
+    });
+
+    // AC7: Verify aggressive 60-75% change instruction
+    expect(aggressivePrompt).toContain('60-75%');
+    expect(aggressivePrompt).toContain('AGGRESSIVE');
+    expect(aggressivePrompt).toContain('Full rewrite');
+    expect(aggressivePrompt).toContain('reorganization');
+    expect(aggressivePrompt).toContain('transformation');
+  });
+});
+
+describe('Story 13.4: Precedence Rules (AC8)', () => {
+  it('AC8: Job Type and Modification Level appear in prompt output', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const prompt = buildPreferencePrompt({
+      tone: 'technical',
+      verbosity: 'concise',
+      emphasis: 'keywords',
+      industry: 'tech',
+      experienceLevel: 'senior',
+      jobType: 'coop',
+      modificationLevel: 'aggressive',
+    });
+
+    // AC8: Both Job Type and Modification Level are present in generated prompt
+    expect(prompt).toContain('Job Type');
+    expect(prompt).toContain('Modification Level');
+
+    // Verify these are not overridden/missing when other prefs conflict conceptually
+    // e.g., senior + coop or tech + aggressive should all appear
+    expect(prompt).toContain('senior');
+    expect(prompt).toContain('co-op/internship');
+    expect(prompt).toContain('AGGRESSIVE');
+  });
+
+  it('AC8: All 7 preferences are independent (no conflicts)', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    // Test an unusual but valid combination
+    const prompt = buildPreferencePrompt({
+      tone: 'casual',              // Style
+      verbosity: 'comprehensive',   // Length
+      emphasis: 'skills',           // Focus
+      industry: 'healthcare',       // Domain
+      experienceLevel: 'entry',     // Level
+      jobType: 'fulltime',          // Position type
+      modificationLevel: 'aggressive', // Change magnitude
+    });
+
+    // All 7 should appear - no preference should be omitted due to "conflicts"
+    expect(prompt).toContain('conversational'); // 'casual' maps to 'conversational'
+    expect(prompt).toContain('comprehensive');
+    expect(prompt).toContain('technical skills'); // 'skills' emphasis maps to this phrase
+    expect(prompt).toContain('healthcare');
+    expect(prompt).toContain('entry');
+    expect(prompt).toContain('full-time');
+    expect(prompt).toContain('AGGRESSIVE');
+  });
+});
