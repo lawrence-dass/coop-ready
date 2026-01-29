@@ -1,177 +1,104 @@
 # Context Optimization Report - SubmitSmart
-**Date:** 2026-01-26
+
+**Date:** 2026-01-29
 **Mode:** ANALYZE (scan-only, no changes made)
-**Project Phase:** Implementation (V0.1 features complete)
-**Epic Status:** Epic 6 at 87.5% (7/8 stories done)
+**Project Phase:** Planning (V0.5 features)
+**Epic Status:** Epics 1-12 complete (V1.0), Epics 13-16 in backlog (V0.5)
 
 ---
 
 ## Executive Summary
 
-The SubmitSmart project's context management is **in excellent condition**. All key documents are within or near budget, with only minor optimizations recommended. The project has successfully implemented a sharding strategy for architecture documentation and maintains a healthy archive system.
+The project has grown significantly since the last optimization. **All V1.0 epics are now complete**, with 53 story files ready for archival. The context management needs attention:
 
 **Key Metrics:**
-- Total tracked documents: 31
-- Documents within budget: 28 (90%)
-- Documents at capacity: 2 (6%)
-- Documents needing optimization: 1 (3%)
-- Archive system: Active and functional
+- Total story files: 54 (including 1 YAML)
+- Documents within budget: 26 (48%)
+- Documents over budget: 28 story files + 2 core docs
+- Archive system: Active but underutilized
+
+**Status: ⚠️ OPTIMIZATION RECOMMENDED**
 
 ---
 
-## Document Analysis by Category
+## Document Analysis
 
 ### 1. Quick Reference Documents
 
 #### CLAUDE.md
 | Metric | Value | Budget | Status |
 |--------|-------|--------|--------|
-| Current Lines | **83** | <60 | ⚠️ SLIGHTLY OVER |
-| Last Optimized | 2026-01-23 (commit 664a0f0) | — | — |
-| Purpose | Developer quick-reference guide | — | — |
-| Content Type | Pointers + critical rules | — | — |
+| Current Lines | **94** | <60 | ❌ OVER (+34) |
+| Change from Last Report | +11 lines | — | — |
 
-**Assessment:** Recently refactored to reference-based model. Currently 83 lines (23 lines over budget). However, this represents **excellent optimization** from the prior 407-line version. The modest overage is acceptable given the critical nature of the content (development constraints, tech stack, key rules).
+**Assessment:** File has grown from 83 to 94 lines. Now 57% over budget. Needs trimming.
 
-**Current Content Structure:**
-- Current status (4 lines) ✓
-- Quick start commands (14 lines) ✓
-- Tech stack summary (1 line) ✓
-- Critical rules (5 rules, ~20 lines) ✓
-- Documentation index (8 lines) ✓
-- Key constraints (4 lines) ✓
-
-**Recommendation:** **ACCEPT as-is**. The 23-line overage is justified by the critical nature of the content and represents a successful refactoring from 6.8x over budget to 1.4x. No further trim recommended.
+**Recommendation:** Remove non-critical content. Target 60 lines.
 
 ---
-
-### 2. Core Implementation Rules
 
 #### project-context.md
 | Metric | Value | Budget | Status |
 |--------|-------|--------|--------|
-| Current Lines | **227** | <200 (soft) | ⚠️ AT SOFT LIMIT |
-| Hard Limit | — | 250 lines | — |
-| Rules Documented | 25 | — | — |
-| Shards Available | 5 | — | — |
+| Current Lines | **227** | <200 | ❌ OVER (+27) |
+| Change from Last Report | +0 lines | — | — |
 
-**Assessment:** Healthy state. File contains comprehensive coverage of critical implementation patterns. Currently at 90% of soft limit (227/250).
+**Assessment:** Same size but now over soft budget. Should be reviewed.
 
-**Current Content:**
-- Header/metadata (8 lines)
-- Technology stack table (18 lines)
-- Critical implementation rules (25 lines)
-- Naming conventions (14 lines)
-- Directory structure (13 lines)
-- LLM security rules (5 lines)
-- API patterns (5 lines)
-- Zustand store pattern (20 lines)
-- Error handling flow (14 lines)
-- Anti-patterns (15 lines)
-- Constraints (8 lines)
-- Context loading guidance (8 lines)
-- Usage guidelines (6 lines)
-
-**Growth Headroom:** 23 lines remaining before hard limit.
-
-**Recommendation:** **MONITOR for growth**. File is well-structured and information is appropriately curated. When total rules exceed 35 items (currently 25), begin extracting rule categories to `architecture/project-context-extended/` shards.
+**Recommendation:** Remove any V0.1/V1.0-specific content that's now completed.
 
 ---
 
-### 3. Architecture Documentation
+### 2. Architecture Documentation
 
 #### architecture.md (Index)
 | Metric | Value | Budget | Status |
 |--------|-------|--------|--------|
 | Index Lines | **109** | <150 | ✓ GOOD |
-| Sharded Date | 2026-01-24 | — | — |
-| Shard Count | 5 | — | — |
-| Total Sharded Lines | 922 | — | — |
 
-**Sharding Breakdown:**
-```
-architecture.md (109 lines - index)
-├── architecture-overview.md (68 lines)
-├── architecture-decisions.md (230 lines)
-├── architecture-patterns.md (193 lines)
-├── architecture-structure.md (216 lines)
-└── architecture-validation.md (215 lines)
-```
+**Assessment:** Well-maintained index. Sharding approach continues to work well.
 
-**Assessment:** **Exemplary sharding implementation**. The index-based approach is working optimally:
-- Index file stays lean (109 lines, 73% under budget)
-- Each shard is focused and self-contained
-- Loading guidance is clear and context-aware
-- Critical patterns are duplicated in index for quick access
-
-**Recommendation:** **MAINTAIN current approach**. No changes needed. This is a best-practice example of context optimization.
+**Recommendation:** No action needed.
 
 ---
 
-### 4. Implementation Artifacts
+### 3. Implementation Artifacts
 
-#### Story Files (31 total)
+#### Story Files (54 total)
 | Metric | Value | Budget | Status |
 |--------|-------|--------|--------|
-| Range | 87-848 lines | <400 each | ✓ GOOD |
-| Average | 333 lines | — | — |
-| Largest Story | 5-3 (848 lines) | — | ✓ ACCEPTABLE |
-| Completion Status | 7/8 done (Epic 6) | — | — |
+| Range | 87-848 lines | <400 each | ⚠️ 28 OVER |
+| Files Over Budget | 28 | — | ❌ |
+| Total Archivable | 53 stories | — | — |
 
-**Distribution:**
-- 0-200 lines: 5 stories (archive candidates)
-- 200-400 lines: 13 stories (healthy)
-- 400-600 lines: 7 stories (acceptable)
-- 600+ lines: 6 stories (complex features)
+**Stories Over 400 Lines (Top 20):**
 
-**Stories by Completion:**
-- Epic 1: 5/5 complete ✓
-- Epic 2: 3/3 complete ✓
-- Epic 3: 6/6 complete (→ archived)
-- Epic 4: 4/4 complete ✓
-- Epic 5: 5/5 complete ✓
-- Epic 6: 8/8 complete ✓
-- Epics 7-12: 0/28 (backlog)
+| File | Lines | Epic Status |
+|------|-------|-------------|
+| 5-3-implement-score-display-with-breakdown.md | 848 | done |
+| 5-4-implement-gap-analysis-display.md | 812 | done |
+| 7-4-implement-suggestion-feedback.md | 771 | done |
+| 5-2-implement-ats-score-calculation.md | 740 | done |
+| 5-1-implement-keyword-analysis.md | 698 | done |
+| 7-3-implement-timeout-recovery.md | 621 | done |
+| 7-1-implement-error-display-component.md | 588 | done |
+| 12-2-implement-quality-metrics-logging.md | 587 | done |
+| 11-2-implement-optimization-preferences.md | 580 | done |
+| 11-4-implement-before-after-text-comparison.md | 567 | done |
+| 11-3-implement-score-comparison.md | 556 | done |
+| 12-1-implement-llm-as-judge-pipeline-step.md | 548 | done |
+| 6-4-implement-experience-section-suggestions.md | 545 | done |
+| 7-2-implement-retry-functionality.md | 532 | done |
+| 6-3-implement-skills-section-suggestions.md | 527 | done |
+| 6-5-implement-suggestion-display-ui.md | 524 | done |
+| 6-6-implement-copy-to-clipboard.md | 458 | done |
+| 8-5-implement-onboarding-flow.md | 453 | done |
+| 9-2-implement-resume-selection-from-library.md | 444 | done |
+| 4-1-implement-job-description-input.md | 443 | done |
 
-**Assessment:** Story files are well-managed and within budget. Archived Epic 3 demonstrates effective record-keeping without cluttering active workspace.
+*(+8 more files between 400-443 lines)*
 
-**Recommendation:** **Continue current archival practice**. Archive Epics 1-6 completion stories once V0.1 release is finalized.
-
----
-
-### 5. Traceability & Testing Documentation
-
-#### Traceability Matrices
-| Document | Lines | Purpose | Status |
-|----------|-------|---------|--------|
-| traceability-matrix.md | 453 | Overall coverage map | ✓ REFERENCE |
-| traceability-matrix-epic-1.md | 1,192 | Epic 1 detailed trace | 📦 ARCHIVABLE |
-| traceability-matrix-epic-2.md | 671 | Epic 2 detailed trace | 📦 ARCHIVABLE |
-| traceability-matrix-epic-6.md | 435 | Epic 6 detailed trace | ✓ REFERENCE |
-
-**Assessment:** Traceability matrices are comprehensive and useful for validation. Epic-specific matrices for completed epics (1, 2) are candidates for archival since those stories are already archived.
-
-**Recommendation:**
-- Keep `traceability-matrix.md` as master reference
-- Keep `traceability-matrix-epic-6.md` (in progress)
-- Archive `traceability-matrix-epic-1.md` and `traceability-matrix-epic-2.md` when corresponding epics are archived
-
----
-
-#### Testing & Summary Documents
-| Document | Lines | Purpose | Status |
-|----------|-------|---------|--------|
-| test-automation-summary-epic-2.md | 401 | Test coverage breakdown | 📦 ARCHIVABLE |
-| epic-2-integration-summary.md | 361 | Integration results | 📦 ARCHIVABLE |
-| CONTEXT_OPTIMIZATION_VALIDATION.md | 292 | Prior optimization audit | 📦 ARCHIVABLE |
-| DEVELOPMENT_WORKFLOW.md | 634 | Workflow reference | ✓ REFERENCE |
-
-**Assessment:** Test summaries and integration reports for Epic 2 are historical records. Can be archived without loss of critical information since stories are already archived.
-
-**Recommendation:**
-- Archive Epic 2 test/summary documents alongside story files
-- Keep `DEVELOPMENT_WORKFLOW.md` as active reference
-- Replace `CONTEXT_OPTIMIZATION_VALIDATION.md` with this new report
+**All files are from completed epics and ready for archival.**
 
 ---
 
@@ -182,20 +109,27 @@ architecture.md (109 lines - index)
 _bmad-output/archive/
 ├── README.md (guide)
 └── epic-3-completed/
-    ├── 3-1-implement-resume-upload-ui.md (320 lines)
-    ├── 3-4-implement-docx-text-extraction.md (497 lines)
-    ├── 3-5-implement-resume-section-parsing.md (559 lines)
-    └── 3-6-epic-3-integration-and-verification-testing.md (103 lines)
-    └── [Total: 2,426 lines archived, 6 stories total]
+    └── 7 files (~2,400 lines archived)
 ```
 
-**Assessment:** Archive system is functioning well. Epic 3 stories successfully archived without access friction.
-
-**Recommendation:** **Prepare archives for Epics 1-2**. Create:
-- `archive/epic-1-completed/` → 5 stories (~2,100 lines)
-- `archive/epic-2-completed/` → 3 stories (~800 lines)
-
-Also move associated traceability/test docs to reduce active directory clutter.
+### Recommended Archive Structure
+```
+_bmad-output/archive/
+├── README.md
+├── epic-1-completed/   → 5 stories (NEW)
+├── epic-2-completed/   → 3 stories (NEW)
+├── epic-3-completed/   → 7 files (EXISTS)
+├── epic-4-completed/   → 4 stories (NEW)
+├── epic-5-completed/   → 5 stories (NEW)
+├── epic-6-completed/   → 9 stories (NEW)
+├── epic-7-completed/   → 5 stories (NEW)
+├── epic-8-completed/   → 6 stories (NEW)
+├── epic-9-completed/   → 4 stories (NEW)
+├── epic-10-completed/  → 4 stories (NEW)
+├── epic-11-completed/  → 5 stories (NEW)
+├── epic-12-completed/  → 3 stories (NEW)
+└── discovery-phase/    → Planning docs (OPTIONAL)
+```
 
 ---
 
@@ -203,34 +137,46 @@ Also move associated traceability/test docs to reduce active directory clutter.
 
 | Category | Status | Score | Trend |
 |----------|--------|-------|-------|
-| Quick References (CLAUDE.md) | ⚠️ Slightly Over | 7/10 | ↑ Improved |
-| Core Rules (project-context.md) | ⚠️ At Soft Limit | 8/10 | → Stable |
-| Architecture Docs | ✓ Excellent | 10/10 | → Stable |
-| Story Files | ✓ Excellent | 9/10 | → Stable |
-| Archive System | ✓ Active | 9/10 | → Stable |
-| Reference Docs | ✓ Good | 8/10 | → Stable |
-| **OVERALL** | **✓ HEALTHY** | **8.5/10** | **↑ Improving** |
+| Quick References (CLAUDE.md) | ❌ Over Budget | 5/10 | ↓ Worse |
+| Core Rules (project-context.md) | ⚠️ Over Budget | 6/10 | → Same |
+| Architecture Docs | ✓ Excellent | 10/10 | → Same |
+| Story Files | ❌ Many Over Budget | 4/10 | ↓ Worse |
+| Archive System | ⚠️ Underutilized | 5/10 | ↓ Worse |
+| **OVERALL** | **⚠️ NEEDS OPTIMIZATION** | **6/10** | **↓ Degraded** |
 
 ---
 
 ## Recommendations Summary
 
-### Priority: **MONITOR** (No immediate action)
-1. **CLAUDE.md**: 83 lines is acceptable. 23-line overage justified by critical content. Monitor future growth; trim if exceeds 100 lines.
+### Priority: **HIGH - Archive Now**
+1. **Archive All Completed Epics (1-2, 4-12)**
+   - 53 story files (~25,000 lines)
+   - Creates clean workspace for V0.5 development
+   - Run: `/context-optimize archive`
 
-### Priority: **PLAN NEXT CYCLE**
-2. **Archive Epics 1-2**: When V0.1 feature freeze is complete, archive:
-   - 8 story files (~2,900 lines)
-   - Associated traceability matrices (~1,860 lines)
-   - Test summaries for Epic 2 (~760 lines)
-   - **Result:** Reduce active implementation artifacts by ~5,500 lines
+### Priority: **MEDIUM - Trim Core Docs**
+2. **CLAUDE.md**: Reduce from 94 → 60 lines (-34)
+   - Remove duplicated info
+   - Move detailed refs to project-context.md
 
-3. **Consolidate Reference Docs**: Move obsolete validation/optimization reports to archive
+3. **project-context.md**: Reduce from 227 → 200 lines (-27)
+   - Remove V0.1/V1.0-specific completed patterns
+   - Consolidate sections
 
-### Priority: **MAINTAIN**
-4. Keep current architecture sharding approach—it's exemplary
-5. Keep project-context.md as-is; plan shard extraction if rules exceed 35
-6. Continue story file discipline; current approach is healthy
+### Priority: **LOW - After V0.5 Starts**
+4. Archive discovery/planning docs for V0.1/V1.0
+5. Update traceability matrices for V0.5
+
+---
+
+## Impact Estimate
+
+| Action | Lines Removed | Benefit |
+|--------|---------------|---------|
+| Archive Epics 1-2, 4-12 | ~25,000 lines | Clean workspace, faster searches |
+| Trim CLAUDE.md | 34 lines | Smaller context window load |
+| Trim project-context.md | 27 lines | Smaller context window load |
+| **Total** | **~25,061 lines** | **Significant improvement** |
 
 ---
 
@@ -238,61 +184,34 @@ Also move associated traceability/test docs to reduce active directory clutter.
 
 ### Current Context Window Usage
 ```
-CLAUDE.md                                    83 lines
-project-context.md                          227 lines
-architecture.md (index + critical patterns) 109 lines
-───────────────────────────────────────────────────
-Quick Reference Context                    ~420 lines
+CLAUDE.md                              94 lines  (over)
+project-context.md                    227 lines  (over)
+architecture.md (index)               109 lines  (good)
+───────────────────────────────────────────────
+Quick Reference Context              ~430 lines
+Estimated Tokens                     ~600-800 tokens
 ```
 
-**Per-Engagement Cost:** ~500-700 tokens (including YAML, formatting)
-
-### After Recommended Optimizations
+### After Optimization
 ```
-Expected reduction: 5,500+ lines from archive
-Expected context savings: 1,000+ tokens per engagement
+CLAUDE.md                              60 lines  (on budget)
+project-context.md                    200 lines  (on budget)
+architecture.md (index)               109 lines  (good)
+───────────────────────────────────────────────
+Quick Reference Context              ~369 lines
+Estimated Tokens                     ~500-600 tokens
+Savings                              ~100-200 tokens per call
 ```
 
 ---
 
-## Files Ready for Archival
+## Next Steps
 
-When V0.1 release is finalized, archive these documents:
-
-**Story Files (8 total, ~2,900 lines):**
-- ✓ 1-1 through 1-5 (Epic 1 complete)
-- ✓ 2-1 through 2-3 (Epic 2 complete)
-- ✓ 4-1 through 4-4 (Epic 4 complete)
-- ✓ 5-1 through 5-5 (Epic 5 complete)
-
-**Reference Docs (3 total, ~1,620 lines):**
-- traceability-matrix-epic-1.md (1,192 lines)
-- traceability-matrix-epic-2.md (671 lines)
-- test-automation-summary-epic-2.md (401 lines)
-- epic-2-integration-summary.md (361 lines)
-
-**Total Archivable:** ~5,500 lines
+Run `/context-optimize archive` to:
+1. Create archive folders for Epics 1-2, 4-12
+2. Move 53 story files to archive
+3. Clean implementation-artifacts directory for V0.5
 
 ---
 
-## Conclusion
-
-The SubmitSmart project demonstrates **mature context management practices**:
-
-✅ **Strengths:**
-- Aggressive but justified refactoring of CLAUDE.md (6.8x → 1.4x)
-- Well-implemented architecture sharding strategy
-- Healthy story file discipline and sizing
-- Active, functional archive system
-- Clear loading guidance and context awareness
-
-⚠️ **Minor Opportunities:**
-- 23 lines of acceptable overage in CLAUDE.md (justified)
-- project-context.md at soft limit (growth headroom: 23 lines)
-- Reference docs can be consolidated after V0.1 release
-
-**Recommendation:** No immediate optimization needed. Continue current practices, plan archival cycle after V0.1 feature freeze.
-
----
-
-_Report generated: 2026-01-26 | Mode: Analyze Only | No files modified_
+_Report generated: 2026-01-29 | Mode: Analyze Only | No files modified_

@@ -132,3 +132,41 @@ development_status:
   12-1-implement-llm-as-judge-pipeline-step: done
   12-2-implement-quality-metrics-logging: done
   12-3-epic-12-integration-and-verification-testing: done
+
+  # =============================================================================
+  # V0.5 HYBRID FEATURES
+  # Reference: initial_docs/revision/ats-resume-optimizer-v05-hybrid-plan.md
+  # =============================================================================
+
+  # Epic 13: Hybrid Preferences (V0.5)
+  epic-13: backlog
+  13-1-add-job-type-modification-level-types: backlog
+  13-2-add-preferences-database-migration: backlog
+  13-3-update-preferences-dialog-ui: backlog
+  13-4-add-prompt-templates: backlog
+  13-5-epic-13-integration-and-verification-testing: backlog
+
+  # Epic 14: Explanation Output (V0.5)
+  epic-14: backlog
+  14-1-add-explanation-types-and-schema: backlog
+  14-2-update-llm-prompts-for-explanations: backlog
+  14-3-render-explanations-in-ui: backlog
+  14-4-epic-14-integration-and-verification-testing: backlog
+
+  # Epic 15: Privacy Consent (V0.5)
+  epic-15: backlog
+  15-1-add-privacy-consent-database-columns: backlog
+  15-2-create-privacy-consent-dialog: backlog
+  15-3-gate-uploads-until-consent-accepted: backlog
+  15-4-epic-15-integration-and-verification-testing: backlog
+
+  # Epic 16: Dashboard UI Architecture (V0.5)
+  epic-16: backlog
+  16-1-create-dashboard-layout-foundation: backlog
+  16-2-implement-dashboard-home-page: backlog
+  16-3-implement-new-scan-page: backlog
+  16-4-implement-scan-results-page: backlog
+  16-5-implement-suggestions-page: backlog
+  16-6-migrate-history-and-settings: backlog
+  16-7-create-full-marketing-landing-page: backlog
+  16-8-epic-16-integration-and-verification-testing: backlog

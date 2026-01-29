@@ -1137,4 +1137,555 @@ So that we can monitor and improve suggestion quality over time.
 | 10 | Optimization History | 3 | V1.0 |
 | 11 | Compare & Enhanced Suggestions | 4 | V1.0 |
 | 12 | Quality Assurance (LLM-as-Judge) | 2 | V1.0 |
-| **Total** | | **46 stories** | |
+| 13 | Hybrid Preferences (V0.5) | 5 | V0.5 |
+| 14 | Explanation Output (V0.5) | 4 | V0.5 |
+| 15 | Privacy Consent (V0.5) | 4 | V0.5 |
+| 16 | Dashboard UI Architecture (V0.5) | 8 | V0.5 |
+| **Total** | | **67 stories** | |
+
+---
+
+# V0.5 Hybrid Features
+
+The following epics implement the V0.5 Hybrid Plan, adding structural controls (Job Type, Modification Level), explanation output, and privacy consent to complement the existing style preferences.
+
+**Reference Document:** `initial_docs/revision/ats-resume-optimizer-v05-hybrid-plan.md`
+
+---
+
+## Epic 13: Hybrid Preferences (V0.5)
+
+Users can configure Job Type and Modification Level to control how suggestions are framed and how much content is changed.
+
+**FRs covered:** FR28 (extends existing preferences implementation)
+**Version:** V0.5
+
+### Story 13.1: Add Job Type and Modification Level Types
+
+As a developer,
+I want the type definitions for Job Type and Modification Level preferences,
+So that I can use them throughout the codebase with type safety.
+
+**Acceptance Criteria:**
+
+**Given** the existing `OptimizationPreferences` type
+**When** I need to access job type or modification level
+**Then** `JobTypePreference` type exists with values `'coop' | 'fulltime'`
+**And** `ModificationLevelPreference` type exists with values `'conservative' | 'moderate' | 'aggressive'`
+**And** `OptimizationPreferences` interface includes `jobType` and `modificationLevel` fields
+**And** `DEFAULT_PREFERENCES` includes default values (`fulltime`, `moderate`)
+**And** `validatePreferences()` validates the new fields
+**And** `PREFERENCE_METADATA` includes labels and descriptions for new options
+
+---
+
+### Story 13.2: Add Preferences Database Migration
+
+As a developer,
+I want the database schema updated to support Job Type and Modification Level,
+So that user preferences persist correctly.
+
+**Acceptance Criteria:**
+
+**Given** the existing `optimization_preferences` JSONB column in profiles table
+**When** the migration runs
+**Then** the default JSONB includes `jobType: 'fulltime'` and `modificationLevel: 'moderate'`
+**And** existing rows are backfilled with new fields
+**And** no existing preferences are overwritten
+**And** the migration is idempotent (safe to run multiple times)
+
+---
+
+### Story 13.3: Update Preferences Dialog UI
+
+As a user,
+I want to configure Job Type and Modification Level in the preferences dialog,
+So that I can control how my suggestions are generated.
+
+**Acceptance Criteria:**
+
+**Given** I open the Preferences dialog
+**When** I view the available settings
+**Then** I see a "Job Type" section with radio buttons for "Co-op/Internship" and "Full-time"
+**And** I see a "Modification Level" section with radio buttons for "Conservative", "Moderate", "Aggressive"
+**And** each option has a clear description explaining its effect
+**And** the new sections appear before the existing Tone/Verbosity sections
+**And** I can save my selections and they persist
+**And** Reset to Defaults resets the new fields to `fulltime` and `moderate`
+
+---
+
+### Story 13.4: Add Job Type and Modification Level Prompt Templates
+
+As a developer,
+I want prompt templates that inject Job Type and Modification Level instructions into LLM calls,
+So that the AI generates appropriately-framed content.
+
+**Acceptance Criteria:**
+
+**Given** preferences include `jobType` and `modificationLevel`
+**When** `buildPreferencePrompt()` is called
+**Then** Job Type prompt is injected with audience-specific language guidelines
+**And** Modification Level prompt is injected with change magnitude instructions
+**And** Co-op/Internship prompts use learning-focused language ("Contributed to...", "Developed...")
+**And** Full-time prompts use impact-focused language ("Led...", "Drove...", "Owned...")
+**And** Conservative level instructs 15-25% change (keyword additions only)
+**And** Moderate level instructs 35-50% change (restructure for impact)
+**And** Aggressive level instructs 60-75% change (full rewrite)
+**And** Job Type and Modification Level take precedence over style preferences if conflicts arise
+
+---
+
+### Story 13.5: Epic 13 Integration and Verification Testing
+
+As a QA engineer,
+I want to verify that Job Type and Modification Level preferences work end-to-end,
+So that we can confidently release the feature.
+
+**Acceptance Criteria:**
+
+**Given** all Epic 13 stories are implemented
+**When** I test the complete flow
+**Then** I can select Job Type and Modification Level in preferences
+**And** preferences persist across sessions
+**And** Co-op mode produces learning-focused suggestions (verify language patterns)
+**And** Full-time mode produces impact-focused suggestions (verify language patterns)
+**And** Conservative mode makes minimal changes to original content
+**And** Aggressive mode produces significantly rewritten content
+**And** no regression in existing preference functionality (Tone, Verbosity, etc.)
+
+---
+
+## Epic 14: Explanation Output (V0.5)
+
+Users can see "Why this works" explanations for each suggestion to understand the reasoning behind changes.
+
+**FRs covered:** New requirement from V0.5 PRD
+**Version:** V0.5
+
+### Story 14.1: Add Explanation Types and Schema
+
+As a developer,
+I want the type definitions updated to include explanation fields,
+So that suggestions can carry reasoning information.
+
+**Acceptance Criteria:**
+
+**Given** the existing suggestion types (`SummarySuggestion`, `SkillsSuggestion`, `ExperienceSuggestion`, `BulletSuggestion`)
+**When** I need to access explanation data
+**Then** each suggestion type includes an optional `explanation?: string` field
+**And** the explanation is a 1-2 sentence string explaining why the change helps
+**And** the session storage schema accepts the new field
+**And** no breaking changes to existing suggestion handling
+
+---
+
+### Story 14.2: Update LLM Prompts for Explanations
+
+As a developer,
+I want the LLM prompts to request explanations alongside suggestions,
+So that the AI provides reasoning for each change.
+
+**Acceptance Criteria:**
+
+**Given** the suggestion generation prompts
+**When** the LLM generates a suggestion
+**Then** the prompt instructs the LLM to include a 1-2 sentence explanation
+**And** the explanation must reference specific JD keywords or requirements
+**And** the JSON response schema includes `explanation` field
+**And** explanations are parsed and stored with suggestions
+**And** empty or missing explanations are handled gracefully (don't fail)
+
+---
+
+### Story 14.3: Render Explanations in UI
+
+As a user,
+I want to see "Why this works" explanations beneath each suggestion,
+So that I understand why the change was recommended.
+
+**Acceptance Criteria:**
+
+**Given** suggestions with explanations are displayed
+**When** I view the suggestion cards
+**Then** I see a "Why this works" section beneath each suggestion
+**And** the explanation is visually distinct (e.g., light blue background, 💡 icon)
+**And** the text is readable and not truncated
+**And** suggestions without explanations display without the explanation section (graceful degradation)
+
+---
+
+### Story 14.4: Epic 14 Integration and Verification Testing
+
+As a QA engineer,
+I want to verify that explanations are generated and displayed correctly,
+So that we can confidently release the feature.
+
+**Acceptance Criteria:**
+
+**Given** all Epic 14 stories are implemented
+**When** I run a full optimization
+**Then** each suggestion includes an explanation
+**And** explanations reference JD keywords or requirements (not generic)
+**And** explanations display correctly in the UI
+**And** the feature degrades gracefully if LLM omits explanation
+**And** no regression in existing suggestion functionality
+
+---
+
+## Epic 15: Privacy Consent (V0.5)
+
+Users must accept a privacy disclosure before uploading their first resume.
+
+**FRs covered:** New requirement from V0.5 PRD (legal/trust)
+**Version:** V0.5
+
+### Story 15.1: Add Privacy Consent Database Columns
+
+As a developer,
+I want the database schema updated to track privacy consent,
+So that we can record when users accept the disclosure.
+
+**Acceptance Criteria:**
+
+**Given** the existing `profiles` table
+**When** the migration runs
+**Then** a `privacy_accepted` BOOLEAN column exists (default false)
+**And** a `privacy_accepted_at` TIMESTAMP column exists (nullable)
+**And** existing profiles have `privacy_accepted = false`
+**And** RLS policies allow users to update their own consent status
+
+---
+
+### Story 15.2: Create Privacy Consent Dialog
+
+As a user,
+I want to see a privacy disclosure before my first upload,
+So that I understand how my data will be used.
+
+**Acceptance Criteria:**
+
+**Given** I have not yet accepted the privacy disclosure
+**When** the consent dialog appears
+**Then** I see a clear explanation of data handling:
+  - Resume is processed using AI services (Anthropic Claude)
+  - Data is stored securely in my account
+  - Data is not used to train AI models
+  - I can delete my data at any time
+**And** I see links to Privacy Policy and Terms of Service
+**And** I see a checkbox to confirm understanding
+**And** I can click "I Agree" to proceed (disabled until checkbox checked)
+**And** I can click "Cancel" to dismiss without uploading
+
+---
+
+### Story 15.3: Gate Uploads Until Consent Accepted
+
+As a user,
+I want to be prevented from uploading until I accept the privacy disclosure,
+So that I make an informed decision about my data.
+
+**Acceptance Criteria:**
+
+**Given** I have not accepted the privacy disclosure (`privacy_accepted = false`)
+**When** I attempt to upload a resume
+**Then** the Privacy Consent Dialog appears
+**And** the upload is blocked until I accept
+**And** after accepting, `privacy_accepted` is set to true and `privacy_accepted_at` is recorded
+**And** subsequent uploads proceed without the dialog
+
+**Given** I have already accepted the privacy disclosure
+**When** I upload a resume
+**Then** the upload proceeds normally (no dialog)
+
+---
+
+### Story 15.4: Epic 15 Integration and Verification Testing
+
+As a QA engineer,
+I want to verify that privacy consent works correctly for all user types,
+So that we can confidently release the feature.
+
+**Acceptance Criteria:**
+
+**Given** all Epic 15 stories are implemented
+**When** I test various scenarios
+**Then** new users see the consent dialog on first upload attempt
+**And** existing users (backfilled) see the consent dialog on next upload
+**And** consent is recorded correctly in the database
+**And** subsequent uploads skip the dialog
+**And** anonymous users who later register retain their consent status
+**And** the feature does not block other app functionality (viewing results, etc.)
+
+---
+
+## Epic 16: Dashboard UI Architecture (V0.5)
+
+Transform SubmitSmart from a single-page app into a proper dashboard-based SaaS with distinct routes for each step of the optimization flow.
+
+**FRs covered:** UX improvement (enables better navigation, scalability, and user experience)
+**Version:** V0.5
+
+### Route Structure
+
+```
+/                           → Marketing landing page (public)
+/app                        → Redirect to /app/dashboard
+/app/dashboard              → Dashboard home (overview, recent scans, quick actions)
+/app/scan/new               → New scan page (upload resume + enter JD)
+/app/scan/[sessionId]       → Scan results (ATS score, breakdowns, keyword analysis)
+/app/scan/[sessionId]/suggestions → Suggestions view (section-by-section improvements)
+/app/history                → Scan history (list of past sessions)
+/app/settings               → User settings (preferences, profile)
+/app/onboarding             → First-time user wizard (if not completed)
+/auth/*                     → Keep existing auth routes
+```
+
+### Layout Structure
+
+All `/app/*` routes share a common layout with:
+- **Sidebar** (left): Navigation links, user profile
+- **Header** (top): Page title, quick actions, notifications
+- **Main content** (center): Page-specific content
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  [Logo] SubmitSmart                    [User] [Settings] [?] │
+├────────────┬─────────────────────────────────────────────────┤
+│            │                                                 │
+│  Dashboard │   [Page Content Area]                           │
+│  New Scan  │                                                 │
+│  History   │                                                 │
+│  Settings  │                                                 │
+│            │                                                 │
+│            │                                                 │
+│ ────────── │                                                 │
+│  [Sign Out]│                                                 │
+└────────────┴─────────────────────────────────────────────────┘
+```
+
+### Mobile Layout
+- Sidebar collapses to hamburger menu
+- Full-width content area
+- Bottom navigation for key actions
+
+---
+
+### Story 16.1: Create Dashboard Layout Foundation
+
+As a user,
+I want a consistent dashboard layout across all app pages,
+So that I can easily navigate between different sections of the application.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated
+**When** I visit any `/app/*` route
+**Then** I see a sidebar navigation on the left (desktop) or hamburger menu (mobile)
+**And** I see a header with the current page title
+**And** the main content area displays the page content
+**And** the sidebar shows navigation links: Dashboard, New Scan, History, Settings
+**And** the sidebar shows a Sign Out button at the bottom
+**And** the active route is highlighted in the sidebar
+**And** on mobile (< 1024px), the sidebar collapses to a hamburger menu
+**And** unauthenticated users are redirected to `/auth/login`
+
+**Technical Notes:**
+- Create route group `app/(dashboard)/`
+- Implement components: `Sidebar.tsx`, `Header.tsx`, `MobileNav.tsx`
+- Use Sheet component for mobile drawer navigation
+- Add auth protection in layout
+
+---
+
+### Story 16.2: Implement Dashboard Home Page
+
+As a user,
+I want a dashboard home page with an overview of my activity,
+So that I can quickly access key features and see my recent work.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated and on `/app/dashboard`
+**When** the page loads
+**Then** I see a welcome message with my name/email
+**And** I see a "New Scan" quick action card with prominent CTA
+**And** I see a "View History" quick action card
+**And** I see a "Your Progress" stats card (placeholder for now)
+**And** I see a "Recent Scans" section showing my last 3-5 sessions
+**And** if I have no scans, I see a getting started guide
+**And** clicking "New Scan" navigates to `/app/scan/new`
+**And** clicking a recent scan navigates to `/app/scan/[sessionId]`
+
+---
+
+### Story 16.3: Implement New Scan Page
+
+As a user,
+I want a dedicated page to start a new resume optimization,
+So that I can upload my resume and enter a job description.
+
+**Acceptance Criteria:**
+
+**Given** I am on `/app/scan/new`
+**When** the page loads
+**Then** I see the Resume Upload section (ResumeUploader component)
+**And** I see the Job Description Input section
+**And** I see configuration options (Job Type, Modification Level from V0.5)
+**And** I see the "Analyze" button
+**And** selecting a resume from library works correctly
+**And** after successful analysis, I am redirected to `/app/scan/[sessionId]`
+**And** errors are displayed using ErrorDisplay component
+**And** the page creates a new session (clears any previous state)
+
+**Technical Notes:**
+- Extract upload/JD components from current home page
+- Add `startNewScan()` action to clear previous session state
+- Integrate V0.5 preferences (Job Type, Modification Level) from Epic 13
+
+---
+
+### Story 16.4: Implement Scan Results Page
+
+As a user,
+I want to see my analysis results on a dedicated page,
+So that I can understand my ATS score and gaps before viewing suggestions.
+
+**Acceptance Criteria:**
+
+**Given** I am on `/app/scan/[sessionId]` with completed analysis
+**When** the page loads
+**Then** I see the ATS Score prominently displayed (ATSScoreDisplay)
+**And** I see the Score Breakdown by category (ScoreBreakdownCard)
+**And** I see the Keyword Analysis (KeywordAnalysisDisplay)
+**And** I see Gap Summary cards (GapSummaryCard)
+**And** I see a prominent "View Suggestions" CTA button
+**And** clicking "View Suggestions" navigates to `/app/scan/[sessionId]/suggestions`
+**And** I see secondary actions: "New Scan", "Download Report" (placeholder)
+**And** if session not found, I see an error and link to start new scan
+**And** the session is loaded from database if not in store
+
+---
+
+### Story 16.5: Implement Suggestions Page
+
+As a user,
+I want to view and interact with optimization suggestions on a dedicated page,
+So that I can focus on improving my resume section by section.
+
+**Acceptance Criteria:**
+
+**Given** I am on `/app/scan/[sessionId]/suggestions` with generated suggestions
+**When** the page loads
+**Then** I see section tabs or accordion: Summary, Skills, Experience
+**And** for each section, I see the SuggestionDisplay component
+**And** I see "Why this works" explanations (from Epic 14)
+**And** I can copy suggestions to clipboard
+**And** I can provide thumbs up/down feedback
+**And** I see Score Comparison (original vs projected) from Story 11.3
+**And** I can regenerate suggestions for a specific section
+**And** I see a "Back to Results" link
+**And** I see a "New Scan" action
+
+---
+
+### Story 16.6: Migrate History and Settings
+
+As a user,
+I want history and settings pages integrated into the dashboard layout,
+So that I have a consistent navigation experience.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated
+**When** I navigate to `/app/history`
+**Then** I see my optimization history (HistoryListView component)
+**And** the page uses the dashboard layout
+**And** clicking a session navigates to `/app/scan/[sessionId]`
+**And** I can delete sessions from history
+
+**Given** I am authenticated
+**When** I navigate to `/app/settings`
+**Then** I see my profile information (email)
+**And** I see optimization preferences (from PreferencesDialog)
+**And** I see V0.5 preferences (Job Type, Modification Level)
+**And** I can update and save preferences
+**And** I see privacy settings section
+**And** I see account actions (Sign Out, Delete Account placeholder)
+
+**Technical Notes:**
+- Move existing `/history` content to `/app/history`
+- Extract PreferencesDialog content into Settings page
+- Add redirects from old `/history` routes to new routes
+
+---
+
+### Story 16.7: Create Full Marketing Landing Page
+
+As a visitor,
+I want to see a marketing landing page that explains the product,
+So that I can understand the value and sign up.
+
+**Acceptance Criteria:**
+
+**Given** I am a visitor (not authenticated)
+**When** I visit `/`
+**Then** I see a Hero section with:
+  - Clear value proposition headline
+  - Subheadline explaining the benefit
+  - Primary CTA: "Get Started Free" → `/auth/signup`
+  - Secondary CTA: "Sign In" → `/auth/login`
+**And** I see a Features section highlighting 3-4 key benefits:
+  - ATS Score Analysis
+  - AI-Powered Suggestions
+  - Section-by-Section Optimization
+  - Privacy-First Approach
+**And** I see a "How It Works" section with 3 steps:
+  1. Upload your resume
+  2. Paste the job description
+  3. Get optimized suggestions
+**And** I see a Testimonials placeholder section
+**And** I see a Pricing placeholder section
+**And** I see a Footer with links to Privacy Policy, Terms, etc.
+
+**Given** I am authenticated
+**When** I visit `/`
+**Then** I am redirected to `/app/dashboard`
+
+---
+
+### Story 16.8: Epic 16 Integration and Verification Testing
+
+As a QA engineer,
+I want to verify the complete dashboard navigation and user flows,
+So that we can confidently release the multi-route architecture.
+
+**Acceptance Criteria:**
+
+**Given** all Epic 16 stories are implemented
+**When** I test the complete flows
+**Then** Landing page displays correctly for unauthenticated users
+**And** authenticated users are redirected from `/` to `/app/dashboard`
+**And** dashboard shows welcome message and quick actions
+**And** new scan flow: `/app/scan/new` → analysis → `/app/scan/[sessionId]`
+**And** suggestions flow: results page → `/app/scan/[sessionId]/suggestions`
+**And** history flow: `/app/history` → click session → `/app/scan/[sessionId]`
+**And** settings flow: preferences save and persist
+**And** mobile navigation works (hamburger menu, drawer)
+**And** browser back/forward navigation works correctly
+**And** deep linking to `/app/scan/[sessionId]` loads session from DB
+**And** page refresh maintains state at each step
+**And** old `/history` routes redirect to new routes
+**And** no regression in existing functionality
+
+---
+
+## V0.5 Story Summary
+
+| Epic | Title | Stories |
+|------|-------|---------|
+| 13 | Hybrid Preferences | 5 |
+| 14 | Explanation Output | 4 |
+| 15 | Privacy Consent | 4 |
+| 16 | Dashboard UI Architecture | 8 |
+| **V0.5 Total** | | **21 stories** |
