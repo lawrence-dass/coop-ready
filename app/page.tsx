@@ -6,7 +6,7 @@
  * Main page where users upload resumes and get optimization suggestions.
  */
 
-import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay, SuggestionDisplay, SignOutButton } from '@/components/shared';
+import { ResumeUploader, FileValidationError, JobDescriptionInput, AnalyzeButton, KeywordAnalysisDisplay, ATSScoreDisplay, ErrorDisplay, SuggestionDisplay, SignOutButton, PrivacyConsentDialog } from '@/components/shared';
 import { SaveResumeButton } from '@/components/resume/SaveResumeButton';
 import { SelectResumeButton } from '@/components/resume/SelectResumeButton';
 import { PreferencesDialog } from '@/components/shared/PreferencesDialog';
@@ -16,8 +16,10 @@ import { toast } from 'sonner';
 import { CheckCircle2, Loader2, History as HistoryIcon, Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { getPreferences } from '@/actions/preferences';
+import { usePrivacyConsent } from '@/hooks/usePrivacyConsent';
+import { acceptPrivacyConsent } from '@/actions/privacy/accept-privacy-consent';
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
@@ -50,6 +52,16 @@ export default function Home() {
   // Preferences dialog state
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
 
+  // Privacy consent state (Story 15.3)
+  const showPrivacyDialog = useOptimizationStore((state) => state.showPrivacyDialog);
+  const setShowPrivacyDialog = useOptimizationStore((state) => state.setShowPrivacyDialog);
+  const setPrivacyAccepted = useOptimizationStore((state) => state.setPrivacyAccepted);
+  const [isPendingConsent, startConsentTransition] = useTransition();
+  const [pendingFileForConsent, setPendingFileForConsent] = useState<File | null>(null);
+
+  // Privacy consent hook
+  const { privacyAccepted, refetch: refetchPrivacyConsent } = usePrivacyConsent();
+
   // Load user preferences on mount (for authenticated users)
   useEffect(() => {
     if (isAuthenticated && !userPreferences) {
@@ -67,6 +79,50 @@ export default function Home() {
       setFileError({ code: error.code, message: error.message });
     }
     toast.error(error.message);
+  };
+
+  // Handle file selection with privacy consent check (Story 15.3)
+  const handleFileSelect = (file: File) => {
+    // Check if user is authenticated and hasn't accepted consent
+    if (isAuthenticated && privacyAccepted === false) {
+      // Store file temporarily and show consent dialog
+      setPendingFileForConsent(file);
+      setShowPrivacyDialog(true);
+      return;
+    }
+
+    // User is either anonymous or has already accepted consent - proceed with upload
+    setPendingFile(file);
+    setFileError(null);
+  };
+
+  // Handle privacy consent acceptance (Story 15.3)
+  const handleAcceptConsent = () => {
+    startConsentTransition(async () => {
+      const { data, error } = await acceptPrivacyConsent();
+
+      if (error) {
+        toast.error(error.message || 'Failed to save consent');
+        return;
+      }
+
+      // Update store with new consent status
+      setPrivacyAccepted(data.privacyAccepted, data.privacyAcceptedAt);
+      toast.success('Privacy consent accepted');
+
+      // Close dialog
+      setShowPrivacyDialog(false);
+
+      // Now process the pending file
+      if (pendingFileForConsent) {
+        setPendingFile(pendingFileForConsent);
+        setPendingFileForConsent(null);
+        setFileError(null);
+      }
+
+      // Refetch to ensure we have latest status
+      await refetchPrivacyConsent();
+    });
   };
 
   return (
@@ -140,10 +196,7 @@ export default function Home() {
             )}
           </div>
           <ResumeUploader
-            onFileSelect={(file) => {
-              setPendingFile(file);
-              setFileError(null); // Clear error on valid file
-            }}
+            onFileSelect={handleFileSelect}
             onFileRemove={() => setPendingFile(null)}
             onError={handleFileError}
             selectedFile={
@@ -231,6 +284,13 @@ export default function Home() {
         onOpenChange={setIsPreferencesOpen}
         initialPreferences={userPreferences}
         onSaveSuccess={(prefs) => setUserPreferences(prefs)}
+      />
+
+      {/* Privacy Consent Dialog (Story 15.3) */}
+      <PrivacyConsentDialog
+        open={showPrivacyDialog}
+        onOpenChange={setShowPrivacyDialog}
+        onAccept={handleAcceptConsent}
       />
     </div>
   );

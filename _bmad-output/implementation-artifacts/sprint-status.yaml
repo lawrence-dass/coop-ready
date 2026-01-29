@@ -157,8 +157,8 @@ development_status:
   epic-15: in-progress
   15-1-add-privacy-consent-database-columns: done
   15-2-create-privacy-consent-dialog: done
-  15-3-gate-uploads-until-consent-accepted: backlog
-  15-4-epic-15-integration-and-verification-testing: backlog
+  15-3-gate-uploads-until-consent-accepted: done
+  15-4-epic-15-integration-and-verification-testing: ready-for-dev
 
   # Epic 16: Dashboard UI Architecture (V0.5)
   epic-16: backlog
