@@ -98,3 +98,23 @@ export interface OnboardingSaveResult {
   /** Success flag */
   success: boolean;
 }
+
+/**
+ * Privacy consent status for user profile
+ *
+ * Story: 15.1 - Add Privacy Consent Database Columns
+ *
+ * Database columns (snake_case):
+ *   - privacy_accepted: BOOLEAN NOT NULL DEFAULT false
+ *   - privacy_accepted_at: TIMESTAMP WITH TIME ZONE (nullable)
+ *
+ * Note: Transform at API boundary (snake_case → camelCase):
+ *   { privacy_accepted, privacy_accepted_at } → { privacyAccepted, privacyAcceptedAt }
+ */
+export interface PrivacyConsentStatus {
+  /** Whether user has accepted privacy disclosure */
+  privacyAccepted: boolean;
+
+  /** Timestamp when user accepted privacy disclosure (null if not accepted) */
+  privacyAcceptedAt: Date | null;
+}
