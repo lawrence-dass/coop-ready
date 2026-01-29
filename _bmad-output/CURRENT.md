@@ -1,13 +1,13 @@
 # Session Handoff - 2026-01-29 (Updated)
 
 ## Current Focus
-Story 16.1 (Dashboard Layout Foundation) - comprehensive context created. Ready for dev-story implementation.
+Story 16.2 (Dashboard Home Page) - comprehensive context created. Ready for dev-story implementation.
 
 ## Project State
 - **Phase**: Implementation (V0.5 - Epic 15 complete, Epic 16 in-progress)
-- **Epic**: 16 - Dashboard UI Architecture (in-progress, 1/8 ready-for-dev)
-- **Story**: 16.1 Dashboard Layout Foundation (ready-for-dev)
-- **Branch**: feature/16-1-dashboard-layout-foundation (clean, ready for dev-story)
+- **Epic**: 16 - Dashboard UI Architecture (in-progress, 2/8 ready-for-dev)
+- **Story**: 16.2 Implement Dashboard Home Page (ready-for-dev)
+- **Branch**: feature/16-2-dashboard-home-page (clean, ready for dev-story)
 
 ## Recent Completion
 - Epic 15 Complete: Database schema, privacy dialog, consent gating, integration tests
