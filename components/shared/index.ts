@@ -30,3 +30,5 @@ export { BeforeAfterComparison } from './BeforeAfterComparison';
 export type { ComparisonSection } from './BeforeAfterComparison';
 export { ComparisonCard } from './ComparisonCard';
 export { TextDiff, SideBySideDiff } from './TextDiff';
+export { PrivacyConsentDialog } from './PrivacyConsentDialog';
+export { PreferencesDialog } from './PreferencesDialog';
