@@ -142,7 +142,7 @@ development_status:
   epic-13: in-progress
   13-1-add-job-type-modification-level-types: done
   13-2-add-preferences-database-migration: done
-  13-3-update-preferences-dialog-ui: ready-for-dev
+  13-3-update-preferences-dialog-ui: done
   13-4-add-prompt-templates: backlog
   13-5-epic-13-integration-and-verification-testing: backlog
 
