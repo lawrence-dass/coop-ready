@@ -27,6 +27,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
     emphasis: 'keywords',
     industry: 'tech',
     experienceLevel: 'senior',
+    jobType: 'fulltime',
+    modificationLevel: 'moderate',
   };
 
   const casualEntryPrefs: OptimizationPreferences = {
@@ -35,6 +37,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
     emphasis: 'skills',
     industry: 'healthcare',
     experienceLevel: 'entry',
+    jobType: 'coop',
+    modificationLevel: 'conservative',
   };
 
   const baseRequest = {
@@ -239,7 +243,7 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
 });
 
 describe('buildPreferencePrompt Integration', () => {
-  it('should generate prompt section containing all 5 preference instructions', async () => {
+  it('should generate prompt section containing all 7 preference instructions', async () => {
     const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
 
     const prefs: OptimizationPreferences = {
@@ -248,6 +252,8 @@ describe('buildPreferencePrompt Integration', () => {
       emphasis: 'keywords',
       industry: 'tech',
       experienceLevel: 'senior',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
     };
 
     const prompt = buildPreferencePrompt(prefs);
@@ -263,6 +269,11 @@ describe('buildPreferencePrompt Integration', () => {
     expect(prompt).toContain('technology');
     expect(prompt).toContain('Experience Level');
     expect(prompt).toContain('senior');
+    // Story 13.1: Verify new preferences are included
+    expect(prompt).toContain('Job Type');
+    expect(prompt).toContain('full-time');
+    expect(prompt).toContain('Modification Level');
+    expect(prompt).toContain('MODERATE');
   });
 
   it('should generate different prompts for different preferences', async () => {
@@ -274,6 +285,8 @@ describe('buildPreferencePrompt Integration', () => {
       emphasis: 'keywords',
       industry: 'tech',
       experienceLevel: 'senior',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
     });
 
     const casualPrompt = buildPreferencePrompt({
@@ -282,6 +295,8 @@ describe('buildPreferencePrompt Integration', () => {
       emphasis: 'skills',
       industry: 'healthcare',
       experienceLevel: 'entry',
+      jobType: 'coop',
+      modificationLevel: 'conservative',
     });
 
     // Prompts should be meaningfully different
@@ -290,5 +305,10 @@ describe('buildPreferencePrompt Integration', () => {
     expect(casualPrompt).toContain('conversational');
     expect(casualPrompt).toContain('healthcare');
     expect(casualPrompt).toContain('entry');
+    // Story 13.1: Verify new preferences produce different prompts
+    expect(techPrompt).toContain('full-time');
+    expect(techPrompt).toContain('MODERATE');
+    expect(casualPrompt).toContain('co-op/internship');
+    expect(casualPrompt).toContain('CONSERVATIVE');
   });
 });

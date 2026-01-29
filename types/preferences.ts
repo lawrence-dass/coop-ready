@@ -1,10 +1,11 @@
 /**
  * Optimization Preferences Types
  *
- * These types define the 5 configurable preferences that users can set
+ * These types define the 7 configurable preferences that users can set
  * to customize how LLM suggestions are generated.
  *
- * Story: 11.2 - Implement Optimization Preferences
+ * Story: 11.2 - Implement Optimization Preferences (5 original preferences)
+ * Story: 13.1 - Add Job Type and Modification Level Types (2 new preferences)
  */
 
 // ============================================================================
@@ -62,6 +63,25 @@ export type ExperienceLevelPreference =
   | 'mid' // Balance execution and leadership, show depth and breadth (default)
   | 'senior'; // Emphasize strategic thinking, mentorship, business impact, innovation
 
+/**
+ * Job Type Preference - Controls audience and language framing
+ *
+ * Adjusts verb choice and impact framing based on job target type.
+ */
+export type JobTypePreference =
+  | 'coop' // Co-op/Internship - Learning-focused language (e.g., "Contributed", "Developed", "Learned")
+  | 'fulltime'; // Full-time Position - Impact-focused language (e.g., "Led", "Drove", "Owned", "Delivered")
+
+/**
+ * Modification Level Preference - Controls suggestion rewrite magnitude
+ *
+ * Determines how aggressively suggestions rewrite original content.
+ */
+export type ModificationLevelPreference =
+  | 'conservative' // 15-25% change - Only adds keywords, minimal restructuring
+  | 'moderate' // 35-50% change - Restructures for impact, balanced changes (default)
+  | 'aggressive'; // 60-75% change - Full rewrite, significant reorganization
+
 // ============================================================================
 // OPTIMIZATION PREFERENCES INTERFACE
 // ============================================================================
@@ -69,7 +89,7 @@ export type ExperienceLevelPreference =
 /**
  * Complete optimization preferences structure
  *
- * Combines all 5 preference dimensions that control suggestion generation.
+ * Combines all 7 preference dimensions that control suggestion generation.
  * Used both for storage (database) and runtime (LLM pipeline).
  */
 export interface OptimizationPreferences {
@@ -87,6 +107,12 @@ export interface OptimizationPreferences {
 
   /** Career level framing */
   experienceLevel: ExperienceLevelPreference;
+
+  /** Job target type (co-op vs full-time) */
+  jobType: JobTypePreference;
+
+  /** How aggressively to modify content */
+  modificationLevel: ModificationLevelPreference;
 }
 
 // ============================================================================
@@ -107,17 +133,14 @@ export const DEFAULT_PREFERENCES: OptimizationPreferences = {
   emphasis: 'impact',
   industry: 'generic',
   experienceLevel: 'mid',
+  jobType: 'fulltime',
+  modificationLevel: 'moderate',
 };
 
 // ============================================================================
 // PREFERENCE DISPLAY METADATA
 // ============================================================================
 
-/**
- * Human-readable labels and descriptions for each preference option
- *
- * Used in the PreferencesDialog UI to help users understand each choice.
- */
 // ============================================================================
 // VALID VALUES (for runtime validation)
 // ============================================================================
@@ -127,6 +150,8 @@ export const VALID_VERBOSITIES: readonly VerbosityPreference[] = ['concise', 'de
 export const VALID_EMPHASES: readonly EmphasisPreference[] = ['skills', 'impact', 'keywords'];
 export const VALID_INDUSTRIES: readonly IndustryPreference[] = ['tech', 'finance', 'healthcare', 'generic'];
 export const VALID_EXPERIENCE_LEVELS: readonly ExperienceLevelPreference[] = ['entry', 'mid', 'senior'];
+export const VALID_JOB_TYPES: readonly JobTypePreference[] = ['coop', 'fulltime'];
+export const VALID_MODIFICATION_LEVELS: readonly ModificationLevelPreference[] = ['conservative', 'moderate', 'aggressive'];
 
 /**
  * Validate that a preferences object contains only valid values
@@ -154,6 +179,12 @@ export function validatePreferences(prefs: unknown): string | null {
   }
   if (!VALID_EXPERIENCE_LEVELS.includes(p.experienceLevel as ExperienceLevelPreference)) {
     return `Invalid experienceLevel: ${String(p.experienceLevel)}. Must be one of: ${VALID_EXPERIENCE_LEVELS.join(', ')}`;
+  }
+  if (!VALID_JOB_TYPES.includes(p.jobType as JobTypePreference)) {
+    return `Invalid jobType: ${String(p.jobType)}. Must be one of: ${VALID_JOB_TYPES.join(', ')}`;
+  }
+  if (!VALID_MODIFICATION_LEVELS.includes(p.modificationLevel as ModificationLevelPreference)) {
+    return `Invalid modificationLevel: ${String(p.modificationLevel)}. Must be one of: ${VALID_MODIFICATION_LEVELS.join(', ')}`;
   }
 
   return null;
@@ -258,6 +289,43 @@ export const PREFERENCE_METADATA = {
       senior: {
         label: 'Senior',
         description: 'Emphasize strategy and mentorship',
+      },
+    },
+  },
+  jobType: {
+    label: 'Job Type',
+    description: 'Type of position you\'re applying for',
+    options: {
+      coop: {
+        label: 'Co-op / Internship',
+        description: 'Learning-focused opportunity, emphasize growth and development',
+        example: 'Contributed to real-world projects under mentorship',
+      },
+      fulltime: {
+        label: 'Full-time Position',
+        description: 'Career position, emphasize impact and delivery',
+        example: 'Led team to deliver major features on schedule',
+      },
+    },
+  },
+  modificationLevel: {
+    label: 'Modification Level',
+    description: 'How aggressively to modify content',
+    options: {
+      conservative: {
+        label: 'Conservative',
+        description: 'Minimal changes (15-25%) - Only adds keywords, light restructuring',
+        example: 'Keeps your writing style, adds ATS keywords',
+      },
+      moderate: {
+        label: 'Moderate',
+        description: 'Balanced changes (35-50%) - Restructures for impact',
+        example: 'Improves clarity and impact while preserving intent',
+      },
+      aggressive: {
+        label: 'Aggressive',
+        description: 'Major rewrite (60-75%) - Full reorganization for maximum impact',
+        example: 'Completely rewrites for strongest possible presentation',
       },
     },
   },
