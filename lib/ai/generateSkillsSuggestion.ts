@@ -123,6 +123,7 @@ ${preferenceSection}
 5. Identify skills that might be less relevant for this role (if any)
 6. Calculate point values for each missing skill addition
 7. Provide a brief summary with total point value
+8. Include a 1-2 sentence explanation of why these skills matter for this role (reference specific JD keywords)
 
 **Point Value Calculation:**
 For each missing skill addition, estimate point impact:
@@ -140,6 +141,8 @@ Total point value = sum of all skill additions. Realistic range: 10-25 points fo
 - Skills can be technical (languages, frameworks), tools (AWS, Docker), or soft skills (Leadership)
 - Be specific with skill names (e.g., "React.js" not just "front-end")
 - Point values must be realistic and conservative
+- Explanation must connect suggestion to specific JD keywords (not generic phrases)
+- Keep explanation concise (1-2 sentences, max 300 chars)
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {
@@ -153,7 +156,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     { "skill": "SkillName", "reason": "Lower priority for this role" }
   ],
   "total_point_value": 12,
-  "summary": "You have 8/12 key skills. Consider adding Docker and Kubernetes based on your DevOps background. Total improvement: +12 points."
+  "summary": "You have 8/12 key skills. Consider adding Docker and Kubernetes based on your DevOps background. Total improvement: +12 points.",
+  "explanation": "Docker and Kubernetes are explicitly listed in the JD's 'Required Skills' section and align with your DevOps background."
 }`;
 
     // Invoke LLM (timeout enforced at the route level)
@@ -169,6 +173,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       skill_removals: Array<{ skill: string; reason: string }>;
       total_point_value?: number;
       summary: string;
+      explanation?: string;
     };
 
     try {
@@ -265,8 +270,29 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       console.warn('[SS:genSkills] Invalid total_point_value from LLM, ignoring:', parsed.total_point_value);
     }
 
+    // Handle explanation field (graceful fallback)
+    let explanation: string | undefined = undefined;
+    if (parsed.explanation !== undefined && parsed.explanation !== null) {
+      if (typeof parsed.explanation === 'string') {
+        // Truncate if too long (max 500 chars)
+        explanation = parsed.explanation.length > 500
+          ? parsed.explanation.substring(0, 497) + '...'
+          : parsed.explanation;
+
+        // Validate explanation quality (log warning if generic)
+        const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
+        const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
+        if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill)/i)) {
+          console.warn('[SS:genSkills] Generic explanation detected (missing specific JD keywords):', explanation);
+        }
+      } else {
+        // Convert non-string to empty string
+        explanation = '';
+      }
+    }
+
     // Return suggestion
-    console.log('[SS:genSkills] Skills generated:', parsed.matched_keywords.length, 'matched,', parsed.skill_additions.length, 'additions, total_point_value:', totalPointValue);
+    console.log('[SS:genSkills] Skills generated:', parsed.matched_keywords.length, 'matched,', parsed.skill_additions.length, 'additions, total_point_value:', totalPointValue, ', explanation:', explanation ? 'present' : 'missing');
     return {
       data: {
         original: resumeSkills, // Return full original, not truncated
@@ -277,6 +303,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
         skill_removals: normalizedRemovals,
         total_point_value: totalPointValue,
         summary: parsed.summary,
+        explanation: explanation,
       },
       error: null,
     };

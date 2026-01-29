@@ -149,7 +149,7 @@ development_status:
   # Epic 14: Explanation Output (V0.5)
   epic-14: in-progress
   14-1-add-explanation-types-and-schema: done
-  14-2-update-llm-prompts-for-explanations: backlog
+  14-2-update-llm-prompts-for-explanations: done
   14-3-render-explanations-in-ui: backlog
   14-4-epic-14-integration-and-verification-testing: backlog
 

@@ -137,6 +137,7 @@ ${preferenceSection}
 6. Start each bullet with a strong action verb (Led, Developed, Improved, etc.)
 7. Focus on achievements, not just tasks
 8. Calculate point value for each bullet optimization
+9. For each bullet, include 1-2 sentence explanation of how it aligns with JD requirements (reference specific keywords)
 
 **Point Value Calculation:**
 For each bullet suggestion, estimate point impact:
@@ -154,6 +155,8 @@ Total point value = sum of all bullet optimizations. Realistic range: 20-40 poin
 - If no metrics can be reasonably inferred, focus on keyword incorporation
 - Maintain chronological context and job progression
 - Point values must be realistic and reflect actual ATS impact
+- Each bullet explanation must reference specific JD keywords (not generic)
+- Keep explanations concise (1-2 sentences, max 200 chars each)
 
 **Authenticity Examples:**
 ✓ "Managed project" → "Led cross-functional team to deliver project, reducing deployment time by 30%" (if context suggests efficiency gains)
@@ -174,7 +177,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           "suggested": "Led cross-functional team to deliver 3-month project, incorporating [keyword], reducing deployment time by 30%",
           "metrics_added": ["3-month", "30%"],
           "keywords_incorporated": ["keyword", "cross-functional"],
-          "point_value": 8
+          "point_value": 8,
+          "explanation": "Adding 'cross-functional team leadership' directly addresses JD's requirement for collaboration skills."
         }
       ]
     }
@@ -208,6 +212,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           metrics_added: string[];
           keywords_incorporated: string[];
           point_value?: number;
+          explanation?: string;
         }>;
       }>;
       total_point_value?: number;
@@ -281,12 +286,35 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
             ? pointValue
             : undefined;
+
+        // Handle explanation field (graceful fallback)
+        let explanation: string | undefined = undefined;
+        if (bullet.explanation !== undefined && bullet.explanation !== null) {
+          if (typeof bullet.explanation === 'string') {
+            // Truncate if too long (max 500 chars)
+            explanation = bullet.explanation.length > 500
+              ? bullet.explanation.substring(0, 497) + '...'
+              : bullet.explanation;
+
+            // Validate explanation quality (log warning if generic)
+            const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
+            const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
+            if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill|requirement)/i)) {
+              console.warn('[SS:genExp] Generic explanation detected (missing specific JD keywords):', explanation);
+            }
+          } else {
+            // Convert non-string to empty string
+            explanation = '';
+          }
+        }
+
         return {
           original: String(bullet.original || ''),
           suggested: String(bullet.suggested || ''),
           metrics_added: Array.isArray(bullet.metrics_added) ? bullet.metrics_added : [],
           keywords_incorporated: Array.isArray(bullet.keywords_incorporated) ? bullet.keywords_incorporated : [],
           point_value: validPointValue,
+          explanation: explanation,
         };
       }),
     }));
@@ -304,7 +332,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     }
 
     // Return suggestion
-    console.log('[SS:genExp] Experience generated:', normalizedEntries.length, 'entries, total_point_value:', totalPointValue);
+    const bulletWithExplanationCount = normalizedEntries.reduce((count, entry) =>
+      count + entry.suggested_bullets.filter(b => b.explanation).length, 0);
+    console.log('[SS:genExp] Experience generated:', normalizedEntries.length, 'entries, total_point_value:', totalPointValue, ', bullets_with_explanation:', bulletWithExplanationCount);
     return {
       data: {
         original: resumeExperience, // Return full original, not truncated

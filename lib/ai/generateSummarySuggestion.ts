@@ -118,6 +118,7 @@ ${preferenceSection}
 5. Keep the summary concise (2-4 sentences, 50-150 words)
 6. Maintain the user's voice and authenticity
 7. Estimate the point value this summary optimization would add to the ATS score
+8. Include a 1-2 sentence explanation of why this summary change improves ATS alignment (reference specific JD keywords or requirements)
 
 **Point Value Calculation:**
 Consider:
@@ -133,12 +134,15 @@ Assign point value as integer 1-12 for summary changes.
 - Do NOT use phrases like "I have the pleasure", "leverage my expertise", "synergize"
 - Make it sound like a human wrote it, not an AI
 - Point values must be realistic for actual ATS systems
+- Explanation must reference specific JD keywords (not generic phrases like "improves score")
+- Keep explanation concise (1-2 sentences, max 300 chars)
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {
   "suggested": "Your optimized summary text here",
   "keywords_added": ["keyword1", "keyword2", "keyword3"],
-  "point_value": 8
+  "point_value": 8,
+  "explanation": "Adding AWS highlights your infrastructure experience directly mentioned in JD's 'AWS expertise required' requirement."
 }`;
 
     // Invoke LLM (timeout enforced at the route level)
@@ -146,7 +150,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     const content = response.content as string;
 
     // Parse JSON response
-    let parsed: { suggested: string; keywords_added: string[]; point_value?: number };
+    let parsed: { suggested: string; keywords_added: string[]; point_value?: number; explanation?: string };
     try {
       parsed = JSON.parse(content);
     } catch (parseError) {
@@ -186,11 +190,32 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       parsed.point_value = undefined;
     }
 
+    // Handle explanation field (graceful fallback)
+    let explanation: string | undefined = undefined;
+    if (parsed.explanation !== undefined && parsed.explanation !== null) {
+      if (typeof parsed.explanation === 'string') {
+        // Truncate if too long (max 500 chars)
+        explanation = parsed.explanation.length > 500
+          ? parsed.explanation.substring(0, 497) + '...'
+          : parsed.explanation;
+
+        // Validate explanation quality (log warning if generic)
+        const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
+        const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
+        if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill)/i)) {
+          console.warn('[SS:genSummary] Generic explanation detected (missing specific JD keywords):', explanation);
+        }
+      } else {
+        // Convert non-string to empty string
+        explanation = '';
+      }
+    }
+
     // Detect AI-tell phrases in suggested summary
     const suggestedAITellPhrases = detectAITellPhrases(parsed.suggested);
 
     // Return suggestion
-    console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added, ', point_value:', parsed.point_value);
+    console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added, ', point_value:', parsed.point_value, ', explanation:', explanation ? 'present' : 'missing');
     return {
       data: {
         original: resumeSummary, // Return full original, not truncated
@@ -201,6 +226,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           ...suggestedAITellPhrases,
         ],
         point_value: parsed.point_value,
+        explanation: explanation,
       },
       error: null,
     };
