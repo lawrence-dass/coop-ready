@@ -49,7 +49,9 @@ export type ErrorCode =
   | 'LLM_TIMEOUT'
   | 'LLM_ERROR'
   | 'RATE_LIMITED'
-  | 'VALIDATION_ERROR';
+  | 'VALIDATION_ERROR'
+  | 'SESSION_NOT_FOUND'
+  | 'ANALYSIS_INCOMPLETE';
 
 // ============================================================================
 // ERROR MESSAGE MAPPING
@@ -103,6 +105,19 @@ const ERROR_MESSAGES: Record<ErrorCode, ErrorDisplayInfo> = {
     title: 'Invalid Input',
     message: 'Please check your inputs and try again',
     recoveryAction: 'Review your resume and job description content',
+  },
+
+  // Session Errors
+  SESSION_NOT_FOUND: {
+    title: 'Session Not Found',
+    message: 'The requested scan session could not be found',
+    recoveryAction: 'Start a new scan to analyze your resume',
+  },
+
+  ANALYSIS_INCOMPLETE: {
+    title: 'Analysis Incomplete',
+    message: 'This session does not have completed analysis data',
+    recoveryAction: 'Start a new scan to analyze your resume',
   },
 };
 
