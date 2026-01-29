@@ -68,6 +68,61 @@ describe('PreferencesDialog', () => {
       expect(screen.getByText('Experience Level')).toBeInTheDocument();
     });
 
+    it('should render Job Type preference section (Story 13.3)', () => {
+      render(
+        <PreferencesDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+        />
+      );
+
+      // Check section label
+      expect(screen.getByText('Job Type')).toBeInTheDocument();
+
+      // Check option labels
+      expect(screen.getByLabelText('Co-op / Internship')).toBeInTheDocument();
+      expect(screen.getByLabelText('Full-time Position')).toBeInTheDocument();
+    });
+
+    it('should render Modification Level preference section (Story 13.3)', () => {
+      render(
+        <PreferencesDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+        />
+      );
+
+      // Check section label
+      expect(screen.getByText('Modification Level')).toBeInTheDocument();
+
+      // Check option labels
+      expect(screen.getByLabelText('Conservative')).toBeInTheDocument();
+      expect(screen.getByLabelText('Moderate')).toBeInTheDocument();
+      expect(screen.getByLabelText('Aggressive')).toBeInTheDocument();
+    });
+
+    it('should render Job Type and Modification Level BEFORE Tone section (Story 13.3 AC4)', () => {
+      render(
+        <PreferencesDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+        />
+      );
+
+      // Get all preference section labels in DOM order
+      const allLabels = screen.getAllByText(/^(Job Type|Modification Level|Tone|Verbosity|Emphasis|Industry Focus|Experience Level)$/);
+      const labelTexts = allLabels.map((el) => el.textContent);
+
+      // Verify Job Type and Modification Level appear before Tone
+      const jobTypeIndex = labelTexts.indexOf('Job Type');
+      const modLevelIndex = labelTexts.indexOf('Modification Level');
+      const toneIndex = labelTexts.indexOf('Tone');
+
+      expect(jobTypeIndex).toBeLessThan(toneIndex);
+      expect(modLevelIndex).toBeLessThan(toneIndex);
+      expect(jobTypeIndex).toBeLessThan(modLevelIndex); // Job Type first, then Mod Level
+    });
+
     it('should render Reset to Defaults button', () => {
       render(
         <PreferencesDialog
@@ -100,18 +155,23 @@ describe('PreferencesDialog', () => {
         />
       );
 
-      // Check that default radio buttons are selected
+      // Check that default radio buttons are selected (all 7 fields)
       const professionalRadio = screen.getByLabelText('Professional');
       const detailedRadio = screen.getByLabelText('Detailed');
       const impactRadio = screen.getByLabelText('Impact');
       const genericRadio = screen.getByLabelText('Generic');
       const midRadio = screen.getByLabelText('Mid-Level');
+      const fulltimeRadio = screen.getByLabelText('Full-time Position');
+      const moderateRadio = screen.getByLabelText('Moderate');
 
       expect(professionalRadio).toBeChecked();
       expect(detailedRadio).toBeChecked();
       expect(impactRadio).toBeChecked();
       expect(genericRadio).toBeChecked();
       expect(midRadio).toBeChecked();
+      // Story 13.3: Verify new fields have correct defaults
+      expect(fulltimeRadio).toBeChecked();
+      expect(moderateRadio).toBeChecked();
     });
 
     it('should initialize with initialPreferences when provided', () => {
@@ -207,6 +267,34 @@ describe('PreferencesDialog', () => {
 
       expect(seniorRadio).toBeChecked();
     });
+
+    it('should allow changing job type preference (Story 13.3)', () => {
+      render(
+        <PreferencesDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+        />
+      );
+
+      const coopRadio = screen.getByLabelText('Co-op / Internship');
+      fireEvent.click(coopRadio);
+
+      expect(coopRadio).toBeChecked();
+    });
+
+    it('should allow changing modification level preference (Story 13.3)', () => {
+      render(
+        <PreferencesDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+        />
+      );
+
+      const aggressiveRadio = screen.getByLabelText('Aggressive');
+      fireEvent.click(aggressiveRadio);
+
+      expect(aggressiveRadio).toBeChecked();
+    });
   });
 
   describe('Reset to Defaults', () => {
@@ -237,13 +325,16 @@ describe('PreferencesDialog', () => {
       const resetButton = screen.getByText('Reset to Defaults');
       fireEvent.click(resetButton);
 
-      // Verify defaults are now selected
+      // Verify defaults are now selected (all 7 fields)
       await waitFor(() => {
         expect(screen.getByLabelText('Professional')).toBeChecked();
         expect(screen.getByLabelText('Detailed')).toBeChecked();
         expect(screen.getByLabelText('Impact')).toBeChecked();
         expect(screen.getByLabelText('Generic')).toBeChecked();
         expect(screen.getByLabelText('Mid-Level')).toBeChecked();
+        // Story 13.3 AC6: Verify new fields reset to defaults
+        expect(screen.getByLabelText('Full-time Position')).toBeChecked();
+        expect(screen.getByLabelText('Moderate')).toBeChecked();
       });
     });
   });

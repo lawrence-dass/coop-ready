@@ -201,7 +201,7 @@ describe('Preferences Persistence Integration (11.2-AC3)', () => {
       const loadResult = await getUserPreferences();
       expect(loadResult.error).toBeNull();
 
-      // Step 3: Verify all 5 fields match
+      // Step 3: Verify all 7 fields match
       expect(loadResult.data?.tone).toBe(customPrefs.tone);
       expect(loadResult.data?.verbosity).toBe(customPrefs.verbosity);
       expect(loadResult.data?.emphasis).toBe(customPrefs.emphasis);
