@@ -2,12 +2,13 @@
  * PreferencesDialog Component
  *
  * Modal dialog for configuring optimization preferences.
- * Allows users to customize 5 dimensions of suggestion generation.
+ * Allows users to customize 7 dimensions of suggestion generation.
  *
  * Story 11.2: Implement Optimization Preferences
+ * Story 13.3: Add Job Type and Modification Level preferences
  *
  * **Features:**
- * - All 5 preferences configurable with radio buttons/selects
+ * - All 7 preferences configurable with radio buttons
  * - Clear descriptions for each option
  * - Reset to Defaults button
  * - Save Preferences button
@@ -49,6 +50,8 @@ import {
   EmphasisPreference,
   IndustryPreference,
   ExperienceLevelPreference,
+  JobTypePreference,
+  ModificationLevelPreference,
 } from '@/types';
 import { savePreferences } from '@/actions/preferences';
 
@@ -123,6 +126,106 @@ export function PreferencesDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Job Type Preference */}
+          <div className="space-y-3">
+            <div>
+              <Label className="text-base font-semibold">
+                {PREFERENCE_METADATA.jobType.label}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {PREFERENCE_METADATA.jobType.description}
+              </p>
+            </div>
+            <RadioGroup
+              value={preferences.jobType}
+              onValueChange={(value) =>
+                setPreferences({
+                  ...preferences,
+                  jobType: value as JobTypePreference,
+                })
+              }
+              className="space-y-2"
+            >
+              {Object.entries(PREFERENCE_METADATA.jobType.options).map(
+                ([key, option]) => (
+                  <div key={key} className="flex items-start space-x-2">
+                    <RadioGroupItem
+                      value={key}
+                      id={`jobType-${key}`}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={`jobType-${key}`}
+                        className="font-medium cursor-pointer"
+                      >
+                        {option.label}
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {option.description}
+                      </p>
+                      {'example' in option && (
+                        <p className="text-xs text-muted-foreground italic mt-1">
+                          Ex: "{option.example}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
+            </RadioGroup>
+          </div>
+
+          {/* Modification Level Preference */}
+          <div className="space-y-3">
+            <div>
+              <Label className="text-base font-semibold">
+                {PREFERENCE_METADATA.modificationLevel.label}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {PREFERENCE_METADATA.modificationLevel.description}
+              </p>
+            </div>
+            <RadioGroup
+              value={preferences.modificationLevel}
+              onValueChange={(value) =>
+                setPreferences({
+                  ...preferences,
+                  modificationLevel: value as ModificationLevelPreference,
+                })
+              }
+              className="space-y-2"
+            >
+              {Object.entries(PREFERENCE_METADATA.modificationLevel.options).map(
+                ([key, option]) => (
+                  <div key={key} className="flex items-start space-x-2">
+                    <RadioGroupItem
+                      value={key}
+                      id={`modificationLevel-${key}`}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={`modificationLevel-${key}`}
+                        className="font-medium cursor-pointer"
+                      >
+                        {option.label}
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {option.description}
+                      </p>
+                      {'example' in option && (
+                        <p className="text-xs text-muted-foreground italic mt-1">
+                          Ex: "{option.example}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
+            </RadioGroup>
+          </div>
+
           {/* Tone Preference */}
           <div className="space-y-3">
             <div>
