@@ -106,10 +106,18 @@ describe('SignOutButton', () => {
       });
     });
 
-    it('redirects to home page after successful sign-out', async () => {
+    it('redirects to home page after successful sign-out via window.location', async () => {
       const { signOut } = await import('@/actions/auth/sign-out');
 
       vi.mocked(signOut).mockResolvedValue({ data: { success: true }, error: null });
+
+      // Mock window.location.href assignment
+      const originalLocation = window.location;
+      const mockLocation = { ...originalLocation, href: '' };
+      Object.defineProperty(window, 'location', {
+        value: mockLocation,
+        writable: true,
+      });
 
       render(<SignOutButton />);
 
@@ -117,7 +125,13 @@ describe('SignOutButton', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/');
+        expect(mockLocation.href).toBe('/');
+      });
+
+      // Restore original location
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
       });
     });
 
@@ -137,10 +151,18 @@ describe('SignOutButton', () => {
       });
     });
 
-    it('calls router.refresh() to force server revalidation', async () => {
+    it('uses full page load for auth state reset (not router methods)', async () => {
       const { signOut } = await import('@/actions/auth/sign-out');
 
       vi.mocked(signOut).mockResolvedValue({ data: { success: true }, error: null });
+
+      // Mock window.location.href assignment
+      const originalLocation = window.location;
+      const mockLocation = { ...originalLocation, href: '' };
+      Object.defineProperty(window, 'location', {
+        value: mockLocation,
+        writable: true,
+      });
 
       render(<SignOutButton />);
 
@@ -148,7 +170,19 @@ describe('SignOutButton', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(mockRefresh).toHaveBeenCalledOnce();
+        // SignOutButton uses window.location.href for full page reload,
+        // not router.refresh(), to ensure AuthProvider reinitializes
+        expect(mockLocation.href).toBe('/');
+      });
+
+      // Router methods should NOT be called - we want a full page load
+      expect(mockRefresh).not.toHaveBeenCalled();
+      expect(mockPush).not.toHaveBeenCalled();
+
+      // Restore original location
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
       });
     });
   });
@@ -181,6 +215,14 @@ describe('SignOutButton', () => {
         error: { message: 'Network error', code: 'SIGN_OUT_ERROR' },
       });
 
+      // Mock window.location.href to track changes
+      const originalLocation = window.location;
+      const mockLocation = { ...originalLocation, href: '/app/dashboard' };
+      Object.defineProperty(window, 'location', {
+        value: mockLocation,
+        writable: true,
+      });
+
       render(<SignOutButton />);
 
       const button = screen.getByRole('button', { name: /sign out/i });
@@ -190,8 +232,14 @@ describe('SignOutButton', () => {
         expect(signOut).toHaveBeenCalled();
       });
 
-      // Should not redirect on error
-      expect(mockPush).not.toHaveBeenCalled();
+      // Should not redirect on error - href should remain unchanged
+      expect(mockLocation.href).toBe('/app/dashboard');
+
+      // Restore original location
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      });
     });
 
     it('re-enables button after error', async () => {
