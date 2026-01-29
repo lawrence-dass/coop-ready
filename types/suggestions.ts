@@ -4,6 +4,7 @@
  * Story 6.3: Implement Skills Section Suggestions
  * Story 6.4: Implement Experience Section Suggestions
  * Story 12.1: Add LLM-as-Judge fields
+ * Story 14.1: Add explanation fields for reasoning output
  */
 
 import type { JudgeCriteriaScores } from './judge';
@@ -31,6 +32,9 @@ export interface SummarySuggestion {
   ats_keywords_added: string[]; // Keywords from JD that were incorporated
   ai_tell_phrases_rewritten: AITellRewrite[]; // AI language that was fixed
   point_value?: number; // Estimated ATS score improvement (0-100)
+
+  /** Story 14.1: 1-2 sentence explanation of why this change helps */
+  explanation?: string;
 
   // Story 12.1: Judge fields (optional for backward compatibility)
   judge_score?: number; // Quality score from LLM judge (0-100)
@@ -86,6 +90,9 @@ export interface SkillsSuggestion {
 
   /** Total estimated point value improvement for all skill additions */
   total_point_value?: number;
+
+  /** Story 14.1: 1-2 sentence explanation of why these skill changes help */
+  explanation?: string;
 }
 
 // ============================================================================
@@ -110,6 +117,9 @@ export interface BulletSuggestion {
 
   /** Estimated ATS score improvement for this bullet (0-100) */
   point_value?: number;
+
+  /** Story 14.1: 1-2 sentence explanation of why this change helps */
+  explanation?: string;
 
   // Story 12.1: Judge fields (optional for backward compatibility)
   judge_score?: number; // Quality score from LLM judge (0-100)
@@ -154,4 +164,7 @@ export interface ExperienceSuggestion {
 
   /** Total estimated point value improvement for all experience optimizations */
   total_point_value?: number;
+
+  /** Story 14.1: 1-2 sentence explanation of why these experience changes help */
+  explanation?: string;
 }
