@@ -20,8 +20,8 @@ interface User {
 }
 
 interface Preferences {
-  jobType: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
-  modLevel: 'Minimal' | 'Moderate' | 'Aggressive';
+  jobType: 'coop' | 'fulltime';
+  modLevel: 'conservative' | 'moderate' | 'aggressive';
   industry: string | null;
   keywords: string | null;
 }

@@ -1,17 +1,31 @@
+'use server';
+
 /**
  * Update User Preferences Server Action
  * Story 16.6: Migrate History and Settings - Task 8
  *
  * Updates user optimization preferences in the users table.
+ * Uses same values as scan page - no mapping needed.
  */
-
-'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import type { ActionResponse } from '@/types';
 import { ERROR_CODES } from '@/types';
-import type { UserPreferences } from '@/lib/dashboard/getUserPreferences';
 import { z } from 'zod';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+/**
+ * User Preferences - matches scan page values exactly
+ */
+export interface UserPreferences {
+  jobType: 'coop' | 'fulltime';
+  modLevel: 'conservative' | 'moderate' | 'aggressive';
+  industry: string | null;
+  keywords: string | null;
+}
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -22,59 +36,23 @@ import { z } from 'zod';
  * CRITICAL: Never trust client-side types - always validate on server
  */
 const userPreferencesSchema = z.object({
-  jobType: z.enum(['Full-time', 'Part-time', 'Contract', 'Internship']),
-  modLevel: z.enum(['Minimal', 'Moderate', 'Aggressive']),
+  jobType: z.enum(['coop', 'fulltime']),
+  modLevel: z.enum(['conservative', 'moderate', 'aggressive']),
   industry: z.string().nullable(),
   keywords: z.string().nullable(),
 });
 
-/**
- * Type for optimization_preferences JSONB column in database
- */
-interface OptimizationPreferencesDB {
-  jobType?: string;
-  modificationLevel?: string;
-  industry?: string | null;
-  keywords?: string | null;
-  // Other fields that may exist
-  tone?: string;
-  verbosity?: string;
-  emphasis?: string;
-  experienceLevel?: string;
-}
-
-/**
- * Maps display jobType values to database values
- */
-function mapJobTypeToDB(displayValue: UserPreferences['jobType']): string {
-  const mapping: Record<UserPreferences['jobType'], string> = {
-    'Full-time': 'fulltime',
-    'Part-time': 'parttime',
-    'Contract': 'contract',
-    'Internship': 'intern',
-  };
-  return mapping[displayValue];
-}
-
-/**
- * Maps display modLevel values to database values
- */
-function mapModLevelToDB(displayValue: UserPreferences['modLevel']): string {
-  const mapping: Record<UserPreferences['modLevel'], string> = {
-    'Minimal': 'conservative',
-    'Moderate': 'moderate',
-    'Aggressive': 'aggressive',
-  };
-  return mapping[displayValue];
-}
+// ============================================================================
+// ACTION
+// ============================================================================
 
 /**
  * Update user optimization preferences
- * 
+ *
  * Updates the users.optimization_preferences JSONB column.
  * Preserves existing preferences fields (tone, verbosity, etc.) while updating
  * only the fields provided.
- * 
+ *
  * @param preferences - Preferences to update
  * @returns ActionResponse with updated UserPreferences
  */
@@ -121,14 +99,14 @@ export async function updateUserPreferences(
       .eq('id', user.id)
       .single();
 
-    // Type-safe access to JSONB column with proper interface
-    const currentPrefs: OptimizationPreferencesDB = (currentProfile?.optimization_preferences as OptimizationPreferencesDB) || {};
+    // Type-safe access to JSONB column
+    const currentPrefs = (currentProfile?.optimization_preferences as Record<string, unknown>) || {};
 
-    // Build updated preferences object
+    // Build updated preferences object - store values directly, no mapping
     const updatedPrefs = {
       ...currentPrefs,
-      jobType: mapJobTypeToDB(preferences.jobType),
-      modificationLevel: mapModLevelToDB(preferences.modLevel),
+      jobType: preferences.jobType,
+      modificationLevel: preferences.modLevel,
       industry: preferences.industry || null,
       keywords: preferences.keywords || null,
     };

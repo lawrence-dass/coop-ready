@@ -36,9 +36,10 @@ export default async function SettingsPage() {
   const { data: preferences, error: prefsError } = await getUserPreferences();
 
   // Use defaults if preferences load failed (with logging)
+  // Values match scan page options - no mapping needed
   const userPreferences = preferences || {
-    jobType: 'Full-time' as const,
-    modLevel: 'Moderate' as const,
+    jobType: 'fulltime' as const,
+    modLevel: 'moderate' as const,
     industry: null,
     keywords: null,
   };

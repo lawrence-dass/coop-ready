@@ -3,8 +3,8 @@
 /**
  * Get Scan Defaults Action
  *
- * Fetches user's saved optimization preferences and maps them to the format
- * used by the scan PreferencesPanel (jobType, modificationLevel).
+ * Fetches user's saved optimization preferences for the scan page.
+ * Settings and scan page use the same values - no mapping needed.
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -20,30 +20,9 @@ interface ScanDefaults {
 }
 
 /**
- * Maps database jobType values to scan preference values
- */
-function mapJobTypeForScan(dbValue: string | undefined): JobTypePreference {
-  // 'intern' maps to 'coop', everything else maps to 'fulltime'
-  if (dbValue === 'intern') return 'coop';
-  return 'fulltime';
-}
-
-/**
- * Maps database modificationLevel values to scan preference values
- */
-function mapModLevelForScan(dbValue: string | undefined): ModificationLevelPreference {
-  const mapping: Record<string, ModificationLevelPreference> = {
-    'conservative': 'conservative',
-    'moderate': 'moderate',
-    'aggressive': 'aggressive',
-  };
-  return mapping[dbValue || 'moderate'] || 'moderate';
-}
-
-/**
  * Get user's default scan preferences
  *
- * Returns preferences mapped to the scan panel format.
+ * Returns preferences stored in the database.
  * Falls back to sensible defaults if user hasn't set preferences.
  */
 export async function getScanDefaults(): Promise<ActionResponse<ScanDefaults>> {
@@ -79,8 +58,8 @@ export async function getScanDefaults(): Promise<ActionResponse<ScanDefaults>> {
 
   return {
     data: {
-      jobType: mapJobTypeForScan(prefs?.jobType),
-      modificationLevel: mapModLevelForScan(prefs?.modificationLevel),
+      jobType: (prefs?.jobType as JobTypePreference) || 'fulltime',
+      modificationLevel: (prefs?.modificationLevel as ModificationLevelPreference) || 'moderate',
     },
     error: null,
   };
