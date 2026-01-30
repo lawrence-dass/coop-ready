@@ -1,6 +1,7 @@
 /**
  * WelcomeHeader Component
  * Story 16.2: Implement Dashboard Home Page
+ * Story 17.6: Dashboard UI Cleanup (removed email display)
  *
  * Displays personalized welcome message with user's name
  * Extracts first name from email address
