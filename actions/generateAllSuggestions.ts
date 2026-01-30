@@ -21,7 +21,7 @@ import type {
 import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
-import { updateSession } from '@/lib/supabase/sessions';
+import { createClient } from '@/lib/supabase/server';
 
 // ============================================================================
 // TYPES
@@ -125,26 +125,27 @@ export async function generateAllSuggestions(
       preferences,
     } = validation.data;
 
+    // Fallback to full resume text if individual sections weren't parsed
+    // This handles cases where the resume format wasn't recognized during parsing
+    const effectiveSummary = (resumeSummary && resumeSummary.trim().length > 0) ? resumeSummary : resumeContent;
+    const effectiveSkills = (resumeSkills && resumeSkills.trim().length > 0) ? resumeSkills : resumeContent;
+    const effectiveExperience = (resumeExperience && resumeExperience.trim().length > 0) ? resumeExperience : resumeContent;
+
+    const usedFallback = effectiveSummary === resumeContent || effectiveSkills === resumeContent || effectiveExperience === resumeContent;
+
     console.log(
       '[SS:generateAll] Starting suggestion generation for session:',
       sessionId.slice(0, 8) + '...',
-      preferences ? `with preferences (tone: ${preferences.tone})` : 'with default preferences'
+      preferences ? `with preferences (tone: ${preferences.tone})` : 'with default preferences',
+      usedFallback ? '(using full resume as fallback for missing sections)' : ''
     );
 
     // Fire all 3 generation calls in parallel (Story 11.2: pass preferences)
     const [summaryResult, skillsResult, experienceResult] =
       await Promise.allSettled([
-        resumeSummary && resumeSummary.trim().length > 0
-          ? generateSummarySuggestion(resumeSummary, jobDescription, keywords, preferences)
-          : Promise.resolve({ data: null, error: { code: 'VALIDATION_ERROR', message: 'No summary section found in resume' } } as ActionResponse<SummarySuggestion>),
-
-        resumeSkills && resumeSkills.trim().length > 0
-          ? generateSkillsSuggestion(resumeSkills, jobDescription, resumeContent, preferences)
-          : Promise.resolve({ data: null, error: { code: 'VALIDATION_ERROR', message: 'No skills section found in resume' } } as ActionResponse<SkillsSuggestion>),
-
-        resumeExperience && resumeExperience.trim().length > 0
-          ? generateExperienceSuggestion(resumeExperience, jobDescription, resumeContent, preferences)
-          : Promise.resolve({ data: null, error: { code: 'VALIDATION_ERROR', message: 'No experience section found in resume' } } as ActionResponse<ExperienceSuggestion>),
+        generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences),
+        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences),
+        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences),
       ]);
 
     // Extract results from settled promises
@@ -188,21 +189,28 @@ export async function generateAllSuggestions(
       result.sectionErrors.experience = experienceResult.reason?.message || 'Experience generation failed';
     }
 
-    // Save successful suggestions to session (graceful degradation)
-    const sessionUpdate: {
-      summarySuggestion?: SummarySuggestion;
-      skillsSuggestion?: SkillsSuggestion;
-      experienceSuggestion?: ExperienceSuggestion;
-    } = {};
-    if (result.summary) sessionUpdate.summarySuggestion = result.summary;
-    if (result.skills) sessionUpdate.skillsSuggestion = result.skills;
-    if (result.experience) sessionUpdate.experienceSuggestion = result.experience;
+    // Save successful suggestions to session using server client (for proper auth context)
+    const dbUpdate: Record<string, unknown> = {};
+    if (result.summary) dbUpdate.summary_suggestion = result.summary;
+    if (result.skills) dbUpdate.skills_suggestion = result.skills;
+    if (result.experience) dbUpdate.experience_suggestion = result.experience;
 
-    if (Object.keys(sessionUpdate).length > 0) {
-      const saveResult = await updateSession(sessionId, sessionUpdate);
-      if (saveResult.error) {
-        console.error('[SS:generateAll] Session save failed:', saveResult.error.message);
-        // Continue — user still gets suggestions in the UI
+    if (Object.keys(dbUpdate).length > 0) {
+      try {
+        const supabase = await createClient();
+        const { error: saveError } = await supabase
+          .from('sessions')
+          .update(dbUpdate)
+          .eq('id', sessionId);
+
+        if (saveError) {
+          console.error('[SS:generateAll] Session save failed:', saveError.message);
+          // Continue — user still gets suggestions in the UI
+        } else {
+          console.log('[SS:generateAll] Suggestions saved to session');
+        }
+      } catch (err) {
+        console.error('[SS:generateAll] Session save error:', err);
       }
     }
 
