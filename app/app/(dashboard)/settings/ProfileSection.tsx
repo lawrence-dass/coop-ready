@@ -109,7 +109,7 @@ export function ProfileSection({
         <CardContent className="space-y-4">
           {!hasOnboardingData ? (
             <p className="text-sm text-gray-500 italic">
-              No onboarding selections available
+              No selections found. Your account may have been created before onboarding was available.
             </p>
           ) : (
             <>

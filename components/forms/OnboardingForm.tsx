@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { saveOnboarding, skipOnboarding } from '@/actions/auth/save-onboarding';
+import { saveOnboarding } from '@/actions/auth/save-onboarding';
 import type { OnboardingAnswers, CareerGoal, ExperienceLevel, Industry } from '@/types/auth';
 
 // Career goal options
@@ -115,23 +115,6 @@ export function OnboardingForm() {
 
       if (data?.success) {
         toast.success('Welcome to SubmitSmart!');
-        // Full page load so AuthProvider reinitializes with the new session cookie
-        window.location.href = '/';
-      }
-    });
-  };
-
-  // Handle skip
-  const handleSkip = () => {
-    startTransition(async () => {
-      const { data, error } = await skipOnboarding();
-
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-
-      if (data?.success) {
         // Full page load so AuthProvider reinitializes with the new session cookie
         window.location.href = '/';
       }
@@ -272,28 +255,15 @@ export function OnboardingForm() {
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex flex-col gap-3">
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isPending}
-            data-testid="complete-button"
-          >
-            {isPending ? 'Saving...' : 'Complete Onboarding'}
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            onClick={handleSkip}
-            disabled={isPending}
-            data-testid="skip-button"
-          >
-            Skip for now
-          </Button>
-        </div>
+        {/* Action button */}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isPending}
+          data-testid="complete-button"
+        >
+          {isPending ? 'Saving...' : 'Get Started'}
+        </Button>
       </form>
     </div>
   );
