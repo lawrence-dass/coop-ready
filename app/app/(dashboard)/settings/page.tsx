@@ -50,9 +50,9 @@ export default async function SettingsPage() {
 
   // Load onboarding data from users table
   // Note: Query by 'id' to match RLS policy (auth.uid() = id)
-  const { data: userData, error: userDataError } = await supabase
+  const { data: userData } = await supabase
     .from('users')
-    .select('first_name, last_name, onboarding_answers')
+    .select('email, first_name, last_name, onboarding_answers')
     .eq('id', user.id)
     .single();
 
@@ -69,10 +69,13 @@ export default async function SettingsPage() {
   };
 
   // Pass user data to client component
+  // Use email from users table as fallback if auth email is empty
+  const userEmail = user.email || userData?.email || '';
+
   return (
     <ClientSettingsPage
       user={{
-        email: user.email || '',
+        email: userEmail,
         createdAt: user.created_at,
         id: user.id,
       }}
