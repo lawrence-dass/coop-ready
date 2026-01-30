@@ -194,7 +194,7 @@
 @layer utilities {
   /* Success states */
   .bg-success {
-    background-color: hsl(var(--success));
+    background-color: #30D158 !important;
   }
   .text-success {
     color: hsl(var(--success));
@@ -208,7 +208,7 @@
 
   /* Warning states */
   .bg-warning {
-    background-color: hsl(var(--warning));
+    background-color: #F5A623 !important;
   }
   .text-warning {
     color: hsl(var(--warning));
@@ -218,6 +218,17 @@
   }
   .bg-warning-light {
     background-color: hsl(38, 91%, 95%);
+  }
+
+  /* Destructive/Error states */
+  .bg-destructive {
+    background-color: #DF1B41 !important;
+  }
+  .text-destructive {
+    color: hsl(var(--destructive));
+  }
+  .border-destructive {
+    border-color: hsl(var(--destructive));
   }
 
   /* Info states */

@@ -49,14 +49,14 @@ import type { ActionResponse } from '@/types';
 const ANALYSIS_TIPS = [
   'Recruiters spend just 7.4 seconds on initial resume scan — make your top third count.',
   'Resumes with 80%+ keyword match get 2.3x more callbacks than those below 70%.',
-  'Matching the exact job title increases interview chances by 10.6x — mirror it in your headline.',
+  'Matching the exact job title increases interview chances by 10.6x - mirror it in your headline.',
   'Customized resumes are 2.6x more likely to land interviews than generic ones.',
   '80% of recruiter attention goes to: job titles, current role, education, and skills section.',
-  'Bullets with quantified results get 40% more engagement — add numbers wherever possible.',
-  'The average job posting receives 250+ applications — only 4-6 candidates get interviews.',
+  'Bullets with quantified results get 40% more engagement - add numbers wherever possible.',
+  'The average job posting receives 250+ applications - only 4-6 candidates get interviews.',
   '98% of Fortune 500 companies use ATS — formatting for machines matters as much as humans.',
   'Keyword stuffing backfires: 67% rejection rate vs. 34% when keywords flow naturally.',
-  'Resumes scoring 85%+ ATS match see ~45% callback rates — aim for that threshold.',
+  'Resumes scoring 85%+ ATS match see ~45% callback rates - aim for that threshold.',
 ];
 
 // ============================================================================
