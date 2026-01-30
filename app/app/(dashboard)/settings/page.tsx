@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: 'Settings | SubmitSmart',
   description: 'Manage your account and optimization preferences',
 };
+
+// Force dynamic rendering to always fetch fresh data
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/lib/supabase/server';
 import { ROUTES } from '@/lib/constants/routes';
 import { ClientSettingsPage } from './ClientSettingsPage';
@@ -45,16 +48,18 @@ export default async function SettingsPage() {
     console.error('[Settings Page] Failed to load preferences:', prefsError);
   }
 
-  // Load privacy consent status and onboarding data from users table
-  const { data: userData } = await supabase
+  // Load onboarding data from users table
+  // Note: Query by 'id' to match RLS policy (auth.uid() = id)
+  const { data: userData, error: userDataError } = await supabase
     .from('users')
-    .select('privacy_consent_accepted, privacy_consent_accepted_at, first_name, last_name, onboarding_answers')
-    .eq('user_id', user.id)
+    .select('first_name, last_name, onboarding_answers')
+    .eq('id', user.id)
     .single();
 
+  // Privacy consent - column doesn't exist yet, use defaults
   const privacyConsent = {
-    accepted: userData?.privacy_consent_accepted || false,
-    acceptedAt: userData?.privacy_consent_accepted_at || null,
+    accepted: false,
+    acceptedAt: null,
   };
 
   const onboardingData = {
