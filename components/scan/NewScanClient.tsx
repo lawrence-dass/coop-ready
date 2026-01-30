@@ -43,6 +43,23 @@ import { acceptPrivacyConsent } from '@/actions/privacy/accept-privacy-consent';
 import type { ActionResponse } from '@/types';
 
 // ============================================================================
+// TIPS & STATS (shown during analysis)
+// ============================================================================
+
+const ANALYSIS_TIPS = [
+  'Recruiters spend just 7.4 seconds on initial resume scan — make your top third count.',
+  'Resumes with 80%+ keyword match get 2.3x more callbacks than those below 70%.',
+  'Matching the exact job title increases interview chances by 10.6x — mirror it in your headline.',
+  'Customized resumes are 2.6x more likely to land interviews than generic ones.',
+  '80% of recruiter attention goes to: job titles, current role, education, and skills section.',
+  'Bullets with quantified results get 40% more engagement — add numbers wherever possible.',
+  'The average job posting receives 250+ applications — only 4-6 candidates get interviews.',
+  '98% of Fortune 500 companies use ATS — formatting for machines matters as much as humans.',
+  'Keyword stuffing backfires: 67% rejection rate vs. 34% when keywords flow naturally.',
+  'Resumes scoring 85%+ ATS match see ~45% callback rates — aim for that threshold.',
+];
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 
@@ -53,6 +70,21 @@ export function NewScanClient() {
   const [loadingStep, setLoadingStep] = useState<string>('');
   const [pendingFileForConsent, setPendingFileForConsent] = useState<File | null>(null);
   const [isPendingConsent, startConsentTransition] = useTransition();
+  const [tipIndex, setTipIndex] = useState(0);
+
+  // Rotate tips while analyzing
+  useEffect(() => {
+    if (!isPending) {
+      setTipIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % ANALYSIS_TIPS.length);
+    }, 5000); // Change tip every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [isPending]);
 
   // Privacy consent hook
   const { privacyAccepted, refetch: refetchPrivacyConsent } = usePrivacyConsent();
@@ -377,7 +409,7 @@ export function NewScanClient() {
       </div>
 
       {/* Analyze Button */}
-      <div className="flex justify-center pt-4">
+      <div className="flex flex-col items-center pt-4 gap-4">
         <Button
           onClick={handleAnalyze}
           disabled={!canAnalyze}
@@ -397,6 +429,13 @@ export function NewScanClient() {
             </>
           )}
         </Button>
+
+        {/* Tips shown during analysis */}
+        {isPending && (
+          <p className="text-center text-sm text-muted-foreground max-w-lg animate-fade-in">
+            💡 {ANALYSIS_TIPS[tipIndex]}
+          </p>
+        )}
       </div>
 
       {/* Helper Text */}
