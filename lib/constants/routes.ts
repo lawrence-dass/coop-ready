@@ -18,6 +18,7 @@ export const ROUTES = {
   // Public routes
   HOME: '/',
   PRIVACY_POLICY: '/privacy-policy',
+  TERMS_OF_SERVICE: '/terms-of-service',
   AUTH: {
     LOGIN: '/auth/login',
     SIGNUP: '/auth/signup',
