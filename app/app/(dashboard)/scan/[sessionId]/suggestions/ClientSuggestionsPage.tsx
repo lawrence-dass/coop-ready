@@ -74,10 +74,6 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
     router.push(ROUTES.APP.SCAN.SESSION(session.id));
   };
 
-  const handleNewScan = () => {
-    router.push(ROUTES.APP.SCAN.NEW);
-  };
-
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="space-y-8">
@@ -270,14 +266,6 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
             Back to Results
           </Button>
           <Button
-            onClick={handleNewScan}
-            variant="outline"
-            size="default"
-            data-testid="new-scan-button"
-          >
-            New Scan
-          </Button>
-          <Button
             variant="ghost"
             size="default"
             disabled
@@ -285,15 +273,6 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
             data-testid="apply-all-button"
           >
             Apply All Suggestions (Coming Soon)
-          </Button>
-          <Button
-            variant="ghost"
-            size="default"
-            disabled
-            title="Download report feature coming soon"
-            data-testid="download-report-button"
-          >
-            Download Report (Coming Soon)
           </Button>
         </div>
       </div>
