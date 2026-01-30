@@ -7,6 +7,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -68,16 +69,20 @@ interface OnboardingSelectionsSectionProps {
 }
 
 export function OnboardingSelectionsSection({ answers }: OnboardingSelectionsSectionProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // Form state
-  const [careerGoal, setCareerGoal] = useState(answers?.careerGoal || '');
-  const [experienceLevel, setExperienceLevel] = useState(answers?.experienceLevel || '');
-  const [targetIndustries, setTargetIndustries] = useState<string[]>(answers?.targetIndustries || []);
+  // Local state for display (updated after save)
+  const [currentAnswers, setCurrentAnswers] = useState(answers);
 
-  const hasData = answers?.careerGoal || answers?.experienceLevel ||
-    (answers?.targetIndustries && answers.targetIndustries.length > 0);
+  // Form state for editing
+  const [careerGoal, setCareerGoal] = useState(currentAnswers?.careerGoal || '');
+  const [experienceLevel, setExperienceLevel] = useState(currentAnswers?.experienceLevel || '');
+  const [targetIndustries, setTargetIndustries] = useState<string[]>(currentAnswers?.targetIndustries || []);
+
+  const hasData = currentAnswers?.careerGoal || currentAnswers?.experienceLevel ||
+    (currentAnswers?.targetIndustries && currentAnswers.targetIndustries.length > 0);
 
   const handleIndustryChange = (industry: string, checked: boolean) => {
     setTargetIndustries(prev =>
@@ -87,9 +92,9 @@ export function OnboardingSelectionsSection({ answers }: OnboardingSelectionsSec
 
   const handleCancel = () => {
     // Reset to original values
-    setCareerGoal(answers?.careerGoal || '');
-    setExperienceLevel(answers?.experienceLevel || '');
-    setTargetIndustries(answers?.targetIndustries || []);
+    setCareerGoal(currentAnswers?.careerGoal || '');
+    setExperienceLevel(currentAnswers?.experienceLevel || '');
+    setTargetIndustries(currentAnswers?.targetIndustries || []);
     setIsEditing(false);
   };
 
@@ -111,8 +116,15 @@ export function OnboardingSelectionsSection({ answers }: OnboardingSelectionsSec
         return;
       }
 
+      // Update local state immediately for instant UI feedback
+      setCurrentAnswers({
+        careerGoal,
+        experienceLevel,
+        targetIndustries,
+      });
       toast.success('Selections updated successfully');
       setIsEditing(false);
+      router.refresh(); // Refresh to sync with server
     });
   };
 
@@ -213,39 +225,39 @@ export function OnboardingSelectionsSection({ answers }: OnboardingSelectionsSec
         ) : (
           <>
             {/* Career Goal */}
-            {answers?.careerGoal && (
+            {currentAnswers?.careerGoal && (
               <div className="flex items-start gap-3">
                 <Target className="h-5 w-5 text-gray-500 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-700">Career Goal</p>
                   <p className="text-sm text-gray-900">
-                    {CAREER_GOAL_LABELS[answers.careerGoal] || answers.careerGoal}
+                    {CAREER_GOAL_LABELS[currentAnswers.careerGoal!] || currentAnswers.careerGoal}
                   </p>
                 </div>
               </div>
             )}
 
             {/* Experience Level */}
-            {answers?.experienceLevel && (
+            {currentAnswers?.experienceLevel && (
               <div className="flex items-start gap-3">
                 <Briefcase className="h-5 w-5 text-gray-500 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-700">Experience Level</p>
                   <p className="text-sm text-gray-900">
-                    {EXPERIENCE_LEVEL_LABELS[answers.experienceLevel] || answers.experienceLevel}
+                    {EXPERIENCE_LEVEL_LABELS[currentAnswers.experienceLevel!] || currentAnswers.experienceLevel}
                   </p>
                 </div>
               </div>
             )}
 
             {/* Target Industries */}
-            {answers?.targetIndustries && answers.targetIndustries.length > 0 && (
+            {currentAnswers?.targetIndustries && currentAnswers.targetIndustries.length > 0 && (
               <div className="flex items-start gap-3">
                 <Building2 className="h-5 w-5 text-gray-500 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-700">Target Industries</p>
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {answers.targetIndustries.map((industry) => (
+                    {currentAnswers.targetIndustries!.map((industry) => (
                       <Badge key={industry} variant="secondary" className="text-xs">
                         {INDUSTRY_LABELS[industry] || industry}
                       </Badge>
