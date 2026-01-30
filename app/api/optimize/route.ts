@@ -22,7 +22,7 @@ import type { Resume } from '@/types/optimization';
 import { extractKeywords } from '@/lib/ai/extractKeywords';
 import { matchKeywords } from '@/lib/ai/matchKeywords';
 import { calculateATSScore } from '@/lib/ai/calculateATSScore';
-import { updateSession } from '@/lib/supabase/sessions';
+import { createClient } from '@/lib/supabase/server';
 import { withTimeout } from '@/lib/utils/withTimeout';
 
 // ============================================================================
@@ -187,15 +187,24 @@ async function runOptimizationPipeline(
       };
     }
 
-    // Step 4: Save results to session
-    const sessionUpdateResult = await updateSession(request.session_id, {
-      keywordAnalysis: matchResult.data,
-      atsScore: scoreResult.data,
-    });
+    // Step 4: Save results to session using server client
+    try {
+      const supabase = await createClient();
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          keyword_analysis: matchResult.data,
+          ats_score: scoreResult.data,
+        })
+        .eq('id', request.session_id);
 
-    // Log session update errors but don't fail the request
-    if (sessionUpdateResult.error) {
-      console.error('[optimize] Session update failed:', sessionUpdateResult.error);
+      if (updateError) {
+        console.error('[optimize] Session update failed:', updateError.message);
+      } else {
+        console.log('[optimize] Session updated successfully');
+      }
+    } catch (updateErr) {
+      console.error('[optimize] Session update error:', updateErr);
     }
 
     // Return results
