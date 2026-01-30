@@ -24,6 +24,7 @@
 
 import { cn } from '@/lib/utils';
 import { MIN_JD_LENGTH, isJobDescriptionValid } from '@/lib/validations/jobDescription';
+import { CheckCircle2, X } from 'lucide-react';
 
 // ============================================================================
 // TYPES
@@ -75,31 +76,41 @@ export function JobDescriptionInput({
         )}
       />
 
-      <div className="flex justify-between items-center text-xs">
-        <span
-          className={cn(
-            isEmpty && 'text-muted-foreground',
-            !isEmpty && !isValid && 'text-destructive',
-            isValid && 'text-success'
-          )}
-        >
-          {characterCount} characters
-          {!isValid && !isEmpty && ` (minimum ${MIN_JD_LENGTH} required)`}
-          {isEmpty && ' (required)'}
-        </span>
-        {!isEmpty && (
+      {/* Success Banner - shown when valid */}
+      {isValid && (
+        <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <p className="flex-1">
+            {characterCount.toLocaleString()} characters
+          </p>
           <button
+            type="button"
             onClick={onClear}
             disabled={isDisabled}
-            className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
-            type="button"
+            className="ml-auto rounded-md p-1 text-green-600 hover:bg-green-100 hover:text-green-800 disabled:opacity-50"
             aria-label="Clear job description"
             data-testid="clear-jd-button"
           >
-            Clear
+            <X className="h-4 w-4" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Character count - shown when not valid */}
+      {!isValid && (
+        <div className="flex justify-between items-center text-xs">
+          <span
+            className={cn(
+              isEmpty && 'text-muted-foreground',
+              !isEmpty && 'text-destructive'
+            )}
+          >
+            {characterCount} characters
+            {!isEmpty && ` (minimum ${MIN_JD_LENGTH} required)`}
+            {isEmpty && ' (required)'}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
