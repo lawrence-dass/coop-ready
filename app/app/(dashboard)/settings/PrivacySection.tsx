@@ -7,6 +7,7 @@
 
 'use client';
 
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Shield, CheckCircle, XCircle, Download, ExternalLink } from 'lucide-react';
@@ -63,12 +64,16 @@ export function PrivacySection({ consent }: PrivacySectionProps) {
           <Button
             variant="outline"
             className="w-full sm:w-auto"
-            onClick={() => {
-              window.open(ROUTES.PRIVACY_POLICY, '_blank');
-            }}
+            asChild
           >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Review Privacy Policy
+            <Link
+              href={ROUTES.PRIVACY_POLICY}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Review Privacy Policy
+            </Link>
           </Button>
         </div>
 

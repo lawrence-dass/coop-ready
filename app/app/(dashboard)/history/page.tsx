@@ -6,7 +6,13 @@
  * Loads all user sessions server-side with RLS enforcement.
  */
 
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: 'History | SubmitSmart',
+  description: 'View and manage your past resume optimizations',
+};
 import { createClient } from '@/lib/supabase/server';
 import { ROUTES } from '@/lib/constants/routes';
 import { getOptimizationHistory } from '@/actions/history/get-optimization-history';

@@ -6,7 +6,13 @@
  * Loads user profile and preferences server-side with RLS enforcement.
  */
 
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: 'Settings | SubmitSmart',
+  description: 'Manage your account and optimization preferences',
+};
 import { createClient } from '@/lib/supabase/server';
 import { ROUTES } from '@/lib/constants/routes';
 import { ClientSettingsPage } from './ClientSettingsPage';

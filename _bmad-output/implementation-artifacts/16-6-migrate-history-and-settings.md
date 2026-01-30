@@ -457,6 +457,18 @@ Client: Render Settings Sections
 
 ## Change Log
 
+**2026-01-29 - Second Code Review Complete - All Issues Fixed**
+- ✅ Code review found and fixed 3 HIGH + 4 MEDIUM issues
+- ✅ Added unique `data-testid` and `data-session-id` attributes for session cards (accessibility)
+- ✅ Changed delete button aria-label to include session date for screen readers
+- ✅ Replaced window.open with Next.js Link for privacy policy (security: rel="noopener noreferrer")
+- ✅ Added metadata exports for History and Settings pages (SEO)
+- ✅ Updated E2E tests to use environment variables for credentials (CI/CD security)
+- ✅ Fixed test selectors to match new data-testid attributes
+- ✅ Build succeeds with no errors after all fixes
+- ✅ All 49 story tests passing
+- ✅ Story status remains "done"
+
 **2026-01-30 - Code Review Complete - All Issues Fixed**
 - ✅ Code review found and fixed 7 HIGH + 3 MEDIUM issues
 - ✅ Added server-side Zod validation for preferences (security fix)
@@ -805,3 +817,13 @@ No critical debugging required. All tests passed on first green phase after impo
 - `app/app/(dashboard)/settings/page.tsx` - Added error logging for failed preference loads
 - `lib/constants/routes.ts` - Added ROUTES.PRIVACY_POLICY constant
 - `app/app/(dashboard)/settings/PrivacySection.tsx` - Updated to use ROUTES.PRIVACY_POLICY
+
+**Code Review Fixes (2026-01-29 - Second Review):**
+- `app/app/(dashboard)/history/ClientHistoryPage.tsx` - Added unique data-testid per session, improved aria-label
+- `app/app/(dashboard)/settings/PrivacySection.tsx` - Changed to use Link component with security attributes
+- `app/app/(dashboard)/history/page.tsx` - Added metadata export for SEO
+- `app/app/(dashboard)/settings/page.tsx` - Added metadata export for SEO
+- `tests/e2e/16-6-history-navigation.spec.ts` - Updated selectors, added env var support for credentials
+- `tests/e2e/16-6-settings-page.spec.ts` - Added env var support for credentials
+- `tests/unit/16-6-privacy-section.test.tsx` - Updated test for Link component
+- `tests/integration/16-6-settings-page.test.tsx` - Updated test for Link component

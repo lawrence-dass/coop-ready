@@ -227,7 +227,7 @@ describe('Story 16.6: Settings Page Integration', () => {
     expect(deleteButton).toBeDisabled();
   });
 
-  test('[P1] 16.6-SETTINGS-008: should display privacy button with window.open', () => {
+  test('[P1] 16.6-SETTINGS-008: should display privacy policy link', () => {
     // WHEN: Rendering settings page
     render(
       <ClientSettingsPage
@@ -237,9 +237,11 @@ describe('Story 16.6: Settings Page Integration', () => {
       />
     );
 
-    // THEN: Privacy policy button should be present (opens in new window via onClick)
-    const button = screen.getByRole('button', { name: /Review Privacy Policy/i });
-    expect(button).toBeInTheDocument();
+    // THEN: Privacy policy link should be present (opens in new tab)
+    const link = screen.getByRole('link', { name: /Review Privacy Policy/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   test('[P1] 16.6-SETTINGS-009: should organize sections with visual separation', () => {
