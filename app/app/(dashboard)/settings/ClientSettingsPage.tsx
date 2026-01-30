@@ -7,8 +7,8 @@
 
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { ProfileSection } from './ProfileSection';
+import { OnboardingSelectionsSection } from './OnboardingSelectionsSection';
 import { OptimizationPreferencesSection } from './OptimizationPreferencesSection';
 import { PrivacySection } from './PrivacySection';
 import { AccountActionsSection } from './AccountActionsSection';
@@ -79,8 +79,10 @@ export function ClientSettingsPage({
           email={user.email}
           firstName={onboarding.firstName}
           lastName={onboarding.lastName}
-          onboardingAnswers={onboarding.answers}
         />
+
+        {/* Onboarding Selections (Editable) */}
+        <OnboardingSelectionsSection answers={onboarding.answers} />
 
         {/* Optimization Preferences */}
         <OptimizationPreferencesSection
