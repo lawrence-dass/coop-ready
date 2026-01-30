@@ -12,12 +12,16 @@ import { test, expect } from '@playwright/test';
  * @P0
  */
 
+// Test credentials - in CI, these should be set via environment variables
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'test@example.com';
+const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'password123';
+
 test.describe('Story 16.6: History Page E2E', () => {
   test.beforeEach(async ({ page }) => {
     // Setup: Login as authenticated user
     await page.goto('/auth/login');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'password123');
+    await page.fill('input[type="email"]', TEST_EMAIL);
+    await page.fill('input[type="password"]', TEST_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL('/app');
   });
@@ -54,8 +58,8 @@ test.describe('Story 16.6: History Page E2E', () => {
     // Count initial sessions
     const initialCount = await page.locator('[data-testid^="history-session"]').count();
 
-    // WHEN: Clicking delete button on first session
-    await page.click('[aria-label="Delete session"]');
+    // WHEN: Clicking delete button on first session (use starts-with for aria-label)
+    await page.click('[data-testid^="delete-session-"]');
 
     // Confirm deletion in dialog
     await page.click('button:has-text("Delete")');
@@ -71,8 +75,8 @@ test.describe('Story 16.6: History Page E2E', () => {
     await page.goto('/app/history');
 
     // Delete all sessions
-    while (await page.locator('[aria-label="Delete session"]').count() > 0) {
-      await page.click('[aria-label="Delete session"]');
+    while (await page.locator('[data-testid^="delete-session-"]').count() > 0) {
+      await page.click('[data-testid^="delete-session-"]');
       await page.click('button:has-text("Delete")');
       await page.waitForTimeout(500);
     }
@@ -106,6 +110,6 @@ test.describe('Story 16.6: History Page E2E', () => {
     await expect(sessionCard).toBeVisible();
 
     // Delete buttons should remain accessible
-    await expect(page.locator('[aria-label="Delete session"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid^="delete-session-"]').first()).toBeVisible();
   });
 });

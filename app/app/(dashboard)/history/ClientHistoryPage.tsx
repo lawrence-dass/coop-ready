@@ -124,9 +124,10 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
 
   return (
     <>
-      <Card 
-        className="shadow-sm hover:shadow-md transition-shadow cursor-pointer" 
-        data-testid="history-session-card" 
+      <Card
+        className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        data-testid={`history-session-${session.id}`}
+        data-session-id={session.id}
         onClick={onClick}
       >
         <CardContent className="p-6">
@@ -157,8 +158,8 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
                 size="sm"
                 onClick={handleDeleteClick}
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                aria-label="Delete session"
-                data-testid="delete-session-button"
+                aria-label={`Delete session from ${formattedDate}`}
+                data-testid={`delete-session-${session.id}`}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

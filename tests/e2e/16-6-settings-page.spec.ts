@@ -12,12 +12,16 @@ import { test, expect } from '@playwright/test';
  * @P0
  */
 
+// Test credentials - in CI, these should be set via environment variables
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'test@example.com';
+const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'password123';
+
 test.describe('Story 16.6: Settings Page E2E', () => {
   test.beforeEach(async ({ page }) => {
     // Setup: Login as authenticated user
     await page.goto('/auth/login');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'password123');
+    await page.fill('input[type="email"]', TEST_EMAIL);
+    await page.fill('input[type="password"]', TEST_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL('/app');
   });

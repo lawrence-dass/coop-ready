@@ -59,23 +59,21 @@ describe('Story 16.6: PrivacySection Component', () => {
     expect(screen.getByText(/Not accepted/i)).toBeInTheDocument();
   });
 
-  test('[P0] 16.6-PRIVACY-004: should have privacy policy button', () => {
+  test('[P0] 16.6-PRIVACY-004: should have privacy policy link', () => {
     // GIVEN: Any consent status
     const consent = {
       accepted: true,
       acceptedAt: '2026-01-24T10:00:00Z',
     };
 
-    // Mock window.open
-    const mockOpen = vi.fn();
-    global.window.open = mockOpen;
-
     // WHEN: Rendering PrivacySection
     render(<PrivacySection consent={consent} />);
 
-    // THEN: Should have button to open privacy policy
-    const button = screen.getByRole('button', { name: /Review Privacy Policy/i });
-    expect(button).toBeInTheDocument();
+    // THEN: Should have link to privacy policy with security attributes
+    const link = screen.getByRole('link', { name: /Review Privacy Policy/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   test('[P1] 16.6-PRIVACY-005: should show download data button as disabled', () => {
