@@ -18,8 +18,6 @@ import { ERROR_CODES } from '@/types';
 export interface UserPreferences {
   jobType: 'coop' | 'fulltime';
   modLevel: 'conservative' | 'moderate' | 'aggressive';
-  industry: string | null;
-  keywords: string | null;
 }
 
 /**
@@ -64,8 +62,6 @@ export async function getUserPreferences(): Promise<ActionResponse<UserPreferenc
         data: {
           jobType: 'fulltime',
           modLevel: 'moderate',
-          industry: null,
-          keywords: null,
         },
         error: null,
       };
@@ -75,16 +71,12 @@ export async function getUserPreferences(): Promise<ActionResponse<UserPreferenc
     const prefs = profile?.optimization_preferences as {
       jobType?: string;
       modificationLevel?: string;
-      industry?: string | null;
-      keywords?: string | null;
     } | null;
 
     return {
       data: {
         jobType: (prefs?.jobType as 'coop' | 'fulltime') || 'fulltime',
         modLevel: (prefs?.modificationLevel as 'conservative' | 'moderate' | 'aggressive') || 'moderate',
-        industry: prefs?.industry || null,
-        keywords: prefs?.keywords || null,
       },
       error: null,
     };

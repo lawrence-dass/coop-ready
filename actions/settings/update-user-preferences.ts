@@ -23,8 +23,6 @@ import { z } from 'zod';
 export interface UserPreferences {
   jobType: 'coop' | 'fulltime';
   modLevel: 'conservative' | 'moderate' | 'aggressive';
-  industry: string | null;
-  keywords: string | null;
 }
 
 // ============================================================================
@@ -38,8 +36,6 @@ export interface UserPreferences {
 const userPreferencesSchema = z.object({
   jobType: z.enum(['coop', 'fulltime']),
   modLevel: z.enum(['conservative', 'moderate', 'aggressive']),
-  industry: z.string().nullable(),
-  keywords: z.string().nullable(),
 });
 
 // ============================================================================
@@ -107,8 +103,6 @@ export async function updateUserPreferences(
       ...currentPrefs,
       jobType: preferences.jobType,
       modificationLevel: preferences.modLevel,
-      industry: preferences.industry || null,
-      keywords: preferences.keywords || null,
     };
 
     // Update preferences in database

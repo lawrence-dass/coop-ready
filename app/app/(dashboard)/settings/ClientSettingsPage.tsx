@@ -22,8 +22,6 @@ interface User {
 interface Preferences {
   jobType: 'coop' | 'fulltime';
   modLevel: 'conservative' | 'moderate' | 'aggressive';
-  industry: string | null;
-  keywords: string | null;
 }
 
 interface PrivacyConsent {
@@ -54,16 +52,6 @@ export function ClientSettingsPage({
   privacyConsent,
   onboarding,
 }: ClientSettingsPageProps) {
-  // Convert null to undefined for React Hook Form compatibility
-  // NOTE: RHF expects undefined for optional fields, but DB stores null
-  // The form component will convert undefined → '' for inputs, then back to null on save
-  const preferencesForForm = {
-    jobType: preferences.jobType,
-    modLevel: preferences.modLevel,
-    industry: preferences.industry ?? undefined,
-    keywords: preferences.keywords ?? undefined,
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Page Header */}
@@ -87,7 +75,7 @@ export function ClientSettingsPage({
         {/* Optimization Preferences */}
         <OptimizationPreferencesSection
           userId={user.id}
-          preferences={preferencesForForm}
+          preferences={preferences}
         />
 
         {/* Privacy Settings */}

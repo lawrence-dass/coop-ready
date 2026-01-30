@@ -40,8 +40,6 @@ export default async function SettingsPage() {
   const userPreferences = preferences || {
     jobType: 'fulltime' as const,
     modLevel: 'moderate' as const,
-    industry: null,
-    keywords: null,
   };
 
   // Log error for monitoring (user sees defaults, no UI disruption)
