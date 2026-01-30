@@ -9,9 +9,13 @@
  * **Preferences:**
  * - Job Type: Co-op/Internship vs Full-time (changes language framing)
  * - Modification Level: How aggressively to rewrite content
+ *
+ * **Defaults:**
+ * - Loads user's saved preferences from Settings on mount
+ * - Falls back to sensible defaults if not set
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useOptimizationStore } from '@/store';
 import {
   DEFAULT_PREFERENCES,
@@ -23,6 +27,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { getScanDefaults } from '@/actions/scan/get-scan-defaults';
 
 // ============================================================================
 // HELPER COMPONENT
@@ -73,12 +78,40 @@ export function PreferencesPanel() {
   const userPreferences = useOptimizationStore((state) => state.userPreferences);
   const setUserPreferences = useOptimizationStore((state) => state.setUserPreferences);
 
-  // Initialize preferences in store if not set
+  // Track if we've loaded user's saved defaults
+  const hasLoadedDefaults = useRef(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load user's saved preferences from Settings on mount
   useEffect(() => {
-    if (!userPreferences) {
-      setUserPreferences(DEFAULT_PREFERENCES);
+    if (hasLoadedDefaults.current) {
+      setIsLoading(false);
+      return;
     }
-  }, [userPreferences, setUserPreferences]);
+
+    async function loadDefaults() {
+      try {
+        const { data } = await getScanDefaults();
+        if (data) {
+          // Merge with full defaults (getScanDefaults only returns jobType and modificationLevel)
+          setUserPreferences({
+            ...DEFAULT_PREFERENCES,
+            jobType: data.jobType,
+            modificationLevel: data.modificationLevel,
+          });
+        } else {
+          setUserPreferences(DEFAULT_PREFERENCES);
+        }
+      } catch {
+        setUserPreferences(DEFAULT_PREFERENCES);
+      } finally {
+        hasLoadedDefaults.current = true;
+        setIsLoading(false);
+      }
+    }
+
+    loadDefaults();
+  }, [setUserPreferences]);
 
   // Use defaults if no preferences set
   const currentPreferences = userPreferences ?? DEFAULT_PREFERENCES;
@@ -95,7 +128,7 @@ export function PreferencesPanel() {
   };
 
   return (
-    <Card className="p-6">
+    <Card className={`p-6 ${isLoading ? 'opacity-75' : ''}`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Job Type */}
         <PreferenceSelect<JobTypePreference>

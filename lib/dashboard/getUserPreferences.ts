@@ -94,10 +94,11 @@ export async function getUserPreferences(): Promise<ActionResponse<UserPreferenc
     }
 
     // Fetch preferences from users table
+    // Note: Query by 'id' to match RLS policy (auth.uid() = id)
     const { data: profile, error: dbError } = await supabase
       .from('users')
       .select('optimization_preferences')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     if (dbError) {

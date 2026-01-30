@@ -114,10 +114,11 @@ export async function updateUserPreferences(
     }
 
     // Get current preferences to preserve other fields
+    // Note: Query by 'id' to match RLS policy (auth.uid() = id)
     const { data: currentProfile } = await supabase
       .from('users')
       .select('optimization_preferences')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     // Type-safe access to JSONB column with proper interface
@@ -133,10 +134,11 @@ export async function updateUserPreferences(
     };
 
     // Update preferences in database
+    // Note: Query by 'id' to match RLS policy (auth.uid() = id)
     const { error: updateError } = await supabase
       .from('users')
       .update({ optimization_preferences: updatedPrefs })
-      .eq('user_id', user.id);
+      .eq('id', user.id);
 
     if (updateError) {
       return {
