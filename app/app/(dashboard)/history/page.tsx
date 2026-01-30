@@ -1,25 +1,32 @@
 /**
- * History Page (Placeholder)
+ * History Page (Server Component)
+ * Story 16.6: Migrate History and Settings
  *
- * Displays the user's past optimization sessions.
- * Will be migrated in Story 16.6.
+ * Renders the optimization history list within the dashboard layout.
+ * Loads all user sessions server-side with RLS enforcement.
  */
 
-export default function HistoryPage() {
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">History</h1>
-        <p className="text-muted-foreground mt-2">
-          View your past resume optimization sessions.
-        </p>
-      </div>
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { ROUTES } from '@/lib/constants/routes';
+import { getOptimizationHistory } from '@/actions/history/get-optimization-history';
+import { ClientHistoryPage } from './ClientHistoryPage';
 
-      <div className="rounded-lg border bg-card p-6 text-center">
-        <p className="text-muted-foreground">
-          History page will be migrated in Story 16.6
-        </p>
-      </div>
-    </div>
-  );
+export default async function HistoryPage() {
+  // Get authenticated user (already protected by layout, but double-check)
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect(ROUTES.AUTH.LOGIN);
+  }
+
+  // Load all optimization sessions for this user
+  const { data: sessions, error } = await getOptimizationHistory();
+
+  // Pass sessions to client component for rendering
+  // Error handling is done in client component
+  return <ClientHistoryPage sessions={sessions || []} error={error} />;
 }

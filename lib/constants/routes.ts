@@ -17,6 +17,7 @@ export interface NavigationItem {
 export const ROUTES = {
   // Public routes
   HOME: '/',
+  PRIVACY_POLICY: '/privacy-policy',
   AUTH: {
     LOGIN: '/auth/login',
     SIGNUP: '/auth/signup',

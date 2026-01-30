@@ -1,0 +1,215 @@
+/**
+ * OptimizationPreferencesSection Component
+ * Story 16.6: Migrate History and Settings - Task 4
+ *
+ * Form for editing optimization preferences (job type, modification level, industry, keywords).
+ * Uses React Hook Form + Zod validation.
+ */
+
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { updateUserPreferences } from '@/actions/settings/update-user-preferences';
+
+// ============================================================================
+// TYPES & SCHEMA
+// ============================================================================
+
+const preferencesSchema = z.object({
+  jobType: z.enum(['Full-time', 'Part-time', 'Contract', 'Internship']),
+  modLevel: z.enum(['Minimal', 'Moderate', 'Aggressive']),
+  industry: z.string().optional(),
+  keywords: z.string().optional(),
+});
+
+type PreferencesFormData = z.infer<typeof preferencesSchema>;
+
+interface OptimizationPreferencesSectionProps {
+  userId: string;
+  preferences: PreferencesFormData;
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+export function OptimizationPreferencesSection({
+  userId,
+  preferences,
+}: OptimizationPreferencesSectionProps) {
+  const [isPending, startTransition] = useTransition();
+
+  // Initialize form with current preferences
+  // NOTE: Converting null to '' for form compatibility, reconvert on submit
+  const form = useForm<PreferencesFormData>({
+    resolver: zodResolver(preferencesSchema),
+    defaultValues: {
+      jobType: preferences.jobType,
+      modLevel: preferences.modLevel,
+      industry: preferences.industry ?? '',
+      keywords: preferences.keywords ?? '',
+    },
+  });
+
+  // Handle form submission
+  const onSubmit = async (data: PreferencesFormData) => {
+    startTransition(async () => {
+      // Convert empty string back to null for DB storage
+      // NOTE: Form uses '' for optional fields, DB stores null
+      const preferencesToSave = {
+        jobType: data.jobType,
+        modLevel: data.modLevel,
+        industry: data.industry?.trim() || null,
+        keywords: data.keywords?.trim() || null,
+      };
+
+      const { data: updated, error } = await updateUserPreferences(preferencesToSave);
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success('Preferences saved successfully');
+      form.reset(data); // Reset form dirty state
+    });
+  };
+
+  const isDirty = form.formState.isDirty;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl">Optimization Preferences</CardTitle>
+        <CardDescription>
+          Customize how we optimize your resume for job applications
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Job Type Field */}
+            <FormField
+              control={form.control}
+              name="jobType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Job Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select job type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Full-time">Full-time</SelectItem>
+                      <SelectItem value="Part-time">Part-time</SelectItem>
+                      <SelectItem value="Contract">Contract</SelectItem>
+                      <SelectItem value="Internship">Internship</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Modification Level Field */}
+            <FormField
+              control={form.control}
+              name="modLevel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Modification Level</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select modification level" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Minimal">Minimal - Light touch-ups</SelectItem>
+                      <SelectItem value="Moderate">Moderate - Balanced changes</SelectItem>
+                      <SelectItem value="Aggressive">Aggressive - Maximum optimization</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Industry Focus Field (Optional) */}
+            <FormField
+              control={form.control}
+              name="industry"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Industry Focus (Optional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="e.g., Software Engineering, Marketing, Finance" 
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Keywords Field (Optional) */}
+            <FormField
+              control={form.control}
+              name="keywords"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Keywords (Optional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="e.g., React, Python, Project Management" 
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Save Button */}
+            <Button 
+              type="submit" 
+              disabled={!isDirty || isPending}
+              className="w-full sm:w-auto"
+            >
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isPending ? 'Saving...' : 'Save Preferences'}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  );
+}
