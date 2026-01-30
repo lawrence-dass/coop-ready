@@ -44,24 +44,24 @@ export function GapSummaryCard({ missing }: GapSummaryCardProps) {
       <CardContent className="space-y-4">
         {/* Priority Counts */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-lg border-2 border-red-200 bg-red-50 p-4 text-center">
-            <p className="text-3xl font-bold text-red-700">{highPriority}</p>
-            <p className="text-sm text-red-600">High Priority</p>
+          <div className="rounded-lg border-2 border-destructive/30 bg-destructive/10 p-4 text-center">
+            <p className="text-3xl font-bold text-destructive">{highPriority}</p>
+            <p className="text-sm text-destructive/80">High Priority</p>
           </div>
-          <div className="rounded-lg border-2 border-amber-200 bg-amber-50 p-4 text-center">
-            <p className="text-3xl font-bold text-amber-700">{mediumPriority}</p>
-            <p className="text-sm text-amber-600">Medium Priority</p>
+          <div className="rounded-lg border-2 border-warning/30 bg-warning/10 p-4 text-center">
+            <p className="text-3xl font-bold text-warning">{mediumPriority}</p>
+            <p className="text-sm text-warning/80">Medium Priority</p>
           </div>
-          <div className="rounded-lg border-2 border-yellow-200 bg-yellow-50 p-4 text-center">
-            <p className="text-3xl font-bold text-yellow-700">{lowPriority}</p>
-            <p className="text-sm text-yellow-600">Low Priority</p>
+          <div className="rounded-lg border-2 border-warning/20 bg-warning/5 p-4 text-center">
+            <p className="text-3xl font-bold text-warning/70">{lowPriority}</p>
+            <p className="text-sm text-warning/60">Low Priority</p>
           </div>
         </div>
 
         {/* Quick Wins */}
         {topGaps.length > 0 && (
-          <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
-            <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+          <div className="rounded-lg bg-info/10 p-4 border border-info/30">
+            <h4 className="font-semibold text-info mb-2 flex items-center gap-2">
               <Lightbulb className="h-4 w-4" />
               Quick Wins - Add These First
             </h4>

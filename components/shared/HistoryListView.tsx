@@ -185,7 +185,7 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
               variant="ghost"
               size="sm"
               onClick={handleDeleteClick}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
               aria-label="Delete session"
               data-testid="delete-session-button"
             >
@@ -195,16 +195,16 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
             {/* ATS Score Badge */}
             {session.atsScore !== null && session.atsScore !== undefined && (
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-indigo-600" />
+                <TrendingUp className="h-4 w-4 text-accent" />
                 <Badge
                 variant="default"
                 className={cn(
                   'text-sm font-semibold',
                   session.atsScore >= 80
-                    ? 'bg-green-600'
+                    ? 'bg-success'
                     : session.atsScore >= 60
-                      ? 'bg-yellow-600'
-                      : 'bg-red-600'
+                      ? 'bg-warning'
+                      : 'bg-destructive'
                 )}
               >
                   {session.atsScore}

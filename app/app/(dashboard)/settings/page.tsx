@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: 'Settings | SubmitSmart',
   description: 'Manage your account and optimization preferences',
 };
+
+// Force dynamic rendering to always fetch fresh data
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/lib/supabase/server';
 import { ROUTES } from '@/lib/constants/routes';
 import { ClientSettingsPage } from './ClientSettingsPage';
@@ -33,11 +36,10 @@ export default async function SettingsPage() {
   const { data: preferences, error: prefsError } = await getUserPreferences();
 
   // Use defaults if preferences load failed (with logging)
+  // Values match scan page options - no mapping needed
   const userPreferences = preferences || {
-    jobType: 'Full-time' as const,
-    modLevel: 'Moderate' as const,
-    industry: null,
-    keywords: null,
+    jobType: 'fulltime' as const,
+    modLevel: 'moderate' as const,
   };
 
   // Log error for monitoring (user sees defaults, no UI disruption)
@@ -45,16 +47,18 @@ export default async function SettingsPage() {
     console.error('[Settings Page] Failed to load preferences:', prefsError);
   }
 
-  // Load privacy consent status and onboarding data from users table
+  // Load onboarding data from users table
+  // Note: Query by 'id' to match RLS policy (auth.uid() = id)
   const { data: userData } = await supabase
     .from('users')
-    .select('privacy_consent_accepted, privacy_consent_accepted_at, first_name, last_name, onboarding_answers')
-    .eq('user_id', user.id)
+    .select('email, first_name, last_name, onboarding_answers')
+    .eq('id', user.id)
     .single();
 
+  // Privacy consent - column doesn't exist yet, use defaults
   const privacyConsent = {
-    accepted: userData?.privacy_consent_accepted || false,
-    acceptedAt: userData?.privacy_consent_accepted_at || null,
+    accepted: false,
+    acceptedAt: null,
   };
 
   const onboardingData = {
@@ -64,10 +68,13 @@ export default async function SettingsPage() {
   };
 
   // Pass user data to client component
+  // Use email from users table as fallback if auth email is empty
+  const userEmail = user.email || userData?.email || '';
+
   return (
     <ClientSettingsPage
       user={{
-        email: user.email || '',
+        email: userEmail,
         createdAt: user.created_at,
         id: user.id,
       }}

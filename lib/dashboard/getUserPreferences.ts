@@ -1,76 +1,31 @@
+'use server';
+
 /**
  * Get User Preferences Query
  * Story 16.6: Migrate History and Settings - Task 8
  *
  * Fetches user optimization preferences from the users table.
+ * Uses same values as scan page - no mapping needed.
  */
-
-'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import type { ActionResponse } from '@/types';
 import { ERROR_CODES } from '@/types';
 
 /**
- * User Preferences Type
- *
- * Maps to preferences needed for Settings page.
- * Extracted from optimization_preferences JSONB column.
+ * User Preferences Type - matches scan page values exactly
  */
 export interface UserPreferences {
-  jobType: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
-  modLevel: 'Minimal' | 'Moderate' | 'Aggressive';
-  industry: string | null;
-  keywords: string | null;
-}
-
-/**
- * Type for optimization_preferences JSONB column in database
- * This matches the actual structure stored in Postgres
- */
-interface OptimizationPreferencesDB {
-  jobType?: string;
-  modificationLevel?: string;
-  industry?: string | null;
-  keywords?: string | null;
-  // Other fields that may exist from Epic 11
-  tone?: string;
-  verbosity?: string;
-  emphasis?: string;
-  experienceLevel?: string;
-}
-
-/**
- * Maps database jobType values to display values
- */
-function mapJobTypeFromDB(dbValue: string | null | undefined): UserPreferences['jobType'] {
-  const mapping: Record<string, UserPreferences['jobType']> = {
-    'fulltime': 'Full-time',
-    'parttime': 'Part-time',
-    'contract': 'Contract',
-    'intern': 'Internship',
-  };
-  return mapping[dbValue || 'fulltime'] || 'Full-time';
-}
-
-/**
- * Maps database modificationLevel values to display values
- */
-function mapModLevelFromDB(dbValue: string | null | undefined): UserPreferences['modLevel'] {
-  const mapping: Record<string, UserPreferences['modLevel']> = {
-    'conservative': 'Minimal',
-    'moderate': 'Moderate',
-    'aggressive': 'Aggressive',
-  };
-  return mapping[dbValue || 'moderate'] || 'Moderate';
+  jobType: 'coop' | 'fulltime';
+  modLevel: 'conservative' | 'moderate' | 'aggressive';
 }
 
 /**
  * Get user optimization preferences
- * 
- * Returns preferences from the profiles.optimization_preferences JSONB column.
+ *
+ * Returns preferences from the users.optimization_preferences JSONB column.
  * If preferences don't exist, returns sensible defaults.
- * 
+ *
  * @returns ActionResponse with UserPreferences
  */
 export async function getUserPreferences(): Promise<ActionResponse<UserPreferences>> {
@@ -94,34 +49,34 @@ export async function getUserPreferences(): Promise<ActionResponse<UserPreferenc
     }
 
     // Fetch preferences from users table
+    // Note: Query by 'id' to match RLS policy (auth.uid() = id)
     const { data: profile, error: dbError } = await supabase
       .from('users')
       .select('optimization_preferences')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     if (dbError) {
       // User record might not exist yet - return defaults
       return {
         data: {
-          jobType: 'Full-time',
-          modLevel: 'Moderate',
-          industry: null,
-          keywords: null,
+          jobType: 'fulltime',
+          modLevel: 'moderate',
         },
         error: null,
       };
     }
 
-    // Extract preferences from JSONB with proper typing
-    const prefs: OptimizationPreferencesDB = profile?.optimization_preferences as OptimizationPreferencesDB;
+    // Extract preferences from JSONB - values stored directly, no mapping needed
+    const prefs = profile?.optimization_preferences as {
+      jobType?: string;
+      modificationLevel?: string;
+    } | null;
 
     return {
       data: {
-        jobType: mapJobTypeFromDB(prefs?.jobType),
-        modLevel: mapModLevelFromDB(prefs?.modificationLevel),
-        industry: prefs?.industry || null,
-        keywords: prefs?.keywords || null,
+        jobType: (prefs?.jobType as 'coop' | 'fulltime') || 'fulltime',
+        modLevel: (prefs?.modificationLevel as 'conservative' | 'moderate' | 'aggressive') || 'moderate',
       },
       error: null,
     };

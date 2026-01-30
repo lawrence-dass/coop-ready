@@ -7,8 +7,8 @@
 
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { ProfileSection } from './ProfileSection';
+import { OnboardingSelectionsSection } from './OnboardingSelectionsSection';
 import { OptimizationPreferencesSection } from './OptimizationPreferencesSection';
 import { PrivacySection } from './PrivacySection';
 import { AccountActionsSection } from './AccountActionsSection';
@@ -20,10 +20,8 @@ interface User {
 }
 
 interface Preferences {
-  jobType: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
-  modLevel: 'Minimal' | 'Moderate' | 'Aggressive';
-  industry: string | null;
-  keywords: string | null;
+  jobType: 'coop' | 'fulltime';
+  modLevel: 'conservative' | 'moderate' | 'aggressive';
 }
 
 interface PrivacyConsent {
@@ -54,16 +52,6 @@ export function ClientSettingsPage({
   privacyConsent,
   onboarding,
 }: ClientSettingsPageProps) {
-  // Convert null to undefined for React Hook Form compatibility
-  // NOTE: RHF expects undefined for optional fields, but DB stores null
-  // The form component will convert undefined → '' for inputs, then back to null on save
-  const preferencesForForm = {
-    jobType: preferences.jobType,
-    modLevel: preferences.modLevel,
-    industry: preferences.industry ?? undefined,
-    keywords: preferences.keywords ?? undefined,
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Page Header */}
@@ -77,17 +65,17 @@ export function ClientSettingsPage({
         {/* Profile Information */}
         <ProfileSection
           email={user.email}
-          createdAt={user.createdAt}
-          userId={user.id}
           firstName={onboarding.firstName}
           lastName={onboarding.lastName}
-          onboardingAnswers={onboarding.answers}
         />
+
+        {/* Onboarding Selections (Editable) */}
+        <OnboardingSelectionsSection answers={onboarding.answers} />
 
         {/* Optimization Preferences */}
         <OptimizationPreferencesSection
           userId={user.id}
-          preferences={preferencesForForm}
+          preferences={preferences}
         />
 
         {/* Privacy Settings */}

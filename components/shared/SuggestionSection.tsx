@@ -96,7 +96,7 @@ function SectionHeader({
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="text-indigo-600">{icon}</div>
+        <div className="text-accent">{icon}</div>
         <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
       </div>
       {onRegenerate && (
@@ -301,7 +301,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
         <SectionHeader icon={icon} label={sectionLabel} onRegenerate={onRegenerate} regenerating={regenerating} />
         <div className="flex items-center justify-center py-12 border border-gray-200 rounded-lg bg-gray-50">
           <div className="text-center space-y-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto" />
             <p className="text-sm text-gray-600">Generating suggestions...</p>
           </div>
         </div>
@@ -322,7 +322,7 @@ export function SuggestionSection(props: SuggestionSectionProps) {
           {/* Loading overlay */}
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
             <div className="text-center space-y-2">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto" />
               <p className="text-sm text-gray-600">Generating new suggestions...</p>
             </div>
           </div>

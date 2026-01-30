@@ -11,12 +11,23 @@
  * - Descriptive text explains each option
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PreferencesPanel } from '@/components/scan/PreferencesPanel';
 import { useOptimizationStore } from '@/store';
 import { DEFAULT_PREFERENCES } from '@/types/preferences';
+
+// Mock the getScanDefaults server action
+vi.mock('@/actions/scan/get-scan-defaults', () => ({
+  getScanDefaults: vi.fn().mockResolvedValue({
+    data: {
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
+    },
+    error: null,
+  }),
+}));
 
 describe('PreferencesPanel Component', () => {
   beforeEach(() => {
@@ -41,32 +52,37 @@ describe('PreferencesPanel Component', () => {
     expect(screen.getByLabelText(/aggressive/i)).toBeInTheDocument();
   });
 
-  it('renders with default preferences when store has no preferences', () => {
+  it('renders with default preferences when store has no preferences', async () => {
     render(<PreferencesPanel />);
 
-    // Default job type is 'fulltime' - check data-state attribute
-    const fulltimeRadio = screen.getByRole('radio', { name: /full-time position/i });
-    expect(fulltimeRadio).toHaveAttribute('data-state', 'checked');
+    // Wait for async loading to complete, then check defaults
+    await waitFor(() => {
+      // Default job type is 'fulltime' - check data-state attribute
+      const fulltimeRadio = screen.getByRole('radio', { name: /full-time position/i });
+      expect(fulltimeRadio).toHaveAttribute('data-state', 'checked');
 
-    // Default modification level is 'moderate' - check data-state attribute
-    const moderateRadio = screen.getByRole('radio', { name: /moderate.*balanced changes/i });
-    expect(moderateRadio).toHaveAttribute('data-state', 'checked');
+      // Default modification level is 'moderate' - check data-state attribute
+      const moderateRadio = screen.getByRole('radio', { name: /moderate.*balanced changes/i });
+      expect(moderateRadio).toHaveAttribute('data-state', 'checked');
+    });
   });
 
   it('updates Job Type in Zustand store when selection changes', async () => {
     const user = userEvent.setup();
     render(<PreferencesPanel />);
 
-    // Initially fulltime (default)
-    let preferences = useOptimizationStore.getState().userPreferences;
-    expect(preferences?.jobType).toBe('fulltime');
+    // Wait for async loading to complete
+    await waitFor(() => {
+      const preferences = useOptimizationStore.getState().userPreferences;
+      expect(preferences?.jobType).toBe('fulltime');
+    });
 
     // Click coop radio
     const coopRadio = screen.getByLabelText(/co-op.*internship/i);
     await user.click(coopRadio);
 
     // Check store updated
-    preferences = useOptimizationStore.getState().userPreferences;
+    const preferences = useOptimizationStore.getState().userPreferences;
     expect(preferences?.jobType).toBe('coop');
   });
 
@@ -74,16 +90,18 @@ describe('PreferencesPanel Component', () => {
     const user = userEvent.setup();
     render(<PreferencesPanel />);
 
-    // Initially moderate (default)
-    let preferences = useOptimizationStore.getState().userPreferences;
-    expect(preferences?.modificationLevel).toBe('moderate');
+    // Wait for async loading to complete
+    await waitFor(() => {
+      const preferences = useOptimizationStore.getState().userPreferences;
+      expect(preferences?.modificationLevel).toBe('moderate');
+    });
 
     // Click aggressive radio
     const aggressiveRadio = screen.getByLabelText(/aggressive/i);
     await user.click(aggressiveRadio);
 
     // Check store updated
-    preferences = useOptimizationStore.getState().userPreferences;
+    const preferences = useOptimizationStore.getState().userPreferences;
     expect(preferences?.modificationLevel).toBe('aggressive');
   });
 
@@ -104,6 +122,11 @@ describe('PreferencesPanel Component', () => {
     const user = userEvent.setup();
     const { unmount } = render(<PreferencesPanel />);
 
+    // Wait for async loading to complete
+    await waitFor(() => {
+      expect(useOptimizationStore.getState().userPreferences).not.toBeNull();
+    });
+
     // Set preferences
     await user.click(screen.getByLabelText(/co-op.*internship/i));
     await user.click(screen.getByLabelText(/conservative/i));
@@ -114,7 +137,7 @@ describe('PreferencesPanel Component', () => {
     // Re-render component
     render(<PreferencesPanel />);
 
-    // Preferences should persist - check data-state
+    // Preferences should persist (from store) - check data-state
     const coopRadio = screen.getByRole('radio', { name: /co-op.*internship/i });
     const conservativeRadio = screen.getByRole('radio', { name: /conservative.*minimal/i });
 

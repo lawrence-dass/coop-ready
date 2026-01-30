@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { updateUserPreferences } from '@/actions/settings/update-user-preferences';
@@ -38,11 +37,10 @@ import { updateUserPreferences } from '@/actions/settings/update-user-preference
 // TYPES & SCHEMA
 // ============================================================================
 
+// Use same values as scan page - no mapping needed
 const preferencesSchema = z.object({
-  jobType: z.enum(['Full-time', 'Part-time', 'Contract', 'Internship']),
-  modLevel: z.enum(['Minimal', 'Moderate', 'Aggressive']),
-  industry: z.string().optional(),
-  keywords: z.string().optional(),
+  jobType: z.enum(['coop', 'fulltime']),
+  modLevel: z.enum(['conservative', 'moderate', 'aggressive']),
 });
 
 type PreferencesFormData = z.infer<typeof preferencesSchema>;
@@ -63,30 +61,18 @@ export function OptimizationPreferencesSection({
   const [isPending, startTransition] = useTransition();
 
   // Initialize form with current preferences
-  // NOTE: Converting null to '' for form compatibility, reconvert on submit
   const form = useForm<PreferencesFormData>({
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
       jobType: preferences.jobType,
       modLevel: preferences.modLevel,
-      industry: preferences.industry ?? '',
-      keywords: preferences.keywords ?? '',
     },
   });
 
   // Handle form submission
   const onSubmit = async (data: PreferencesFormData) => {
     startTransition(async () => {
-      // Convert empty string back to null for DB storage
-      // NOTE: Form uses '' for optional fields, DB stores null
-      const preferencesToSave = {
-        jobType: data.jobType,
-        modLevel: data.modLevel,
-        industry: data.industry?.trim() || null,
-        keywords: data.keywords?.trim() || null,
-      };
-
-      const { data: updated, error } = await updateUserPreferences(preferencesToSave);
+      const { data: updated, error } = await updateUserPreferences(data);
 
       if (error) {
         toast.error(error.message);
@@ -111,7 +97,7 @@ export function OptimizationPreferencesSection({
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Job Type Field */}
+            {/* Job Type Field - Same options as scan page */}
             <FormField
               control={form.control}
               name="jobType"
@@ -125,10 +111,8 @@ export function OptimizationPreferencesSection({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Full-time">Full-time</SelectItem>
-                      <SelectItem value="Part-time">Part-time</SelectItem>
-                      <SelectItem value="Contract">Contract</SelectItem>
-                      <SelectItem value="Internship">Internship</SelectItem>
+                      <SelectItem value="coop">Co-op / Internship</SelectItem>
+                      <SelectItem value="fulltime">Full-time Position</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -136,7 +120,7 @@ export function OptimizationPreferencesSection({
               )}
             />
 
-            {/* Modification Level Field */}
+            {/* Modification Level Field - Same options as scan page */}
             <FormField
               control={form.control}
               name="modLevel"
@@ -150,49 +134,11 @@ export function OptimizationPreferencesSection({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Minimal">Minimal - Light touch-ups</SelectItem>
-                      <SelectItem value="Moderate">Moderate - Balanced changes</SelectItem>
-                      <SelectItem value="Aggressive">Aggressive - Maximum optimization</SelectItem>
+                      <SelectItem value="conservative">Conservative - Minimal changes (15-25%)</SelectItem>
+                      <SelectItem value="moderate">Moderate - Balanced changes (35-50%)</SelectItem>
+                      <SelectItem value="aggressive">Aggressive - Major rewrite (60-75%)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Industry Focus Field (Optional) */}
-            <FormField
-              control={form.control}
-              name="industry"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Industry Focus (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="e.g., Software Engineering, Marketing, Finance" 
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Keywords Field (Optional) */}
-            <FormField
-              control={form.control}
-              name="keywords"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Keywords (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="e.g., React, Python, Project Management" 
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
