@@ -79,17 +79,17 @@ export async function signup(
   const supabase = await createClient();
 
   try {
-    // Step 1: Get current anonymous session (for migration)
+    // Step 1: Get current anonymous user (for migration)
     let anonymousId: string | null = null;
     try {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user?.is_anonymous) {
-        anonymousId = session.user.id;
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+      if (currentUser?.is_anonymous) {
+        anonymousId = currentUser.id;
       }
     } catch {
-      // Ignore errors getting anonymous session
+      // Ignore errors getting anonymous user
       // User might not have one, which is fine
     }
 
@@ -129,10 +129,22 @@ export async function signup(
         };
       }
 
+      // Check for rate limit BEFORE checking for email errors
+      // (rate limit message contains "email" which would incorrectly match)
       if (
-        error.message.includes('email') ||
-        error.code === 'invalid_email'
+        error.code === 'over_email_send_rate_limit' ||
+        error.message.includes('rate limit')
       ) {
+        return {
+          data: null,
+          error: {
+            message: 'Too many signup attempts. Please wait a few minutes and try again.',
+            code: ERROR_CODES.RATE_LIMITED,
+          },
+        };
+      }
+
+      if (error.code === 'invalid_email') {
         return {
           data: null,
           error: {

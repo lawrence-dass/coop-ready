@@ -316,7 +316,7 @@ export function NewScanClient() {
         />
       )}
 
-      {/* Main Content Grid */}
+      {/* Main Content Grid - Resume & Job Description */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column: Resume Upload */}
         <div className="space-y-4">
@@ -349,23 +349,22 @@ export function NewScanClient() {
           )}
         </div>
 
-        {/* Right Column: Job Description + Preferences */}
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">2. Enter Job Description</h2>
-            <JobDescriptionInput
-              value={jobDescription || ''}
-              onChange={handleJDChange}
-              onClear={handleJDClear}
-              isDisabled={isPending}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">3. Configure Preferences</h2>
-            <PreferencesPanel />
-          </div>
+        {/* Right Column: Job Description */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">2. Enter Job Description</h2>
+          <JobDescriptionInput
+            value={jobDescription || ''}
+            onChange={handleJDChange}
+            onClear={handleJDClear}
+            isDisabled={isPending}
+          />
         </div>
+      </div>
+
+      {/* Full-width Preferences Section */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">3. Configure Preferences</h2>
+        <PreferencesPanel />
       </div>
 
       {/* Analyze Button */}
