@@ -2,13 +2,13 @@
  * ProfileSection Component
  * Story 16.6: Migrate History and Settings - Task 3
  *
- * Displays user profile information (email, account creation date, user ID, and onboarding data).
+ * Displays user profile information (name, email) and onboarding selections.
  */
 
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Calendar, Hash, Target, Briefcase, Building2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { User, Mail, Target, Briefcase, Building2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface OnboardingAnswers {
@@ -19,8 +19,6 @@ interface OnboardingAnswers {
 
 interface ProfileSectionProps {
   email: string;
-  createdAt: string;
-  userId: string;
   firstName: string | null;
   lastName: string | null;
   onboardingAnswers: OnboardingAnswers | null;
@@ -57,111 +55,110 @@ const INDUSTRY_LABELS: Record<string, string> = {
 
 export function ProfileSection({
   email,
-  createdAt,
-  userId,
   firstName,
   lastName,
   onboardingAnswers,
 }: ProfileSectionProps) {
-  // Format date: "Member since Jan 24, 2026"
-  const formattedDate = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(createdAt));
-
   // Build display name
   const displayName = firstName && lastName
     ? `${firstName} ${lastName}`
     : firstName || lastName || null;
 
+  const hasOnboardingData = onboardingAnswers?.careerGoal ||
+    onboardingAnswers?.experienceLevel ||
+    (onboardingAnswers?.targetIndustries && onboardingAnswers.targetIndustries.length > 0);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Profile Information</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Name (if available) */}
-        {displayName && (
+    <div className="space-y-6">
+      {/* Profile Information Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Profile</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Name */}
           <div className="flex items-start gap-3">
             <User className="h-5 w-5 text-gray-500 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-700">Name</p>
-              <p className="text-sm text-gray-900">{displayName}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Email Address */}
-        <div className="flex items-start gap-3">
-          <User className="h-5 w-5 text-gray-500 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-700">Email</p>
-            <p className="text-sm text-gray-900">{email}</p>
-          </div>
-        </div>
-
-        {/* Account Creation Date */}
-        <div className="flex items-start gap-3">
-          <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-700">Member since</p>
-            <p className="text-sm text-gray-900">{formattedDate}</p>
-          </div>
-        </div>
-
-        {/* Career Goal (if available) */}
-        {onboardingAnswers?.careerGoal && (
-          <div className="flex items-start gap-3">
-            <Target className="h-5 w-5 text-gray-500 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-700">Career Goal</p>
               <p className="text-sm text-gray-900">
-                {CAREER_GOAL_LABELS[onboardingAnswers.careerGoal] || onboardingAnswers.careerGoal}
+                {displayName || <span className="text-gray-400 italic">Not provided</span>}
               </p>
             </div>
           </div>
-        )}
 
-        {/* Experience Level (if available) */}
-        {onboardingAnswers?.experienceLevel && (
+          {/* Email Address */}
           <div className="flex items-start gap-3">
-            <Briefcase className="h-5 w-5 text-gray-500 mt-0.5" />
+            <Mail className="h-5 w-5 text-gray-500 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-700">Experience Level</p>
-              <p className="text-sm text-gray-900">
-                {EXPERIENCE_LEVEL_LABELS[onboardingAnswers.experienceLevel] || onboardingAnswers.experienceLevel}
-              </p>
+              <p className="text-sm font-medium text-gray-700">Email</p>
+              <p className="text-sm text-gray-900">{email}</p>
             </div>
           </div>
-        )}
+        </CardContent>
+      </Card>
 
-        {/* Target Industries (if available) */}
-        {onboardingAnswers?.targetIndustries && onboardingAnswers.targetIndustries.length > 0 && (
-          <div className="flex items-start gap-3">
-            <Building2 className="h-5 w-5 text-gray-500 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-700">Target Industries</p>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {onboardingAnswers.targetIndustries.map((industry) => (
-                  <Badge key={industry} variant="secondary" className="text-xs">
-                    {INDUSTRY_LABELS[industry] || industry}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Onboarding Selections Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Your Selections</CardTitle>
+          <CardDescription>
+            Preferences you selected during onboarding
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!hasOnboardingData ? (
+            <p className="text-sm text-gray-500 italic">
+              No onboarding selections available
+            </p>
+          ) : (
+            <>
+              {/* Career Goal */}
+              {onboardingAnswers?.careerGoal && (
+                <div className="flex items-start gap-3">
+                  <Target className="h-5 w-5 text-gray-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700">Career Goal</p>
+                    <p className="text-sm text-gray-900">
+                      {CAREER_GOAL_LABELS[onboardingAnswers.careerGoal] || onboardingAnswers.careerGoal}
+                    </p>
+                  </div>
+                </div>
+              )}
 
-        {/* User ID (optional, for debugging) */}
-        <div className="flex items-start gap-3">
-          <Hash className="h-5 w-5 text-gray-500 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-700">User ID</p>
-            <p className="text-xs font-mono text-gray-500 break-all">{userId}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+              {/* Experience Level */}
+              {onboardingAnswers?.experienceLevel && (
+                <div className="flex items-start gap-3">
+                  <Briefcase className="h-5 w-5 text-gray-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700">Experience Level</p>
+                    <p className="text-sm text-gray-900">
+                      {EXPERIENCE_LEVEL_LABELS[onboardingAnswers.experienceLevel] || onboardingAnswers.experienceLevel}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Target Industries */}
+              {onboardingAnswers?.targetIndustries && onboardingAnswers.targetIndustries.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Building2 className="h-5 w-5 text-gray-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700">Target Industries</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {onboardingAnswers.targetIndustries.map((industry) => (
+                        <Badge key={industry} variant="secondary" className="text-xs">
+                          {INDUSTRY_LABELS[industry] || industry}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

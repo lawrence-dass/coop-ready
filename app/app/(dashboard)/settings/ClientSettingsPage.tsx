@@ -77,8 +77,6 @@ export function ClientSettingsPage({
         {/* Profile Information */}
         <ProfileSection
           email={user.email}
-          createdAt={user.createdAt}
-          userId={user.id}
           firstName={onboarding.firstName}
           lastName={onboarding.lastName}
           onboardingAnswers={onboarding.answers}
