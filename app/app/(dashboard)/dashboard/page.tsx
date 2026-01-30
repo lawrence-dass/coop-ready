@@ -45,6 +45,12 @@ export default async function DashboardPage() {
   const recentSessions = sessions || [];
   const totalScans = recentSessions.length;
 
+  // Calculate average ATS score from sessions that have scores
+  const sessionsWithScores = recentSessions.filter(s => s.atsScore !== null && s.atsScore !== undefined);
+  const averageAtsScore = sessionsWithScores.length > 0
+    ? sessionsWithScores.reduce((sum, s) => sum + (s.atsScore || 0), 0) / sessionsWithScores.length
+    : null;
+
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
       {/* Welcome Header - Shows user's first name from profile */}
@@ -54,7 +60,7 @@ export default async function DashboardPage() {
       />
 
       {/* Progress Stats - Story 17.6: Moved up, now immediately after Welcome */}
-      <ProgressStatsCard totalScans={totalScans} />
+      <ProgressStatsCard totalScans={totalScans} averageAtsScore={averageAtsScore} />
 
       {/* Recent Scans OR Getting Started Guide */}
       {sessionsError ? (

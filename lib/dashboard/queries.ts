@@ -42,7 +42,7 @@ export async function getRecentSessions(): Promise<
     // Fetch recent sessions for this user
     const { data: sessions, error: dbError } = await supabase
       .from('sessions')
-      .select('id, created_at, resume_content, jd_content, analysis, suggestions')
+      .select('id, created_at, title, resume_content, jd_content, ats_score, analysis, suggestions')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -63,14 +63,16 @@ export async function getRecentSessions(): Promise<
         id: session.id,
         createdAt: new Date(session.created_at),
         resumeName: extractResumeName(session.resume_content),
-        jobTitle: extractJobTitle(session.jd_content),
+        // Use stored title if available, otherwise fall back to extraction for legacy sessions
+        jobTitle: (session as any).title || extractJobTitle(session.jd_content),
         companyName: extractCompanyName(session.jd_content),
         jdPreview: session.jd_content
           ? session.jd_content.slice(0, 100)
           : null,
+        // ATS score is stored in ats_score column with overall property
         atsScore:
-          session.analysis && typeof session.analysis === 'object'
-            ? (session.analysis as any).atsScore || null
+          (session as any).ats_score && typeof (session as any).ats_score === 'object'
+            ? (session as any).ats_score.overall ?? null
             : null,
         suggestionCount: countSuggestions(session.suggestions),
       })

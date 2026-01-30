@@ -11,9 +11,12 @@ import { BarChart3, TrendingUp, Target } from 'lucide-react';
 
 interface ProgressStatsCardProps {
   totalScans?: number;
+  averageAtsScore?: number | null;
 }
 
-export function ProgressStatsCard({ totalScans = 0 }: ProgressStatsCardProps) {
+export function ProgressStatsCard({ totalScans = 0, averageAtsScore }: ProgressStatsCardProps) {
+  const hasAtsScore = averageAtsScore !== null && averageAtsScore !== undefined;
+
   const stats = [
     {
       label: 'Total Scans',
@@ -23,9 +26,9 @@ export function ProgressStatsCard({ totalScans = 0 }: ProgressStatsCardProps) {
     },
     {
       label: 'Average ATS Score',
-      value: '--',
+      value: hasAtsScore ? `${Math.round(averageAtsScore)}%` : '--',
       icon: Target,
-      isTbd: true,
+      isTbd: !hasAtsScore,
     },
     {
       label: 'Improvement Rate',

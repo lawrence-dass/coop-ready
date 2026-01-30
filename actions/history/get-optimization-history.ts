@@ -29,10 +29,11 @@ import { ERROR_CODES } from '@/types';
 interface SessionRow {
   id: string;
   created_at: string;
+  title: string | null;
   resume_content: string | null;
   jd_content: string | null;
-  analysis: {
-    atsScore?: { overall?: number };
+  ats_score: {
+    overall?: number;
   } | null;
   summary_suggestion: unknown | null;
   skills_suggestion: unknown | null;
@@ -186,18 +187,24 @@ function countSuggestions(row: SessionRow): number {
  * Converts snake_case DB fields to camelCase TypeScript types
  * and extracts display metadata.
  *
+ * For new sessions: Uses stored title directly
+ * For legacy sessions: Falls back to extraction from JD content
+ *
  * @param row - Database row from sessions query
  * @returns HistorySession object
  */
 function transformToHistorySession(row: SessionRow): HistorySession {
+  // Use stored title if available, otherwise fall back to extraction for legacy sessions
+  const jobTitle = row.title || extractJobTitle(row.jd_content);
+
   return {
     id: row.id,
     createdAt: new Date(row.created_at),
     resumeName: extractResumeName(row.resume_content),
-    jobTitle: extractJobTitle(row.jd_content),
+    jobTitle,
     companyName: extractCompanyName(row.jd_content),
     jdPreview: row.jd_content?.substring(0, 100) || null,
-    atsScore: row.analysis?.atsScore?.overall || null,
+    atsScore: row.ats_score?.overall ?? null,
     suggestionCount: countSuggestions(row),
   };
 }
@@ -249,7 +256,7 @@ export async function getOptimizationHistory(): Promise<
     const { data, error: queryError } = await supabase
       .from('sessions')
       .select(
-        'id, created_at, resume_content, jd_content, analysis, summary_suggestion, skills_suggestion, experience_suggestion'
+        'id, created_at, title, resume_content, jd_content, ats_score, summary_suggestion, skills_suggestion, experience_suggestion'
       )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
