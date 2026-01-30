@@ -128,8 +128,8 @@ export function SignupForm({ onSuccess, onVerificationRequired }: SignupFormProp
         if (onSuccess) {
           onSuccess(data.userId, data.email);
         } else {
-          // Full page load so AuthProvider reinitializes with the new session cookie
-          window.location.href = '/';
+          // Redirect to onboarding for new signups
+          window.location.href = '/auth/onboarding';
         }
       }
     });

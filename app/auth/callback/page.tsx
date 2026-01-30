@@ -42,14 +42,14 @@ export default async function CallbackPage({
   }
 
   // Check if user needs onboarding (Story 8-5)
-  // New users (no profile or onboarding_complete=false) should complete onboarding
-  const { data: profile } = await supabase
-    .from('profiles')
+  // New users (no record or onboarding_complete=false) should complete onboarding
+  const { data: userData } = await supabase
+    .from('users')
     .select('onboarding_complete')
     .eq('user_id', data.session.user.id)
     .single();
 
-  if (!profile || !profile.onboarding_complete) {
+  if (!userData || !userData.onboarding_complete) {
     redirect('/auth/onboarding');
   }
 

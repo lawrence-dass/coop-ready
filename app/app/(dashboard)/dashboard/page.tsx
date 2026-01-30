@@ -33,6 +33,13 @@ export default async function DashboardPage() {
     redirect(ROUTES.AUTH.LOGIN);
   }
 
+  // Fetch user's first name from users table
+  const { data: userData } = await supabase
+    .from('users')
+    .select('first_name')
+    .eq('user_id', user.id)
+    .single();
+
   // Fetch recent sessions
   const { data: sessions, error: sessionsError } = await getRecentSessions();
   const recentSessions = sessions || [];
@@ -40,8 +47,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
-      {/* Welcome Header - Story 17.6: Shows first name only, no email */}
-      <WelcomeHeader userEmail={user.email || 'user@example.com'} />
+      {/* Welcome Header - Shows user's first name from profile */}
+      <WelcomeHeader
+        firstName={userData?.first_name}
+        userEmail={user.email || 'user@example.com'}
+      />
 
       {/* Progress Stats - Story 17.6: Moved up, now immediately after Welcome */}
       <ProgressStatsCard totalScans={totalScans} />

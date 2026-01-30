@@ -37,6 +37,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import { login } from '@/actions/auth/login';
+import { checkOnboarding } from '@/actions/auth/check-onboarding';
 
 interface LoginFormProps {
   /** Callback when login succeeds */
@@ -66,13 +67,21 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         return;
       }
 
-      // Success
+      // Success - check onboarding status before redirecting
       toast.success('Logged in successfully!');
       if (onSuccess) {
         onSuccess(data.userId, data.email);
       } else {
-        // Full page load so AuthProvider reinitializes with the new session cookie
-        window.location.href = '/';
+        // Check if user has completed onboarding
+        const { data: onboardingData } = await checkOnboarding();
+
+        // Redirect to onboarding if not complete, otherwise home
+        if (onboardingData && !onboardingData.onboardingComplete) {
+          window.location.href = '/auth/onboarding';
+        } else {
+          // Full page load so AuthProvider reinitializes with the new session cookie
+          window.location.href = '/';
+        }
       }
     });
   }

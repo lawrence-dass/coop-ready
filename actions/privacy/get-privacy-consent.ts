@@ -59,9 +59,9 @@ export async function getPrivacyConsent(): Promise<
       };
     }
 
-    // Query profiles table for privacy consent status
+    // Query users table for privacy consent status
     const { data, error } = await supabase
-      .from('profiles')
+      .from('users')
       .select('privacy_accepted, privacy_accepted_at')
       .eq('id', user.id)
       .single();

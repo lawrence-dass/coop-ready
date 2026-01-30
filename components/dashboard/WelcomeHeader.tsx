@@ -3,26 +3,29 @@
  * Story 16.2: Implement Dashboard Home Page
  * Story 17.6: Dashboard UI Cleanup (removed email display)
  *
- * Displays personalized welcome message with user's name
- * Extracts first name from email address
+ * Displays personalized welcome message with user's first name.
+ * Falls back to extracting name from email if first name not provided.
  */
 
 interface WelcomeHeaderProps {
+  firstName?: string | null;
   userEmail: string;
   showTimeGreeting?: boolean;
 }
 
 export function WelcomeHeader({
+  firstName,
   userEmail,
   showTimeGreeting = false,
 }: WelcomeHeaderProps) {
-  const firstName = extractFirstName(userEmail);
+  // Use provided firstName, or fall back to extracting from email
+  const displayName = firstName?.trim() || extractFirstName(userEmail);
   const greeting = showTimeGreeting ? getTimeBasedGreeting() : 'Welcome';
 
   return (
     <div className="mb-6">
       <h1 className="text-3xl font-bold">
-        {greeting}, {firstName}!
+        {greeting}, {displayName}!
       </h1>
     </div>
   );

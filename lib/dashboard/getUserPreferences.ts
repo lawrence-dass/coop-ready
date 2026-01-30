@@ -2,7 +2,7 @@
  * Get User Preferences Query
  * Story 16.6: Migrate History and Settings - Task 8
  *
- * Fetches user optimization preferences from the profiles table.
+ * Fetches user optimization preferences from the users table.
  */
 
 'use server';
@@ -93,15 +93,15 @@ export async function getUserPreferences(): Promise<ActionResponse<UserPreferenc
       };
     }
 
-    // Fetch preferences from profiles table
+    // Fetch preferences from users table
     const { data: profile, error: dbError } = await supabase
-      .from('profiles')
+      .from('users')
       .select('optimization_preferences')
       .eq('user_id', user.id)
       .single();
 
     if (dbError) {
-      // Profile might not exist yet - return defaults
+      // User record might not exist yet - return defaults
       return {
         data: {
           jobType: 'Full-time',

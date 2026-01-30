@@ -47,6 +47,12 @@ const VALID_INDUSTRIES: Industry[] = [
 function validateOnboardingAnswers(
   answers: OnboardingAnswers
 ): string | null {
+  if (!answers.firstName || typeof answers.firstName !== 'string' || !answers.firstName.trim()) {
+    return 'First name is required';
+  }
+  if (!answers.lastName || typeof answers.lastName !== 'string' || !answers.lastName.trim()) {
+    return 'Last name is required';
+  }
   if (
     !answers.careerGoal ||
     !VALID_CAREER_GOALS.includes(answers.careerGoal as CareerGoal)
@@ -112,11 +118,16 @@ export async function saveOnboarding(
     };
   }
 
+  // Store firstName/lastName in separate columns, other answers in JSONB
+  const { firstName, lastName, ...otherAnswers } = answers;
+
   // Update profile with onboarding data
   const { error: updateError } = await supabase
-    .from('profiles')
+    .from('users')
     .update({
-      onboarding_answers: answers,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      onboarding_answers: otherAnswers,
       onboarding_complete: true,
       onboarding_completed_at: new Date().toISOString(),
     })
@@ -166,7 +177,7 @@ export async function skipOnboarding(): Promise<
 
   // Mark onboarding as complete without answers
   const { error: updateError } = await supabase
-    .from('profiles')
+    .from('users')
     .update({
       onboarding_complete: true,
       onboarding_completed_at: new Date().toISOString(),

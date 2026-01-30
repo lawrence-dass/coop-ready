@@ -11,6 +11,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
@@ -52,10 +53,21 @@ export function OnboardingForm() {
 
   // Form state
   const [answers, setAnswers] = useState<OnboardingAnswers>({
+    firstName: '',
+    lastName: '',
     careerGoal: '',
     experienceLevel: '',
     targetIndustries: [],
   });
+
+  // Handle name changes
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAnswers((prev) => ({ ...prev, firstName: e.target.value }));
+  };
+
+  const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAnswers((prev) => ({ ...prev, lastName: e.target.value }));
+  };
 
   // Handle career goal change
   const handleCareerGoalChange = (value: string) => {
@@ -83,6 +95,8 @@ export function OnboardingForm() {
 
     // Validate all questions answered
     if (
+      !answers.firstName.trim() ||
+      !answers.lastName.trim() ||
       !answers.careerGoal ||
       !answers.experienceLevel ||
       answers.targetIndustries.length === 0
@@ -134,13 +148,46 @@ export function OnboardingForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8" data-testid="onboarding-form">
-        {/* Question 1: Career Goal */}
+        {/* Step 1: Name */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">
+              What&apos;s your name?
+            </Label>
+            <p className="text-sm text-muted-foreground">Step 1 of 4</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="first-name">First Name</Label>
+              <Input
+                id="first-name"
+                value={answers.firstName}
+                onChange={handleFirstNameChange}
+                placeholder="John"
+                data-testid="first-name-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="last-name">Last Name</Label>
+              <Input
+                id="last-name"
+                value={answers.lastName}
+                onChange={handleLastNameChange}
+                placeholder="Doe"
+                data-testid="last-name-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Step 2: Career Goal */}
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-base font-semibold">
               What&apos;s your primary career goal right now?
             </Label>
-            <p className="text-sm text-muted-foreground">Step 1 of 3</p>
+            <p className="text-sm text-muted-foreground">Step 2 of 4</p>
           </div>
 
           <RadioGroup
@@ -163,13 +210,13 @@ export function OnboardingForm() {
           </RadioGroup>
         </div>
 
-        {/* Question 2: Experience Level */}
+        {/* Step 3: Experience Level */}
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-base font-semibold">
               What&apos;s your professional experience level?
             </Label>
-            <p className="text-sm text-muted-foreground">Step 2 of 3</p>
+            <p className="text-sm text-muted-foreground">Step 3 of 4</p>
           </div>
 
           <RadioGroup
@@ -192,14 +239,14 @@ export function OnboardingForm() {
           </RadioGroup>
         </div>
 
-        {/* Question 3: Target Industries */}
+        {/* Step 4: Target Industries */}
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-base font-semibold">
               Which industries are you targeting?
             </Label>
             <p className="text-sm text-muted-foreground">
-              Step 3 of 3 • Select all that apply
+              Step 4 of 4 • Select all that apply
             </p>
           </div>
 
