@@ -382,7 +382,7 @@ export function NewScanClient() {
           onClick={handleAnalyze}
           disabled={!canAnalyze}
           size="lg"
-          className="w-full max-w-md bg-indigo-600 hover:bg-indigo-700"
+          className="w-full max-w-md bg-primary hover:bg-primary/90"
           data-testid="analyze-button"
         >
           {isPending ? (

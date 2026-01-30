@@ -227,7 +227,7 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
 
       {/* Total Improvement Banner */}
       {hasTotalPoints && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6">
+        <div className="bg-gradient-to-r from-accent/10 to-purple-50 border border-accent/20 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-gray-900 mb-1">
@@ -238,7 +238,7 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
               </p>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-600">
+              <div className="text-4xl font-bold text-accent">
                 +{totalPoints}
               </div>
               <div className="text-sm text-gray-600 font-medium">points</div>
@@ -258,7 +258,7 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
             id="suggestion-sort"
             value={suggestionSortBy}
             onChange={(e) => setSuggestionSortBy(e.target.value as SuggestionSortBy)}
-            className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
             data-testid="sort-select"
           >
             <option value="points-high">Points: High → Low</option>

@@ -79,10 +79,10 @@ export function FeedbackButtons({
           'inline-flex items-center justify-center',
           'w-10 h-10 rounded-md',
           'transition-all duration-200 ease-in-out',
-          'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+          'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           currentFeedback === true
-            ? 'text-indigo-600 bg-indigo-50 active'
+            ? 'text-accent bg-accent/10 active'
             : 'text-gray-400 bg-white'
         )}
       >
@@ -112,10 +112,10 @@ export function FeedbackButtons({
           'inline-flex items-center justify-center',
           'w-10 h-10 rounded-md',
           'transition-all duration-200 ease-in-out',
-          'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+          'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           currentFeedback === false
-            ? 'text-indigo-600 bg-indigo-50 active'
+            ? 'text-accent bg-accent/10 active'
             : 'text-gray-400 bg-white'
         )}
       >

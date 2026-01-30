@@ -93,7 +93,7 @@ export function ScoreComparison({
           <div className="flex flex-col items-center justify-center">
             {isLoading ? (
               <div data-testid="score-loading" className="text-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-indigo-600 mx-auto mb-2" />
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-accent mx-auto mb-2" />
                 <div className="text-sm text-gray-500">Calculating projected score...</div>
               </div>
             ) : hasError ? (
@@ -161,13 +161,13 @@ export function ScoreComparison({
               {/* Summary */}
               {categoryDeltas.summary > 0 && (
                 <div
-                  className="bg-indigo-50 rounded-lg p-4"
+                  className="bg-accent/10 rounded-lg p-4"
                   data-testid="category-summary"
                 >
                   <div className="text-xs text-gray-600 font-medium mb-1">
                     Summary
                   </div>
-                  <div className="text-2xl font-bold text-indigo-600">
+                  <div className="text-2xl font-bold text-accent">
                     +{categoryDeltas.summary}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">points</div>
