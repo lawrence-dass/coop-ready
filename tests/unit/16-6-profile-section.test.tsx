@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ProfileSection } from '@/app/app/(dashboard)/settings/ProfileSection';
+import { ProfileSection } from '@/app/(authenticated)/(dashboard)/settings/ProfileSection';
 import '@testing-library/jest-dom/vitest';
 
 /**

@@ -27,15 +27,15 @@ export const ROUTES = {
     ERROR: '/auth/error',
   },
 
-  // Dashboard routes
+  // Dashboard routes (authenticated)
   APP: {
-    DASHBOARD: '/app/dashboard',
+    DASHBOARD: '/dashboard',
     SCAN: {
-      NEW: '/app/scan/new',
-      SESSION: (id: string) => `/app/scan/${id}` as const,
+      NEW: '/scan/new',
+      SESSION: (id: string) => `/scan/${id}` as const,
     },
-    HISTORY: '/app/history',
-    SETTINGS: '/app/settings',
+    HISTORY: '/history',
+    SETTINGS: '/settings',
   },
 } as const;
 

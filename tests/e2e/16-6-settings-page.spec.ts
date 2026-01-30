@@ -23,21 +23,21 @@ test.describe('Story 16.6: Settings Page E2E', () => {
     await page.fill('input[type="email"]', TEST_EMAIL);
     await page.fill('input[type="password"]', TEST_PASSWORD);
     await page.click('button[type="submit"]');
-    await page.waitForURL('/app');
+    await page.waitForURL(/\/(dashboard|scan|history|settings)/);
   });
 
   test('[P0] 16.6-E2E-SETTINGS-001: should navigate to settings page from sidebar', async ({ page }) => {
     // WHEN: Clicking settings link in sidebar
-    await page.click('a[href="/app/settings"]');
+    await page.click('a[href="/settings"]');
 
     // THEN: Should navigate to settings page
-    await expect(page).toHaveURL('/app/settings');
+    await expect(page).toHaveURL('/settings');
     await expect(page.locator('h1, h2').filter({ hasText: /Settings/i }).first()).toBeVisible();
   });
 
   test('[P0] 16.6-E2E-SETTINGS-002: should display all settings sections', async ({ page }) => {
     // GIVEN: User is on settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // THEN: Should show all four sections
     await expect(page.locator('text=/Profile Information/i')).toBeVisible();
@@ -48,7 +48,7 @@ test.describe('Story 16.6: Settings Page E2E', () => {
 
   test('[P0] 16.6-E2E-SETTINGS-003: should update preferences successfully', async ({ page }) => {
     // GIVEN: User is on settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // WHEN: User updates industry focus
     const industryInput = page.locator('input[name="industry"]');
@@ -71,7 +71,7 @@ test.describe('Story 16.6: Settings Page E2E', () => {
 
   test('[P0] 16.6-E2E-SETTINGS-004: should display user profile information', async ({ page }) => {
     // GIVEN: User is on settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // THEN: Should show user email and account creation date
     await expect(page.locator('text=/test@example.com/i')).toBeVisible();
@@ -81,7 +81,7 @@ test.describe('Story 16.6: Settings Page E2E', () => {
 
   test('[P0] 16.6-E2E-SETTINGS-005: should sign out successfully', async ({ page }) => {
     // GIVEN: User is on settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // WHEN: Clicking sign out button
     await page.click('button:has-text("Sign Out")');
@@ -92,7 +92,7 @@ test.describe('Story 16.6: Settings Page E2E', () => {
 
   test('[P0] 16.6-E2E-SETTINGS-006: should display privacy consent status', async ({ page }) => {
     // GIVEN: User is on settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // THEN: Should show privacy consent section
     await expect(page.locator('text=/Privacy consent/i')).toBeVisible();
@@ -101,7 +101,7 @@ test.describe('Story 16.6: Settings Page E2E', () => {
 
   test('[P1] 16.6-E2E-SETTINGS-007: should validate form changes before enabling save', async ({ page }) => {
     // GIVEN: User is on settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // WHEN: Form is not modified
     const saveButton = page.locator('button:has-text("Save Preferences")');
@@ -122,7 +122,7 @@ test.describe('Story 16.6: Settings Page E2E', () => {
     await page.setViewportSize({ width: 375, height: 667 });
 
     // WHEN: Navigating to settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // THEN: Page should be usable on mobile
     // Sidebar should collapse to hamburger
@@ -142,7 +142,7 @@ test.describe('Story 16.6: Settings Page E2E', () => {
 
   test('[P1] 16.6-E2E-SETTINGS-009: should have delete account button disabled', async ({ page }) => {
     // GIVEN: User is on settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // THEN: Delete account button should be disabled
     const deleteButton = page.locator('button:has-text("Delete Account")');
@@ -151,7 +151,7 @@ test.describe('Story 16.6: Settings Page E2E', () => {
 
   test('[P1] 16.6-E2E-SETTINGS-010: should open privacy policy in new tab', async ({ page }) => {
     // GIVEN: User is on settings page
-    await page.goto('/app/settings');
+    await page.goto('/settings');
 
     // WHEN: Clicking privacy policy link
     const [newPage] = await Promise.all([

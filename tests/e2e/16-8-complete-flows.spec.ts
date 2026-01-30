@@ -35,7 +35,7 @@ async function loginUser(page: import('@playwright/test').Page) {
   await page.fill('input[type="password"]', TEST_PASSWORD);
   await page.click('button[type="submit"]');
   // Wait for redirect to dashboard
-  await page.waitForURL(/\/app/, { timeout: 10000 });
+  await page.waitForURL(/\/(dashboard|scan|history|settings)/, { timeout: 10000 });
 }
 
 test.describe('Epic 16 Integration: Dashboard Home Flow @P0', () => {
@@ -53,7 +53,7 @@ test.describe('Epic 16 Integration: Dashboard Home Flow @P0', () => {
       page,
     }) => {
       // GIVEN: User is on dashboard
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // THEN: Welcome message is visible
       await expect(page.getByText(/Welcome/i)).toBeVisible();
@@ -67,35 +67,35 @@ test.describe('Epic 16 Integration: Dashboard Home Flow @P0', () => {
       expect(emailVisible || (await page.getByText(/@/).isVisible())).toBe(true);
     });
 
-    test('[P0] New Scan quick action navigates to /app/scan/new', async ({
+    test('[P0] New Scan quick action navigates to /scan/new', async ({
       page,
     }) => {
       // GIVEN: User is on dashboard
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // WHEN: User clicks New Scan quick action
       await page.getByRole('link', { name: /New Scan|Start Scan/i }).first().click();
 
       // THEN: User is navigated to new scan page
-      await expect(page).toHaveURL('/app/scan/new');
+      await expect(page).toHaveURL('/scan/new');
     });
 
-    test('[P0] View History quick action navigates to /app/history', async ({
+    test('[P0] View History quick action navigates to /history', async ({
       page,
     }) => {
       // GIVEN: User is on dashboard
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // WHEN: User clicks View History quick action
       await page.getByRole('link', { name: /View History/i }).first().click();
 
       // THEN: User is navigated to history page
-      await expect(page).toHaveURL('/app/history');
+      await expect(page).toHaveURL('/history');
     });
 
     test('[P1] progress stats card renders', async ({ page }) => {
       // GIVEN: User is on dashboard
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // THEN: Progress stats card is visible
       await expect(page.getByText(/Total Scans|scans/i)).toBeVisible();
@@ -103,7 +103,7 @@ test.describe('Epic 16 Integration: Dashboard Home Flow @P0', () => {
 
     test('[P1] shows recent scans or getting started guide', async ({ page }) => {
       // GIVEN: User is on dashboard
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // THEN: Either recent scans or getting started guide is visible
       const hasRecentScans = await page
@@ -134,7 +134,7 @@ test.describe('Epic 16 Integration: New Scan Flow @P0', () => {
       page,
     }) => {
       // WHEN: User navigates to new scan page
-      await page.goto('/app/scan/new', { waitUntil: 'networkidle' });
+      await page.goto('/scan/new', { waitUntil: 'networkidle' });
 
       // THEN: Page title is visible
       await expect(
@@ -150,7 +150,7 @@ test.describe('Epic 16 Integration: New Scan Flow @P0', () => {
 
     test('[P1] resume upload area accepts drag and drop', async ({ page }) => {
       // GIVEN: User is on new scan page
-      await page.goto('/app/scan/new', { waitUntil: 'networkidle' });
+      await page.goto('/scan/new', { waitUntil: 'networkidle' });
 
       // THEN: Drag and drop area is visible
       await expect(
@@ -160,7 +160,7 @@ test.describe('Epic 16 Integration: New Scan Flow @P0', () => {
 
     test('[P1] job description textarea accepts text input', async ({ page }) => {
       // GIVEN: User is on new scan page
-      await page.goto('/app/scan/new', { waitUntil: 'networkidle' });
+      await page.goto('/scan/new', { waitUntil: 'networkidle' });
 
       // WHEN: User enters job description
       const jdTextarea = page.locator('textarea').first();
@@ -188,7 +188,7 @@ test.describe('Epic 16 Integration: History Flow @P0', () => {
       page,
     }) => {
       // WHEN: User navigates to history page
-      await page.goto('/app/history', { waitUntil: 'networkidle' });
+      await page.goto('/history', { waitUntil: 'networkidle' });
 
       // THEN: Page title is visible
       await expect(page.getByRole('heading', { name: /History/i })).toBeVisible();
@@ -209,7 +209,7 @@ test.describe('Epic 16 Integration: History Flow @P0', () => {
 
     test('[P0] sessions are sorted by most recent first', async ({ page }) => {
       // GIVEN: User is on history page with sessions
-      await page.goto('/app/history', { waitUntil: 'networkidle' });
+      await page.goto('/history', { waitUntil: 'networkidle' });
 
       // THEN: Check if sessions exist
       const sessionCards = page.locator('[data-testid^="history-session"]');
@@ -228,7 +228,7 @@ test.describe('Epic 16 Integration: History Flow @P0', () => {
 
     test('[P1] clicking session navigates to results page', async ({ page }) => {
       // GIVEN: User is on history page with sessions
-      await page.goto('/app/history', { waitUntil: 'networkidle' });
+      await page.goto('/history', { waitUntil: 'networkidle' });
 
       const firstSession = page.locator('[data-testid^="history-session"]').first();
       const isVisible = await firstSession.isVisible().catch(() => false);
@@ -242,7 +242,7 @@ test.describe('Epic 16 Integration: History Flow @P0', () => {
 
         // THEN: User is navigated to session results page
         if (sessionId) {
-          await expect(page).toHaveURL(`/app/scan/${sessionId}`);
+          await expect(page).toHaveURL(`/scan/${sessionId}`);
         } else {
           // Just check we navigated to some scan page
           await expect(page).toHaveURL(/\/app\/scan\//);
@@ -253,7 +253,7 @@ test.describe('Epic 16 Integration: History Flow @P0', () => {
 
     test('[P1] empty history shows Start New Scan CTA', async ({ page }) => {
       // GIVEN: User is on history page
-      await page.goto('/app/history', { waitUntil: 'networkidle' });
+      await page.goto('/history', { waitUntil: 'networkidle' });
 
       // Check if empty state is shown
       const hasEmptyState = await page
@@ -282,7 +282,7 @@ test.describe('Epic 16 Integration: Settings Flow @P0', () => {
   test.describe('AC#8: Settings Page Displays Correctly', () => {
     test('[P0] settings page displays all sections', async ({ page }) => {
       // WHEN: User navigates to settings page
-      await page.goto('/app/settings', { waitUntil: 'networkidle' });
+      await page.goto('/settings', { waitUntil: 'networkidle' });
 
       // THEN: All settings sections are visible
       await expect(page.getByText(/Profile Information/i)).toBeVisible();
@@ -293,7 +293,7 @@ test.describe('Epic 16 Integration: Settings Flow @P0', () => {
 
     test('[P0] profile section shows user email', async ({ page }) => {
       // GIVEN: User is on settings page
-      await page.goto('/app/settings', { waitUntil: 'networkidle' });
+      await page.goto('/settings', { waitUntil: 'networkidle' });
 
       // THEN: User email is displayed
       await expect(page.getByText(TEST_EMAIL)).toBeVisible();
@@ -301,7 +301,7 @@ test.describe('Epic 16 Integration: Settings Flow @P0', () => {
 
     test('[P0] sign out button works and redirects to login', async ({ page }) => {
       // GIVEN: User is on settings page
-      await page.goto('/app/settings', { waitUntil: 'networkidle' });
+      await page.goto('/settings', { waitUntil: 'networkidle' });
 
       // WHEN: User clicks sign out button
       await page.click('button:has-text("Sign Out")');
@@ -312,7 +312,7 @@ test.describe('Epic 16 Integration: Settings Flow @P0', () => {
 
     test('[P1] optimization preferences can be saved', async ({ page }) => {
       // GIVEN: User is on settings page
-      await page.goto('/app/settings', { waitUntil: 'networkidle' });
+      await page.goto('/settings', { waitUntil: 'networkidle' });
 
       // WHEN: User updates industry focus
       const industryInput = page.locator('input[name="industry"]');
@@ -334,7 +334,7 @@ test.describe('Epic 16 Integration: Settings Flow @P0', () => {
 
     test('[P1] privacy section shows consent status', async ({ page }) => {
       // GIVEN: User is on settings page
-      await page.goto('/app/settings', { waitUntil: 'networkidle' });
+      await page.goto('/settings', { waitUntil: 'networkidle' });
 
       // THEN: Privacy consent section is visible
       await expect(page.getByText(/Privacy consent/i)).toBeVisible();
@@ -342,7 +342,7 @@ test.describe('Epic 16 Integration: Settings Flow @P0', () => {
 
     test('[P1] changes persist after page refresh', async ({ page }) => {
       // GIVEN: User is on settings page and updates preferences
-      await page.goto('/app/settings', { waitUntil: 'networkidle' });
+      await page.goto('/settings', { waitUntil: 'networkidle' });
 
       const industryInput = page.locator('input[name="industry"]');
       await industryInput.clear();
@@ -374,39 +374,39 @@ test.describe('Epic 16 Integration: Sidebar Navigation @P0', () => {
 
   test('[P0] sidebar navigation links work correctly', async ({ page }) => {
     // GIVEN: User is on dashboard
-    await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
     // Test navigation to each page via sidebar
     // New Scan
-    await page.click('a[href="/app/scan/new"]');
-    await expect(page).toHaveURL('/app/scan/new');
+    await page.click('a[href="/scan/new"]');
+    await expect(page).toHaveURL('/scan/new');
 
     // History
-    await page.click('a[href="/app/history"]');
-    await expect(page).toHaveURL('/app/history');
+    await page.click('a[href="/history"]');
+    await expect(page).toHaveURL('/history');
 
     // Settings
-    await page.click('a[href="/app/settings"]');
-    await expect(page).toHaveURL('/app/settings');
+    await page.click('a[href="/settings"]');
+    await expect(page).toHaveURL('/settings');
 
     // Dashboard (home)
-    await page.click('a[href="/app/dashboard"]');
-    await expect(page).toHaveURL('/app/dashboard');
+    await page.click('a[href="/dashboard"]');
+    await expect(page).toHaveURL('/dashboard');
   });
 
   test('[P1] sidebar shows active state for current page', async ({ page }) => {
     // GIVEN: User is on dashboard
-    await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
     // THEN: Dashboard link should have active state (usually bg-accent or similar)
-    const dashboardLink = page.locator('a[href="/app/dashboard"]');
+    const dashboardLink = page.locator('a[href="/dashboard"]');
     await expect(dashboardLink).toBeVisible();
 
     // Navigate to history and check active state changes
-    await page.click('a[href="/app/history"]');
-    await expect(page).toHaveURL('/app/history');
+    await page.click('a[href="/history"]');
+    await expect(page).toHaveURL('/history');
 
-    const historyLink = page.locator('a[href="/app/history"]');
+    const historyLink = page.locator('a[href="/history"]');
     await expect(historyLink).toBeVisible();
   });
 });
@@ -421,27 +421,27 @@ test.describe('Epic 16 Integration: Complete User Journey @P0', () => {
 
     // Step 1: Login
     await loginUser(page);
-    await expect(page).toHaveURL(/\/app/);
+    await expect(page).toHaveURL(/\/(dashboard|scan|history|settings)/);
 
     // Step 2: Navigate to Dashboard
-    await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('/dashboard', { waitUntil: 'networkidle' });
     await expect(page.getByText(/Welcome/i)).toBeVisible();
 
     // Step 3: Navigate to New Scan
-    await page.click('a[href="/app/scan/new"]');
-    await expect(page).toHaveURL('/app/scan/new');
+    await page.click('a[href="/scan/new"]');
+    await expect(page).toHaveURL('/scan/new');
     await expect(
       page.getByRole('heading', { name: /New Resume Scan/i })
     ).toBeVisible();
 
     // Step 4: Navigate to History
-    await page.click('a[href="/app/history"]');
-    await expect(page).toHaveURL('/app/history');
+    await page.click('a[href="/history"]');
+    await expect(page).toHaveURL('/history');
     await expect(page.getByRole('heading', { name: /History/i })).toBeVisible();
 
     // Step 5: Navigate to Settings
-    await page.click('a[href="/app/settings"]');
-    await expect(page).toHaveURL('/app/settings');
+    await page.click('a[href="/settings"]');
+    await expect(page).toHaveURL('/settings');
     await expect(page.getByText(/Profile Information/i)).toBeVisible();
 
     // Step 6: Sign Out

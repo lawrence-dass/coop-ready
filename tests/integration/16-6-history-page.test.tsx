@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ClientHistoryPage } from '@/app/app/(dashboard)/history/ClientHistoryPage';
+import { ClientHistoryPage } from '@/app/(authenticated)/(dashboard)/history/ClientHistoryPage';
 import { deleteOptimizationSession } from '@/actions/history/delete-optimization-session';
 import type { HistorySession } from '@/types/history';
 import '@testing-library/jest-dom/vitest';
@@ -97,7 +97,7 @@ describe('Story 16.6: History Page Integration', () => {
     // THEN: Should navigate to session results page
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('session-1'));
-      expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('/app/scan/'));
+      expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('/scan/'));
     });
   });
 

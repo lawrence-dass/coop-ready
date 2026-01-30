@@ -217,7 +217,7 @@ describe('SignOutButton', () => {
 
       // Mock window.location.href to track changes
       const originalLocation = window.location;
-      const mockLocation = { ...originalLocation, href: '/app/dashboard' };
+      const mockLocation = { ...originalLocation, href: '/dashboard' };
       Object.defineProperty(window, 'location', {
         value: mockLocation,
         writable: true,
@@ -233,7 +233,7 @@ describe('SignOutButton', () => {
       });
 
       // Should not redirect on error - href should remain unchanged
-      expect(mockLocation.href).toBe('/app/dashboard');
+      expect(mockLocation.href).toBe('/dashboard');
 
       // Restore original location
       Object.defineProperty(window, 'location', {

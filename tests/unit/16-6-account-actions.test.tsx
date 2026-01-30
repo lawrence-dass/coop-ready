@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AccountActionsSection } from '@/app/app/(dashboard)/settings/AccountActionsSection';
+import { AccountActionsSection } from '@/app/(authenticated)/(dashboard)/settings/AccountActionsSection';
 import { signOut } from '@/actions/auth/sign-out';
 import '@testing-library/jest-dom/vitest';
 

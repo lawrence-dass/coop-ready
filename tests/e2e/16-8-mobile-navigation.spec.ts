@@ -32,7 +32,7 @@ async function loginUser(page: import('@playwright/test').Page) {
   await page.fill('input[type="email"]', TEST_EMAIL);
   await page.fill('input[type="password"]', TEST_PASSWORD);
   await page.click('button[type="submit"]');
-  await page.waitForURL(/\/app/, { timeout: 10000 });
+  await page.waitForURL(/\/(dashboard|scan|history|settings)/, { timeout: 10000 });
 }
 
 test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
@@ -97,7 +97,7 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
       page,
     }) => {
       // GIVEN: User is on dashboard on mobile
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // THEN: Hamburger menu button is visible
       const menuButton = page.locator('button[aria-label*="menu"]');
@@ -115,7 +115,7 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
       page,
     }) => {
       // GIVEN: User is on dashboard on mobile
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // WHEN: User clicks hamburger menu
       const menuButton = page.locator('button[aria-label*="menu"]');
@@ -126,9 +126,9 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
       await page.waitForTimeout(300);
 
       // Check for navigation links in the drawer
-      const dashboardLink = page.locator('[role="dialog"] a[href="/app/dashboard"]');
-      const historyLink = page.locator('[role="dialog"] a[href="/app/history"]');
-      const settingsLink = page.locator('[role="dialog"] a[href="/app/settings"]');
+      const dashboardLink = page.locator('[role="dialog"] a[href="/dashboard"]');
+      const historyLink = page.locator('[role="dialog"] a[href="/history"]');
+      const settingsLink = page.locator('[role="dialog"] a[href="/settings"]');
 
       // At least one link should be visible in the drawer
       const anyLinkVisible =
@@ -143,7 +143,7 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
       page,
     }) => {
       // GIVEN: User has opened mobile menu
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
       const menuButton = page.locator('button[aria-label*="menu"]');
       await menuButton.click();
       await page.waitForTimeout(300);
@@ -162,7 +162,7 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
 
     test('[P0] all navigation links work from mobile menu', async ({ page }) => {
       // GIVEN: User is on dashboard on mobile
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // Test navigation to New Scan
       let menuButton = page.locator('button[aria-label*="menu"]');
@@ -170,10 +170,10 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
       await page.waitForTimeout(300);
 
       // Find and click New Scan link in drawer
-      const newScanLink = page.locator('[role="dialog"] a[href="/app/scan/new"]');
+      const newScanLink = page.locator('[role="dialog"] a[href="/scan/new"]');
       if (await newScanLink.isVisible()) {
         await newScanLink.click();
-        await expect(page).toHaveURL('/app/scan/new');
+        await expect(page).toHaveURL('/scan/new');
       }
 
       // Test navigation to History
@@ -181,10 +181,10 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
       await menuButton.click();
       await page.waitForTimeout(300);
 
-      const historyLink = page.locator('[role="dialog"] a[href="/app/history"]');
+      const historyLink = page.locator('[role="dialog"] a[href="/history"]');
       if (await historyLink.isVisible()) {
         await historyLink.click();
-        await expect(page).toHaveURL('/app/history');
+        await expect(page).toHaveURL('/history');
       }
 
       // Test navigation to Settings
@@ -192,10 +192,10 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
       await menuButton.click();
       await page.waitForTimeout(300);
 
-      const settingsLink = page.locator('[role="dialog"] a[href="/app/settings"]');
+      const settingsLink = page.locator('[role="dialog"] a[href="/settings"]');
       if (await settingsLink.isVisible()) {
         await settingsLink.click();
-        await expect(page).toHaveURL('/app/settings');
+        await expect(page).toHaveURL('/settings');
       }
     });
 
@@ -203,7 +203,7 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
       page,
     }) => {
       // GIVEN: User is on dashboard on mobile
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // Check hamburger button size
       const menuButton = page.locator('button[aria-label*="menu"]');
@@ -227,10 +227,10 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
 
     test('[P0] no horizontal scroll on dashboard pages', async ({ page }) => {
       const pagesToTest = [
-        '/app/dashboard',
-        '/app/scan/new',
-        '/app/history',
-        '/app/settings',
+        '/dashboard',
+        '/scan/new',
+        '/history',
+        '/settings',
       ];
 
       for (const pageUrl of pagesToTest) {
@@ -257,7 +257,7 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
 
     test('[P1] new scan form is usable on mobile', async ({ page }) => {
       // GIVEN: User is on new scan page on mobile
-      await page.goto('/app/scan/new', { waitUntil: 'networkidle' });
+      await page.goto('/scan/new', { waitUntil: 'networkidle' });
 
       // THEN: Form elements are visible and accessible
       await expect(
@@ -280,7 +280,7 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
 
     test('[P1] settings form is usable on mobile', async ({ page }) => {
       // GIVEN: User is on settings page on mobile
-      await page.goto('/app/settings', { waitUntil: 'networkidle' });
+      await page.goto('/settings', { waitUntil: 'networkidle' });
 
       // THEN: All sections are visible (stacked vertically)
       await expect(page.getByText(/Profile Information/i)).toBeVisible();
@@ -296,7 +296,7 @@ test.describe('Epic 16 Integration: Mobile Navigation @P1', () => {
 
     test('[P1] history cards stack vertically on mobile', async ({ page }) => {
       // GIVEN: User is on history page on mobile
-      await page.goto('/app/history', { waitUntil: 'networkidle' });
+      await page.goto('/history', { waitUntil: 'networkidle' });
 
       // THEN: Page title is visible
       await expect(page.getByRole('heading', { name: /History/i })).toBeVisible();
@@ -348,14 +348,14 @@ test.describe('Epic 16 Integration: Tablet Navigation @P2', () => {
       await page.fill('input[type="email"]', TEST_EMAIL);
       await page.fill('input[type="password"]', TEST_PASSWORD);
       await page.click('button[type="submit"]');
-      await page.waitForURL(/\/app/, { timeout: 10000 });
+      await page.waitForURL(/\/(dashboard|scan|history|settings)/, { timeout: 10000 });
 
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // On tablet (768px), sidebar behavior may vary
       // Check that navigation is accessible
       const menuButton = page.locator('button[aria-label*="menu"]');
-      const sidebarLinks = page.locator('a[href="/app/history"]');
+      const sidebarLinks = page.locator('a[href="/history"]');
 
       // Either hamburger menu or sidebar links should be visible
       const hasHamburger = await menuButton.isVisible().catch(() => false);

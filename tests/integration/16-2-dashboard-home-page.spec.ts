@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Dashboard Home Page', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to app - auth middleware should redirect to login
-    await page.goto('/app/dashboard');
+    await page.goto('/dashboard');
   });
 
   test('should redirect to login if not authenticated', async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe('Dashboard Home Page', () => {
     });
 
     test('should display welcome message with user name', async ({ page }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Should show welcome message
       await expect(
@@ -35,7 +35,7 @@ test.describe('Dashboard Home Page', () => {
     });
 
     test('should display quick action cards', async ({ page }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Should show New Scan card
       await expect(page.getByText('New Scan')).toBeVisible();
@@ -47,29 +47,29 @@ test.describe('Dashboard Home Page', () => {
     test('should navigate to new scan when clicking New Scan card', async ({
       page,
     }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Click New Scan button
       await page.getByRole('button', { name: /start scan/i }).first().click();
 
       // Should navigate to new scan page
-      await expect(page).toHaveURL('/app/scan/new');
+      await expect(page).toHaveURL('/scan/new');
     });
 
     test('should navigate to history when clicking View History card', async ({
       page,
     }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Click View History button
       await page.getByRole('button', { name: /view history/i }).click();
 
       // Should navigate to history page
-      await expect(page).toHaveURL('/app/history');
+      await expect(page).toHaveURL('/history');
     });
 
     test('should display progress stats', async ({ page }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Should show Your Progress section
       await expect(page.getByText('Your Progress')).toBeVisible();
@@ -82,7 +82,7 @@ test.describe('Dashboard Home Page', () => {
       page,
     }) => {
       // Assuming fresh user with no sessions
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Should show getting started
       await expect(page.getByText(/getting started/i)).toBeVisible();
@@ -102,7 +102,7 @@ test.describe('Dashboard Home Page', () => {
       // TODO: Create test session data
       test.skip(true, 'Requires test data setup');
 
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Should show recent scans section
       await expect(page.getByText('Recent Scans')).toBeVisible();
@@ -116,7 +116,7 @@ test.describe('Dashboard Home Page', () => {
     });
 
     test('should be keyboard accessible', async ({ page }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Tab through interactive elements
       await page.keyboard.press('Tab');
@@ -130,7 +130,7 @@ test.describe('Dashboard Home Page', () => {
     test('should be responsive on mobile', async ({ page }) => {
       // Set mobile viewport
       await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Quick action cards should stack vertically
       await expect(page.getByText('New Scan')).toBeVisible();
@@ -140,7 +140,7 @@ test.describe('Dashboard Home Page', () => {
     test('should be responsive on tablet', async ({ page }) => {
       // Set tablet viewport
       await page.setViewportSize({ width: 768, height: 1024 });
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Cards should be in 2-column layout
       await expect(page.getByText('New Scan')).toBeVisible();

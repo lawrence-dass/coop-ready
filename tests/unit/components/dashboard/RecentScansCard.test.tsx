@@ -91,7 +91,7 @@ describe('RecentScansCard', () => {
     const { container } = render(<RecentScansCard sessions={mockSessions} />);
 
     // Should have clickable cards with links
-    const links = container.querySelectorAll('a[href^="/app/scan/"]');
+    const links = container.querySelectorAll('a[href^="/scan/"]');
     expect(links.length).toBeGreaterThan(0);
   });
 
@@ -117,7 +117,7 @@ describe('RecentScansCard', () => {
 
     const { container } = render(<RecentScansCard sessions={manySessions} />);
 
-    const links = container.querySelectorAll('a[href^="/app/scan/"]');
+    const links = container.querySelectorAll('a[href^="/scan/"]');
     expect(links.length).toBeLessThanOrEqual(5);
   });
 });

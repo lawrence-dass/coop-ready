@@ -145,10 +145,10 @@ test.describe('Epic 16 Integration: Authentication Redirect @P0', () => {
 
       // WHEN: User tries to access protected dashboard routes
       const protectedRoutes = [
-        '/app/dashboard',
-        '/app/scan/new',
-        '/app/history',
-        '/app/settings',
+        '/dashboard',
+        '/scan/new',
+        '/history',
+        '/settings',
       ];
 
       for (const route of protectedRoutes) {
@@ -165,13 +165,13 @@ test.describe('Epic 16 Integration: Authentication Redirect @P0', () => {
 
     test('[P0] dashboard route exists and returns non-404', async ({ page }) => {
       // WHEN: User navigates to dashboard
-      const response = await page.goto('/app/dashboard');
+      const response = await page.goto('/dashboard');
 
       // THEN: Route exists (not 404)
       expect(response?.status()).not.toBe(404);
     });
 
-    test('[P1] /app/scan/[id] route with invalid session ID redirects or shows error', async ({
+    test('[P1] /scan/[id] route with invalid session ID redirects or shows error', async ({
       page,
     }) => {
       // GIVEN: User is not authenticated
@@ -179,7 +179,7 @@ test.describe('Epic 16 Integration: Authentication Redirect @P0', () => {
 
       // WHEN: User navigates to an invalid session
       try {
-        await page.goto('/app/scan/invalid-session-id', { waitUntil: 'networkidle' });
+        await page.goto('/scan/invalid-session-id', { waitUntil: 'networkidle' });
       } catch {
         // Navigation may be interrupted by redirect
       }
@@ -234,7 +234,7 @@ test.describe('Epic 16 Integration: Browser Navigation @P0', () => {
       await expect(page).toHaveURL('/auth/signup');
     });
 
-    test('[P1] old /history route redirects to /app/history', async ({ page }) => {
+    test('[P1] old /history route redirects to /history', async ({ page }) => {
       // GIVEN: User is authenticated (for this test to work properly, we need auth)
       // If placeholder Supabase, just check the redirect happens
       await page.context().clearCookies();
@@ -246,10 +246,10 @@ test.describe('Epic 16 Integration: Browser Navigation @P0', () => {
         // Navigation might be interrupted by redirect
       }
 
-      // THEN: User is redirected (either to /app/history or /auth/login)
+      // THEN: User is redirected (either to /history or /auth/login)
       const url = page.url();
       const wasRedirected =
-        url.includes('/app/history') || url.includes('/auth/login');
+        url.includes('/history') || url.includes('/auth/login');
       expect(wasRedirected).toBe(true);
     });
 

@@ -14,7 +14,7 @@ test.describe('Dashboard Layout Foundation @P0', () => {
       await page.context().clearCookies();
 
       // Try to access dashboard
-      await page.goto('/app/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
       // Should be redirected to login page
       await expect(page).toHaveURL('/auth/login');
@@ -24,7 +24,7 @@ test.describe('Dashboard Layout Foundation @P0', () => {
       await page.context().clearCookies();
 
       // These should all redirect to login (not 404)
-      const routes = ['/app/dashboard', '/app/scan/new', '/app/history', '/app/settings'];
+      const routes = ['/dashboard', '/scan/new', '/history', '/settings'];
 
       for (const route of routes) {
         try {
@@ -41,14 +41,14 @@ test.describe('Dashboard Layout Foundation @P0', () => {
   });
 
   test.describe('AC#1: Route Structure', () => {
-    test('dashboard route exists at /app/dashboard', async ({ page }) => {
+    test('dashboard route exists at /dashboard', async ({ page }) => {
       // Just verify the route exists (will redirect to login if not authed)
-      const response = await page.goto('/app/dashboard');
+      const response = await page.goto('/dashboard');
       expect(response?.status()).not.toBe(404);
     });
 
     test('placeholder routes exist', async ({ page }) => {
-      const routes = ['/app/scan/new', '/app/history', '/app/settings'];
+      const routes = ['/scan/new', '/history', '/settings'];
 
       for (const route of routes) {
         try {

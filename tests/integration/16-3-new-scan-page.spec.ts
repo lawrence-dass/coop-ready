@@ -18,7 +18,7 @@ test.describe('Story 16.3: New Scan Page', () => {
     // Login before each test
     await login(page);
     // Navigate to new scan page
-    await page.goto('/app/scan/new');
+    await page.goto('/scan/new');
   });
 
   test('renders all required sections', async ({ page }) => {
@@ -113,7 +113,7 @@ test.describe('Story 16.3: New Scan Page', () => {
     // Should show loading state
     await expect(page.getByText(/analyzing/i)).toBeVisible();
 
-    // Should redirect to /app/scan/[sessionId]
+    // Should redirect to /scan/[sessionId]
     await page.waitForURL(/\/app\/scan\/.+/, { timeout: 65000 });
     expect(page.url()).toMatch(/\/app\/scan\/[a-f0-9\-]+/);
   });

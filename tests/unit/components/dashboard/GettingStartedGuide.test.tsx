@@ -50,7 +50,7 @@ describe('GettingStartedGuide', () => {
     expect(button).toBeInTheDocument();
   });
 
-  it('should navigate to /app/scan/new when CTA is clicked', async () => {
+  it('should navigate to /scan/new when CTA is clicked', async () => {
     const user = userEvent.setup();
     render(<GettingStartedGuide />);
 
@@ -59,7 +59,7 @@ describe('GettingStartedGuide', () => {
     });
     await user.click(button);
 
-    expect(mockPush).toHaveBeenCalledWith('/app/scan/new');
+    expect(mockPush).toHaveBeenCalledWith('/scan/new');
   });
 
   it('should have icons for each step', () => {
