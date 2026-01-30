@@ -74,7 +74,6 @@ export function NewScanClient() {
   const clearJobDescription = useOptimizationStore((state) => state.clearJobDescription);
   const setGeneralError = useOptimizationStore((state) => state.setGeneralError);
   const clearGeneralError = useOptimizationStore((state) => state.clearGeneralError);
-  const reset = useOptimizationStore((state) => state.reset);
   const setShowPrivacyDialog = useOptimizationStore((state) => state.setShowPrivacyDialog);
   const setPrivacyAccepted = useOptimizationStore((state) => state.setPrivacyAccepted);
   const clearResumeAndResults = useOptimizationStore((state) => state.clearResumeAndResults);
@@ -163,8 +162,7 @@ export function NewScanClient() {
   const handleAnalyze = () => {
     startTransition(async () => {
       try {
-        // Step 0: Clear previous session state (AC #4)
-        reset();
+        // Clear any previous errors but keep inputs visible during analysis
         clearGeneralError();
 
         setLoadingStep('Creating session...');
@@ -227,6 +225,17 @@ export function NewScanClient() {
           setLoadingStep('Generating suggestions...');
 
           const keywordAnalysis = result.data.keywordAnalysis as import('@/types/analysis').KeywordAnalysisResult;
+
+          // Log resume sections for debugging
+          console.log('[NewScanClient] Resume sections:', {
+            hasSummary: !!resumeContent.summary,
+            summaryLength: resumeContent.summary?.length || 0,
+            hasSkills: !!resumeContent.skills,
+            skillsLength: resumeContent.skills?.length || 0,
+            hasExperience: !!resumeContent.experience,
+            experienceLength: resumeContent.experience?.length || 0,
+          });
+
           const suggestionsResult = await generateAllSuggestions({
             sessionId,
             resumeSummary: resumeContent.summary || '',
@@ -239,7 +248,7 @@ export function NewScanClient() {
           });
 
           if (suggestionsResult.error) {
-            console.error('[NewScanClient] Suggestions generation failed:', suggestionsResult.error);
+            console.error('[NewScanClient] Suggestions generation failed:', JSON.stringify(suggestionsResult.error));
             // Don't fail the whole flow - suggestions are optional, user can still see results
           } else if (suggestionsResult.data) {
             const store = useOptimizationStore.getState();

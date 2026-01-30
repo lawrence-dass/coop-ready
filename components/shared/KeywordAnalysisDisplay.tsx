@@ -4,7 +4,7 @@
 // Story 5.4: Enhanced with Gap Analysis Display
 import { useState } from 'react';
 import { KeywordAnalysisResult, KeywordCategory } from '@/types/analysis';
-import { CheckCircle2, AlertCircle, TrendingUp, PartyPopper } from 'lucide-react';
+import { CheckCircle2, AlertCircle, TrendingUp, PartyPopper, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { GapSummaryCard } from './GapSummaryCard';
@@ -27,6 +27,7 @@ interface KeywordAnalysisDisplayProps {
 export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps) {
   const { matched, missing, matchRate } = analysis;
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const [matchedOpen, setMatchedOpen] = useState(false);
 
   // Filter missing keywords by priority
   const filteredMissing =
@@ -120,52 +121,66 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
       {/* NEW: Gap Summary Dashboard */}
       {missing.length > 0 && <GapSummaryCard missing={missing} />}
 
-      {/* Matched Keywords */}
+      {/* Matched Keywords - Collapsible, closed by default */}
       {matched.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-700">
-              <CheckCircle2 className="h-5 w-5" />
-              Matched Keywords ({matched.length})
-            </CardTitle>
-            <CardDescription>
-              Keywords from the job description found in your resume
-            </CardDescription>
+          <CardHeader
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => setMatchedOpen(!matchedOpen)}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-green-700">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Matched Keywords ({matched.length})
+                </CardTitle>
+                <CardDescription>
+                  Keywords from the job description found in your resume
+                </CardDescription>
+              </div>
+              <ChevronDown
+                className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                  matchedOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {Object.entries(matchedByCategory).map(([category, keywords]) => (
-              <div key={category} className="space-y-2">
-                <h4 className="font-semibold text-sm text-muted-foreground">
-                  {formatCategory(category as KeywordCategory)} ({keywords.length})
-                </h4>
-                <div className="space-y-2">
-                  {keywords.map((kw, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-lg border border-green-200 bg-green-50 p-3"
-                    >
-                      <div className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-green-900">{kw.keyword}</span>
-                            <Badge className={getMatchTypeBadge(kw.matchType)}>
-                              {kw.matchType}
-                            </Badge>
+          {matchedOpen && (
+            <CardContent className="space-y-4">
+              {Object.entries(matchedByCategory).map(([category, keywords]) => (
+                <div key={category} className="space-y-2">
+                  <h4 className="font-semibold text-sm text-muted-foreground">
+                    {formatCategory(category as KeywordCategory)} ({keywords.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {keywords.map((kw, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg border border-green-200 bg-green-50 p-3"
+                      >
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-green-900">{kw.keyword}</span>
+                              <Badge className={getMatchTypeBadge(kw.matchType)}>
+                                {kw.matchType}
+                              </Badge>
+                            </div>
+                            {kw.context && (
+                              <p className="text-sm text-green-700 italic">
+                                &ldquo;{kw.context}&rdquo;
+                              </p>
+                            )}
                           </div>
-                          {kw.context && (
-                            <p className="text-sm text-green-700 italic">
-                              &ldquo;{kw.context}&rdquo;
-                            </p>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </CardContent>
+              ))}
+            </CardContent>
+          )}
         </Card>
       )}
 
