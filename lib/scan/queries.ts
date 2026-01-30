@@ -11,10 +11,17 @@ interface SessionData {
     score: ATSScore;
     keywordAnalysis: KeywordAnalysisResult;
   } | null;
-  suggestions: any;
+  suggestions: {
+    summary?: any[];
+    skills?: any[];
+    experience?: any[];
+  } | null;
   preferences: any;
   anonymousId: string | null;
   userId: string;
+  // Raw columns for direct access
+  atsScore: ATSScore | null;
+  keywordAnalysis: KeywordAnalysisResult | null;
 }
 
 /**
@@ -78,17 +85,42 @@ export async function getSessionById(
     }
 
     // Transform snake_case to camelCase
+    // Build analysis from separate columns if analysis column is null
+    const atsScore = data.ats_score as ATSScore | null;
+    const keywordAnalysis = data.keyword_analysis as KeywordAnalysisResult | null;
+    const analysis = data.analysis ?? (atsScore && keywordAnalysis ? {
+      score: atsScore,
+      keywordAnalysis: keywordAnalysis,
+    } : null);
+
+    // Build suggestions from separate columns if suggestions column is null
+    const summarySuggestion = data.summary_suggestion;
+    const skillsSuggestion = data.skills_suggestion;
+    const experienceSuggestion = data.experience_suggestion;
+
+    // Try to use the suggestions column first, otherwise build from individual columns
+    let suggestions = data.suggestions;
+    if (!suggestions && (summarySuggestion || skillsSuggestion || experienceSuggestion)) {
+      suggestions = {
+        summary: summarySuggestion ? [summarySuggestion] : [],
+        skills: skillsSuggestion ? [skillsSuggestion] : [],
+        experience: experienceSuggestion ? [experienceSuggestion] : [],
+      };
+    }
+
     return {
       data: {
         id: data.id,
         createdAt: data.created_at,
         resumeContent: data.resume_content,
         jdContent: data.jd_content,
-        analysis: data.analysis,
-        suggestions: data.suggestions,
+        analysis,
+        suggestions,
         preferences: data.preferences,
         anonymousId: data.anonymous_id,
         userId: data.user_id,
+        atsScore,
+        keywordAnalysis,
       },
       error: null,
     };

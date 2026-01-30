@@ -26,15 +26,20 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOptimizationStore } from '@/store';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { ResumeUploader } from '@/components/shared/ResumeUploader';
 import { JobDescriptionInput } from '@/components/shared/JobDescriptionInput';
 import { PreferencesPanel } from '@/components/scan/PreferencesPanel';
 import { ErrorDisplay } from '@/components/shared/ErrorDisplay';
+import { PrivacyConsentDialog } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { isJobDescriptionValid } from '@/lib/validations/jobDescription';
 import { createScanSession } from '@/actions/scan/create-session';
+import { generateAllSuggestions } from '@/actions/generateAllSuggestions';
+import { usePrivacyConsent } from '@/hooks/usePrivacyConsent';
+import { acceptPrivacyConsent } from '@/actions/privacy/accept-privacy-consent';
 import type { ActionResponse } from '@/types';
 
 // ============================================================================
@@ -43,8 +48,14 @@ import type { ActionResponse } from '@/types';
 
 export function NewScanClient() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [loadingStep, setLoadingStep] = useState<string>('');
+  const [pendingFileForConsent, setPendingFileForConsent] = useState<File | null>(null);
+  const [isPendingConsent, startConsentTransition] = useTransition();
+
+  // Privacy consent hook
+  const { privacyAccepted, refetch: refetchPrivacyConsent } = usePrivacyConsent();
 
   // Zustand store state
   const resumeContent = useOptimizationStore((state) => state.resumeContent);
@@ -53,6 +64,8 @@ export function NewScanClient() {
   const fileError = useOptimizationStore((state) => state.fileError);
   const generalError = useOptimizationStore((state) => state.generalError);
   const userPreferences = useOptimizationStore((state) => state.userPreferences);
+  const isExtracting = useOptimizationStore((state) => state.isExtracting);
+  const showPrivacyDialog = useOptimizationStore((state) => state.showPrivacyDialog);
 
   // Zustand store actions
   const setPendingFile = useOptimizationStore((state) => state.setPendingFile);
@@ -62,23 +75,61 @@ export function NewScanClient() {
   const setGeneralError = useOptimizationStore((state) => state.setGeneralError);
   const clearGeneralError = useOptimizationStore((state) => state.clearGeneralError);
   const reset = useOptimizationStore((state) => state.reset);
-
-  // Privacy consent state (Story 15.3)
-  const privacyAccepted = useOptimizationStore((state) => state.privacyAccepted);
+  const setShowPrivacyDialog = useOptimizationStore((state) => state.setShowPrivacyDialog);
+  const setPrivacyAccepted = useOptimizationStore((state) => state.setPrivacyAccepted);
+  const clearResumeAndResults = useOptimizationStore((state) => state.clearResumeAndResults);
 
   // Derived state: can we analyze?
   const hasResume = !!resumeContent;
   const hasValidJD = isJobDescriptionValid(jobDescription || '');
-  // Must have resume, valid JD, privacy consent, and not be in pending state
-  const canAnalyze = hasResume && hasValidJD && privacyAccepted === true && !isPending;
+  // Privacy consent: required for authenticated users (true), not required for anonymous (null)
+  const hasPrivacyConsent = !isAuthenticated || privacyAccepted === true;
+  // Must have resume, valid JD, privacy consent (if authenticated), and not be in pending state
+  const canAnalyze = hasResume && hasValidJD && hasPrivacyConsent && !isPending;
 
   // ============================================================================
   // FILE HANDLERS
   // ============================================================================
 
   const handleFileSelect = (file: File) => {
+    // Privacy consent check for authenticated users (Story 15.3)
+    if (isAuthenticated && privacyAccepted === false) {
+      setPendingFileForConsent(file);
+      setShowPrivacyDialog(true);
+      return;
+    }
+
+    // CRITICAL: Clear old resume so extraction effect triggers
+    clearResumeAndResults();
     setPendingFile(file);
     clearGeneralError();
+  };
+
+  // Handle privacy consent acceptance (Story 15.3)
+  const handleAcceptConsent = () => {
+    startConsentTransition(async () => {
+      const { data, error } = await acceptPrivacyConsent();
+
+      if (error) {
+        toast.error(error.message || 'Failed to save consent');
+        return;
+      }
+
+      // Update store with new consent status
+      setPrivacyAccepted(data.privacyAccepted, data.privacyAcceptedAt);
+      toast.success('Privacy consent accepted');
+      setShowPrivacyDialog(false);
+
+      // Now process the pending file
+      if (pendingFileForConsent) {
+        clearResumeAndResults();
+        setPendingFile(pendingFileForConsent);
+        setPendingFileForConsent(null);
+      }
+
+      // Refetch to ensure we have latest status
+      await refetchPrivacyConsent();
+    });
   };
 
   const handleFileRemove = () => {
@@ -170,6 +221,40 @@ export function NewScanClient() {
           useOptimizationStore.getState().setATSScore(result.data.atsScore as import('@/types/analysis').ATSScore);
         }
 
+        // Step 3b: Generate suggestions (same pattern as AnalyzeButton)
+        // This populates Zustand so /app/scan/[sessionId]/suggestions can display them
+        if (resumeContent && result.data?.keywordAnalysis) {
+          setLoadingStep('Generating suggestions...');
+
+          const keywordAnalysis = result.data.keywordAnalysis as import('@/types/analysis').KeywordAnalysisResult;
+          const suggestionsResult = await generateAllSuggestions({
+            sessionId,
+            resumeSummary: resumeContent.summary || '',
+            resumeSkills: resumeContent.skills || '',
+            resumeExperience: resumeContent.experience || '',
+            resumeContent: rawResumeText,
+            jobDescription: jobDescription || '',
+            keywords: keywordAnalysis.matched?.map((k: { keyword: string }) => k.keyword),
+            preferences: userPreferences,
+          });
+
+          if (suggestionsResult.error) {
+            console.error('[NewScanClient] Suggestions generation failed:', suggestionsResult.error);
+            // Don't fail the whole flow - suggestions are optional, user can still see results
+          } else if (suggestionsResult.data) {
+            const store = useOptimizationStore.getState();
+            if (suggestionsResult.data.summary) {
+              store.setSummarySuggestion(suggestionsResult.data.summary);
+            }
+            if (suggestionsResult.data.skills) {
+              store.setSkillsSuggestion(suggestionsResult.data.skills);
+            }
+            if (suggestionsResult.data.experience) {
+              store.setExperienceSuggestion(suggestionsResult.data.experience);
+            }
+          }
+        }
+
         // Step 4: Navigate to results page
         setLoadingStep('Redirecting to results...');
         toast.success('Analysis complete!');
@@ -244,6 +329,24 @@ export function NewScanClient() {
               pendingFile ? { name: pendingFile.name, size: pendingFile.size } : null
             }
           />
+          {/* Success Banner - Shows after resume extraction */}
+          {resumeContent && !isExtracting && (
+            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800" data-testid="resume-parsed">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <p className="flex-1">
+                Resume extracted successfully ({(resumeContent.rawText?.length || 0).toLocaleString()} characters)
+              </p>
+              <button
+                type="button"
+                onClick={clearResumeAndResults}
+                className="ml-auto rounded-md p-1 text-green-600 hover:bg-green-100 hover:text-green-800"
+                aria-label="Clear extracted resume"
+                data-testid="clear-resume-btn"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Job Description + Preferences */}
@@ -293,9 +396,16 @@ export function NewScanClient() {
         <p className="text-center text-sm text-muted-foreground">
           {!hasResume && 'Upload a resume to get started'}
           {hasResume && !hasValidJD && 'Enter a job description (minimum 50 characters)'}
-          {hasResume && hasValidJD && privacyAccepted !== true && 'Accept privacy consent to continue'}
+          {hasResume && hasValidJD && !hasPrivacyConsent && 'Accept privacy consent to continue'}
         </p>
       )}
+
+      {/* Privacy Consent Dialog (Story 15.3) */}
+      <PrivacyConsentDialog
+        open={showPrivacyDialog}
+        onOpenChange={setShowPrivacyDialog}
+        onAccept={handleAcceptConsent}
+      />
     </div>
   );
 }
