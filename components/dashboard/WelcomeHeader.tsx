@@ -20,10 +20,9 @@ export function WelcomeHeader({
 
   return (
     <div className="mb-6">
-      <h1 className="text-3xl font-bold mb-1">
+      <h1 className="text-3xl font-bold">
         {greeting}, {firstName}!
       </h1>
-      <p className="text-muted-foreground">{userEmail}</p>
     </div>
   );
 }

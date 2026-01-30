@@ -1,12 +1,14 @@
 /**
  * Dashboard Page
  * Story 16.2: Implement Dashboard Home Page
+ * Story 17.6: Dashboard UI Cleanup
  *
  * Main dashboard home page showing:
- * - Welcome message
- * - Quick action cards (New Scan, View History)
+ * - Welcome message (first name only, no email)
  * - Progress stats
  * - Recent scans OR getting started guide
+ *
+ * Note: Quick action cards removed per Story 17.6 - available in sidebar
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -17,7 +19,6 @@ import { RecentScansCard } from '@/components/dashboard/RecentScansCard';
 import { GettingStartedGuide } from '@/components/dashboard/GettingStartedGuide';
 import { ROUTES } from '@/lib/constants/routes';
 import { redirect } from 'next/navigation';
-import QuickActionCardClient from './QuickActionCardClient';
 
 export default async function DashboardPage() {
   // Get authenticated user
@@ -39,28 +40,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
-      {/* Welcome Header */}
+      {/* Welcome Header - Story 17.6: Shows first name only, no email */}
       <WelcomeHeader userEmail={user.email || 'user@example.com'} />
 
-      {/* Quick Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <QuickActionCardClient
-          title="New Scan"
-          description="Start a new resume optimization scan"
-          iconName="ScanLine"
-          href={ROUTES.APP.SCAN.NEW}
-          ctaText="Start Scan"
-        />
-        <QuickActionCardClient
-          title="View History"
-          description="See all your previous optimization scans"
-          iconName="History"
-          href={ROUTES.APP.HISTORY}
-          ctaText="View History"
-        />
-      </div>
-
-      {/* Progress Stats */}
+      {/* Progress Stats - Story 17.6: Moved up, now immediately after Welcome */}
       <ProgressStatsCard totalScans={totalScans} />
 
       {/* Recent Scans OR Getting Started Guide */}
