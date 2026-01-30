@@ -24,10 +24,6 @@ export function ScanResultsClient({
     router.push(`${ROUTES.APP.SCAN.SESSION(sessionId)}/suggestions`);
   };
 
-  const handleNewScan = () => {
-    router.push(ROUTES.APP.SCAN.NEW);
-  };
-
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="space-y-8">
@@ -58,27 +54,6 @@ export function ScanResultsClient({
             data-testid="view-suggestions-button"
           >
             View Suggestions
-          </Button>
-        </section>
-
-        {/* Section 4: Secondary Actions */}
-        <section className="flex flex-col gap-3 sm:flex-row">
-          <Button
-            onClick={handleNewScan}
-            variant="outline"
-            size="default"
-            data-testid="new-scan-button"
-          >
-            New Scan
-          </Button>
-          <Button
-            variant="ghost"
-            size="default"
-            disabled
-            title="PDF report feature coming soon"
-            data-testid="download-report-button"
-          >
-            Download Report (Coming Soon)
           </Button>
         </section>
       </div>

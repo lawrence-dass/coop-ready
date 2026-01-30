@@ -219,7 +219,7 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
                   {getCategoryIcon(category as KeywordCategory)}
                   {formatCategory(category as KeywordCategory)} ({keywords.length})
                 </h4>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2">
                   {keywords.map((kw, idx) => (
                     <MissingKeywordItem key={idx} keyword={kw} />
                   ))}
