@@ -71,16 +71,16 @@ export function JobDescriptionInput({
           'w-full h-[210px] p-3 border rounded-md resize-none',
           'focus:outline-none focus:ring-2 focus:ring-primary',
           'disabled:opacity-50 disabled:cursor-not-allowed',
-          isValid && 'ring-1 ring-green-500 border-green-500'
+          isValid && 'ring-1 ring-success border-success'
         )}
       />
 
       <div className="flex justify-between items-center text-xs">
         <span
           className={cn(
-            isEmpty && 'text-gray-500',
-            !isEmpty && !isValid && 'text-red-600',
-            isValid && 'text-green-600'
+            isEmpty && 'text-muted-foreground',
+            !isEmpty && !isValid && 'text-destructive',
+            isValid && 'text-success'
           )}
         >
           {characterCount} characters

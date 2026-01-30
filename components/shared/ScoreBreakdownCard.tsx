@@ -50,14 +50,14 @@ const CATEGORIES: Record<keyof ScoreBreakdown, CategoryConfig> = {
 
 /**
  * Returns the color class for a score value based on UX design spec ranges:
- * - 0-39%: Red (danger)
+ * - 0-39%: Red (destructive)
  * - 40-69%: Amber (warning)
  * - 70-100%: Green (success)
  */
 function getScoreColorClass(score: number): string {
-  if (score < 40) return 'bg-red-500';
-  if (score < 70) return 'bg-amber-500';
-  return 'bg-green-500';
+  if (score < 40) return 'bg-destructive';
+  if (score < 70) return 'bg-warning';
+  return 'bg-success';
 }
 
 export function ScoreBreakdownCard({

@@ -64,11 +64,11 @@ export function ATSScoreDisplay({
   // Error state
   if (error) {
     return (
-      <div className={`rounded-lg border border-red-200 bg-red-50 p-6 ${className}`}>
+      <div className={`rounded-lg border border-destructive/30 bg-destructive/10 p-6 ${className}`}>
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0">
             <svg
-              className="h-5 w-5 text-red-400"
+              className="h-5 w-5 text-destructive"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -80,8 +80,8 @@ export function ATSScoreDisplay({
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-red-800">Error calculating score</h3>
-            <p className="mt-1 text-sm text-red-700">{error.message}</p>
+            <h3 className="text-sm font-medium text-destructive">Error calculating score</h3>
+            <p className="mt-1 text-sm text-destructive/80">{error.message}</p>
           </div>
         </div>
       </div>
