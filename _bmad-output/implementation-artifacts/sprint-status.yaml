@@ -161,7 +161,7 @@ development_status:
   15-4-epic-15-integration-and-verification-testing: done
 
   # Epic 16: Dashboard UI Architecture (V0.5)
-  epic-16: in-progress
+  epic-16: done
   16-1-create-dashboard-layout-foundation: done
   16-2-implement-dashboard-home-page: done
   16-3-implement-new-scan-page: done
@@ -169,4 +169,4 @@ development_status:
   16-5-implement-suggestions-page: done
   16-6-migrate-history-and-settings: done
   16-7-create-full-marketing-landing-page: done
-  16-8-epic-16-integration-and-verification-testing: backlog
+  16-8-epic-16-integration-and-verification-testing: done
