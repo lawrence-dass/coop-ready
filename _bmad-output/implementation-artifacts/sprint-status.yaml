@@ -170,3 +170,14 @@ development_status:
   16-6-migrate-history-and-settings: done
   16-7-create-full-marketing-landing-page: done
   16-8-epic-16-integration-and-verification-testing: done
+
+  # Epic 17: Resume Compare & Dashboard Stats (V1.5)
+  # Reference: _bmad-output/planning-artifacts/epic-17-compare-dashboard-stats.md
+  epic-17: backlog
+  17-1-add-comparison-database-schema: backlog
+  17-2-implement-compare-upload-ui: backlog
+  17-3-implement-comparison-analysis-server-action: backlog
+  17-4-implement-comparison-results-display: backlog
+  17-5-implement-dashboard-stats-calculation: backlog
+  17-6-dashboard-ui-cleanup: backlog
+  17-7-epic-17-integration-and-verification-testing: backlog
