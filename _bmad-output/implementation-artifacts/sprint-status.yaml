@@ -179,5 +179,5 @@ development_status:
   17-3-implement-comparison-analysis-server-action: backlog
   17-4-implement-comparison-results-display: backlog
   17-5-implement-dashboard-stats-calculation: backlog
-  17-6-dashboard-ui-cleanup: review
+  17-6-dashboard-ui-cleanup: done
   17-7-epic-17-integration-and-verification-testing: backlog

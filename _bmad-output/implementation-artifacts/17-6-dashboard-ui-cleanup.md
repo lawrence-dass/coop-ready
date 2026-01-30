@@ -1,6 +1,6 @@
 # Story 17.6: Dashboard UI Cleanup
 
-Status: review
+Status: done
 
 ## Story
 
@@ -120,5 +120,11 @@ Claude Opus 4.5
 
 **Modified:**
 - `app/app/(dashboard)/dashboard/page.tsx` - Removed Quick Action Cards, reordered layout
-- `components/dashboard/WelcomeHeader.tsx` - Removed email display paragraph
+- `components/dashboard/WelcomeHeader.tsx` - Removed email display paragraph, added Story 17.6 reference
+- `components/dashboard/index.ts` - Removed QuickActionCard export, added Story 17.6 reference
 - `tests/unit/components/dashboard/WelcomeHeader.test.tsx` - Updated test for no email display
+
+**Deleted (Code Review Cleanup):**
+- `app/app/(dashboard)/dashboard/QuickActionCardClient.tsx` - Orphaned after removal from dashboard
+- `components/dashboard/QuickActionCard.tsx` - No longer used after dashboard cleanup
+- `tests/unit/components/dashboard/QuickActionCard.test.tsx` - Tests for deleted component
