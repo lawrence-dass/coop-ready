@@ -28,10 +28,11 @@ describe('WelcomeHeader', () => {
     expect(screen.getByText(/Welcome, Bob/i)).toBeInTheDocument();
   });
 
-  it('should display email as subtitle', () => {
+  it('should NOT display email as subtitle (Story 17.6)', () => {
     render(<WelcomeHeader userEmail="test@example.com" />);
 
-    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+    // Email should NOT be displayed per Story 17.6 AC#2
+    expect(screen.queryByText('test@example.com')).not.toBeInTheDocument();
   });
 
   it('should handle complex email formats', () => {
