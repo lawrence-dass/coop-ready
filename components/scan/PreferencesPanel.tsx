@@ -22,13 +22,7 @@ import {
 } from '@/types/preferences';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 // ============================================================================
 // HELPER COMPONENT
@@ -49,27 +43,23 @@ function PreferenceSelect<T extends string>({
   const options = Object.entries(metadata.options) as [T, { label: string; description: string }][];
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor={prefKey} className="text-sm font-medium">
+    <div className="space-y-3">
+      <Label className="text-sm font-medium">
         {metadata.label}
       </Label>
-      <Select value={value} onValueChange={(v) => onChange(v as T)}>
-        <SelectTrigger id={prefKey} className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map(([optionValue, optionMeta]) => (
-            <SelectItem key={optionValue} value={optionValue}>
-              <div className="flex flex-col">
-                <span>{optionMeta.label}</span>
-                <span className="text-xs text-muted-foreground">
-                  {optionMeta.description}
-                </span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <RadioGroup value={value} onValueChange={(v) => onChange(v as T)}>
+        {options.map(([optionValue, optionMeta]) => (
+          <div key={optionValue} className="flex items-start space-x-3">
+            <RadioGroupItem value={optionValue} id={`${prefKey}-${optionValue}`} className="mt-0.5" />
+            <Label htmlFor={`${prefKey}-${optionValue}`} className="font-normal cursor-pointer">
+              <span className="block text-sm">{optionMeta.label}</span>
+              <span className="block text-xs text-muted-foreground">
+                {optionMeta.description}
+              </span>
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
     </div>
   );
 }
@@ -106,14 +96,6 @@ export function PreferencesPanel() {
 
   return (
     <Card className="p-6">
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold">Optimization Preferences</h3>
-        <p className="text-sm text-muted-foreground">
-          Customize how suggestions are generated for your resume
-        </p>
-      </div>
-
-      {/* Two preferences side by side */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Job Type */}
         <PreferenceSelect<JobTypePreference>

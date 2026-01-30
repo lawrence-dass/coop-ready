@@ -60,10 +60,6 @@ export function JobDescriptionInput({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <label htmlFor="jd-input" className="text-sm font-medium">
-        Job Description
-      </label>
-
       <textarea
         id="jd-input"
         value={value}
@@ -72,7 +68,7 @@ export function JobDescriptionInput({
         placeholder="Paste the job description here..."
         data-testid="job-description-input"
         className={cn(
-          'w-full min-h-[120px] p-3 border rounded-md resize-y',
+          'w-full h-[210px] p-3 border rounded-md resize-none',
           'focus:outline-none focus:ring-2 focus:ring-primary',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           isValid && 'ring-1 ring-green-500 border-green-500'
