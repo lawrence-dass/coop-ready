@@ -121,12 +121,16 @@ export async function saveOnboarding(
   // Store firstName/lastName in separate columns, other answers in JSONB
   const { firstName, lastName, ...otherAnswers } = answers;
 
-  // Update profile with onboarding data
+  // Get email from auth user (fallback to user_metadata for OAuth)
+  const userEmail = user.email || (user.user_metadata?.email as string | undefined) || null;
+
+  // Update profile with onboarding data (including email for completeness)
   const { error: updateError } = await supabase
     .from('users')
     .update({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
+      email: userEmail,
       onboarding_answers: otherAnswers,
       onboarding_complete: true,
       onboarding_completed_at: new Date().toISOString(),

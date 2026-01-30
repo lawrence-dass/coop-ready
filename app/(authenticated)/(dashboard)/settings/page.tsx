@@ -68,8 +68,14 @@ export default async function SettingsPage() {
   };
 
   // Pass user data to client component
-  // Use email from users table as fallback if auth email is empty
-  const userEmail = user.email || userData?.email || '';
+  // Use email from multiple sources as fallback:
+  // 1. Auth user email (primary)
+  // 2. OAuth user_metadata email (for Google/social auth)
+  // 3. Users table email (database fallback)
+  const userEmail = user.email
+    || (user.user_metadata?.email as string | undefined)
+    || userData?.email
+    || '';
 
   return (
     <ClientSettingsPage
