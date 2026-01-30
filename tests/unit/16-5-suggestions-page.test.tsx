@@ -2,7 +2,15 @@ import { describe, test, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ScoreComparisonSection } from '@/app/app/(dashboard)/scan/[sessionId]/suggestions/ScoreComparisonSection';
 import { SectionSummaryCard } from '@/app/app/(dashboard)/scan/[sessionId]/suggestions/SectionSummaryCard';
+import { SuggestionsLoadingState } from '@/app/app/(dashboard)/scan/[sessionId]/suggestions/SuggestionsLoadingState';
 import '@testing-library/jest-dom/vitest';
+
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}));
 
 /**
  * Story 16.5: Suggestions Page Component Unit Tests
@@ -115,6 +123,46 @@ describe('Story 16.5: Suggestions Page Components', () => {
       // THEN: Should display "1 suggestion" (singular)
       expect(container.textContent).toContain('1 suggestion');
       expect(container.textContent).not.toContain('1 suggestions');
+    });
+  });
+
+  describe('SuggestionsLoadingState', () => {
+    test('[P0] 16.5-UI-006: should display loading spinner and message', () => {
+      // GIVEN: A session ID
+      const sessionId = '123e4567-e89b-12d3-a456-426614174000';
+
+      // WHEN: Rendering component
+      render(<SuggestionsLoadingState sessionId={sessionId} />);
+
+      // THEN: Should display loading state with spinner and message
+      const loadingState = screen.getByTestId('suggestions-loading-state');
+      expect(loadingState).toBeInTheDocument();
+      expect(loadingState).toHaveAttribute('role', 'status');
+      expect(screen.getByText('Generating suggestions...')).toBeInTheDocument();
+    });
+
+    test('[P0] 16.5-UI-007: should render skeleton placeholders for content areas', () => {
+      // GIVEN: A session ID
+      const sessionId = '123e4567-e89b-12d3-a456-426614174000';
+
+      // WHEN: Rendering component
+      const { container } = render(<SuggestionsLoadingState sessionId={sessionId} />);
+
+      // THEN: Should display skeleton elements
+      const skeletons = container.querySelectorAll('[data-slot="skeleton"]');
+      expect(skeletons.length).toBeGreaterThan(0);
+    });
+
+    test('[P0] 16.5-UI-008: should display page header', () => {
+      // GIVEN: A session ID
+      const sessionId = '123e4567-e89b-12d3-a456-426614174000';
+
+      // WHEN: Rendering component
+      render(<SuggestionsLoadingState sessionId={sessionId} />);
+
+      // THEN: Should display page header
+      expect(screen.getByText('Optimization Suggestions')).toBeInTheDocument();
+      expect(screen.getByText('Review and apply suggestions to improve your ATS score')).toBeInTheDocument();
     });
   });
 });

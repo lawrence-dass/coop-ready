@@ -8,13 +8,36 @@ import { generateAllSuggestions } from '@/actions/generateAllSuggestions';
 import * as generateSummary from '@/lib/ai/generateSummarySuggestion';
 import * as generateSkills from '@/lib/ai/generateSkillsSuggestion';
 import * as generateExperience from '@/lib/ai/generateExperienceSuggestion';
-import * as sessions from '@/lib/supabase/sessions';
 
 // Mock dependencies
 vi.mock('@/lib/ai/generateSummarySuggestion');
 vi.mock('@/lib/ai/generateSkillsSuggestion');
 vi.mock('@/lib/ai/generateExperienceSuggestion');
-vi.mock('@/lib/supabase/sessions');
+
+// Mock Supabase server client - track calls and control responses
+const mockEq = vi.fn();
+const mockUpdate = vi.fn();
+const mockFrom = vi.fn();
+let mockDbError: { message: string } | null = null;
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn().mockImplementation(async () => ({
+    from: (table: string) => {
+      mockFrom(table);
+      return {
+        update: (data: unknown) => {
+          mockUpdate(data);
+          return {
+            eq: (field: string, value: string) => {
+              mockEq(field, value);
+              return { error: mockDbError };
+            },
+          };
+        },
+      };
+    },
+  })),
+}));
 
 // ============================================================================
 // TEST DATA
@@ -85,10 +108,12 @@ describe('generateAllSuggestions', () => {
       data: mockExperienceSuggestion,
       error: null,
     });
-    vi.mocked(sessions.updateSession).mockResolvedValue({
-      data: { success: true },
-      error: null,
-    });
+
+    // Reset supabase mocks
+    mockFrom.mockClear();
+    mockUpdate.mockClear();
+    mockEq.mockClear();
+    mockDbError = null;
   });
 
   // ==========================================================================
@@ -168,14 +193,16 @@ describe('generateAllSuggestions', () => {
     it('should save all suggestions to session', async () => {
       await generateAllSuggestions(validRequest);
 
-      expect(sessions.updateSession).toHaveBeenCalledWith(
-        validRequest.sessionId,
+      // Verify database update was called with correct data
+      expect(mockFrom).toHaveBeenCalledWith('sessions');
+      expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          summarySuggestion: mockSummarySuggestion,
-          skillsSuggestion: mockSkillsSuggestion,
-          experienceSuggestion: mockExperienceSuggestion,
+          summary_suggestion: mockSummarySuggestion,
+          skills_suggestion: mockSkillsSuggestion,
+          experience_suggestion: mockExperienceSuggestion,
         })
       );
+      expect(mockEq).toHaveBeenCalledWith('id', validRequest.sessionId);
     });
   });
 
@@ -272,55 +299,73 @@ describe('generateAllSuggestions', () => {
 
       await generateAllSuggestions(validRequest);
 
-      expect(sessions.updateSession).toHaveBeenCalledWith(
-        validRequest.sessionId,
+      // Verify only successful suggestions were saved
+      expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          skillsSuggestion: mockSkillsSuggestion,
-          experienceSuggestion: mockExperienceSuggestion,
+          skills_suggestion: mockSkillsSuggestion,
+          experience_suggestion: mockExperienceSuggestion,
         })
       );
 
       // Summary should NOT be in the update
-      const updateCall = vi.mocked(sessions.updateSession).mock.calls[0][1];
-      expect(updateCall).not.toHaveProperty('summarySuggestion');
+      const updateCall = mockUpdate.mock.calls[0][0];
+      expect(updateCall).not.toHaveProperty('summary_suggestion');
     });
   });
 
   // ==========================================================================
-  // MISSING RESUME SECTIONS
+  // MISSING RESUME SECTIONS (FALLBACK BEHAVIOR)
   // ==========================================================================
 
   describe('missing resume sections', () => {
-    it('should skip summary generation when resumeSummary is empty', async () => {
+    it('should use full resume as fallback when resumeSummary is empty', async () => {
       const result = await generateAllSuggestions({
         ...validRequest,
         resumeSummary: '',
       });
 
-      expect(generateSummary.generateSummarySuggestion).not.toHaveBeenCalled();
-      expect(result.data?.summary).toBeNull();
+      // Should call with full resume content as fallback
+      expect(generateSummary.generateSummarySuggestion).toHaveBeenCalledWith(
+        validRequest.resumeContent, // fallback to full resume
+        validRequest.jobDescription,
+        validRequest.keywords,
+        undefined
+      );
+      expect(result.data?.summary).toEqual(mockSummarySuggestion);
       expect(result.data?.skills).toEqual(mockSkillsSuggestion);
       expect(result.data?.experience).toEqual(mockExperienceSuggestion);
     });
 
-    it('should skip skills generation when resumeSkills is empty', async () => {
+    it('should use full resume as fallback when resumeSkills is empty', async () => {
       const result = await generateAllSuggestions({
         ...validRequest,
         resumeSkills: '',
       });
 
-      expect(generateSkills.generateSkillsSuggestion).not.toHaveBeenCalled();
-      expect(result.data?.skills).toBeNull();
+      // Should call with full resume content as fallback
+      expect(generateSkills.generateSkillsSuggestion).toHaveBeenCalledWith(
+        validRequest.resumeContent, // fallback to full resume
+        validRequest.jobDescription,
+        validRequest.resumeContent,
+        undefined
+      );
+      expect(result.data?.skills).toEqual(mockSkillsSuggestion);
     });
 
-    it('should skip experience generation when resumeExperience is empty', async () => {
+    it('should use full resume as fallback when resumeExperience is empty', async () => {
       const result = await generateAllSuggestions({
         ...validRequest,
         resumeExperience: '',
       });
 
-      expect(generateExperience.generateExperienceSuggestion).not.toHaveBeenCalled();
-      expect(result.data?.experience).toBeNull();
+      // Should call with full resume content as fallback
+      expect(generateExperience.generateExperienceSuggestion).toHaveBeenCalledWith(
+        validRequest.resumeContent, // fallback to full resume
+        validRequest.jobDescription,
+        validRequest.resumeContent,
+        undefined
+      );
+      expect(result.data?.experience).toEqual(mockExperienceSuggestion);
     });
   });
 
@@ -330,10 +375,8 @@ describe('generateAllSuggestions', () => {
 
   describe('session persistence', () => {
     it('should continue when session save fails', async () => {
-      vi.mocked(sessions.updateSession).mockResolvedValue({
-        data: null,
-        error: { code: 'VALIDATION_ERROR', message: 'Session save failed' },
-      });
+      // Simulate database error
+      mockDbError = { message: 'Session save failed' };
 
       const result = await generateAllSuggestions(validRequest);
 
@@ -342,7 +385,7 @@ describe('generateAllSuggestions', () => {
       expect(result.data?.summary).toEqual(mockSummarySuggestion);
     });
 
-    it('should not call updateSession when no sections succeed', async () => {
+    it('should not call database update when no sections succeed', async () => {
       vi.mocked(generateSummary.generateSummarySuggestion).mockResolvedValue({
         data: null,
         error: { code: 'LLM_ERROR', message: 'Failed' },
@@ -358,7 +401,8 @@ describe('generateAllSuggestions', () => {
 
       await generateAllSuggestions(validRequest);
 
-      expect(sessions.updateSession).not.toHaveBeenCalled();
+      // Database update should not be called when nothing succeeded
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
   });
 });
