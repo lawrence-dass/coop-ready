@@ -20,7 +20,7 @@
  * 4. User clicks Analyze
  * 5. Session created in database with resume/JD content
  * 6. /api/optimize called with session_id, resume_content, jd_content, anonymous_id
- * 7. Redirect to /app/scan/[sessionId] on success
+ * 7. Redirect to /scan/[sessionId] on success
  */
 
 import { useState, useTransition, useEffect } from 'react';
@@ -41,6 +41,7 @@ import { generateAllSuggestions } from '@/actions/generateAllSuggestions';
 import { usePrivacyConsent } from '@/hooks/usePrivacyConsent';
 import { acceptPrivacyConsent } from '@/actions/privacy/accept-privacy-consent';
 import type { ActionResponse } from '@/types';
+import { ROUTES } from '@/lib/constants/routes';
 
 // ============================================================================
 // TIPS & STATS (shown during analysis)
@@ -252,7 +253,7 @@ export function NewScanClient() {
         }
 
         // Step 3b: Generate suggestions (same pattern as AnalyzeButton)
-        // This populates Zustand so /app/scan/[sessionId]/suggestions can display them
+        // This populates Zustand so /scan/[sessionId]/suggestions can display them
         if (resumeContent && result.data?.keywordAnalysis) {
           setLoadingStep('Generating suggestions...');
 
@@ -300,8 +301,8 @@ export function NewScanClient() {
         setLoadingStep('Redirecting to results...');
         toast.success('Analysis complete!');
 
-        // Navigate to /app/scan/[sessionId]
-        router.push(`/app/scan/${sessionId}`);
+        // Navigate to scan results page
+        router.push(ROUTES.APP.SCAN.SESSION(sessionId));
       } catch (error) {
         setLoadingStep('');
 

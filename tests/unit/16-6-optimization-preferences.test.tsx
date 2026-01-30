@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { OptimizationPreferencesSection } from '@/app/app/(dashboard)/settings/OptimizationPreferencesSection';
+import { OptimizationPreferencesSection } from '@/app/(authenticated)/(dashboard)/settings/OptimizationPreferencesSection';
 import { updateUserPreferences } from '@/actions/settings/update-user-preferences';
 import '@testing-library/jest-dom/vitest';
 

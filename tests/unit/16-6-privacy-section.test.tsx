@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { PrivacySection } from '@/app/app/(dashboard)/settings/PrivacySection';
+import { PrivacySection } from '@/app/(authenticated)/(dashboard)/settings/PrivacySection';
 import '@testing-library/jest-dom/vitest';
 
 /**

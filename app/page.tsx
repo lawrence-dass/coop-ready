@@ -3,7 +3,7 @@
  * Story 16.7: Create Full Marketing Landing Page
  *
  * Main marketing landing page that displays for unauthenticated users.
- * Authenticated users are redirected to /app/dashboard.
+ * Authenticated users are redirected to /dashboard.
  *
  * This is a Server Component for optimal performance and SEO.
  */

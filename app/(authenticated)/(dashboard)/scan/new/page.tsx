@@ -8,7 +8,7 @@
  * - Job Description Input section
  * - Configuration Options (Job Type, Modification Level)
  * - Analyze button
- * - Redirects to /app/scan/[sessionId] after successful analysis
+ * - Redirects to /scan/[sessionId] after successful analysis
  *
  * **Layout:**
  * - Mobile: Single column, cards stack

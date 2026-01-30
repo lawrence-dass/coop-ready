@@ -14,7 +14,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
 
   test.describe('AC#1: Auth Protection', () => {
     test('should redirect unauthenticated users to /auth/login', async ({ page }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Should be redirected to login
       await expect(page).toHaveURL('/auth/login');
@@ -29,10 +29,10 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
       await page.waitForURL('/');
 
       // Navigate to dashboard
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       // Should NOT be redirected
-      await expect(page).toHaveURL('/app/dashboard');
+      await expect(page).toHaveURL('/dashboard');
 
       // Should see dashboard layout
       await expect(page.getByRole('navigation')).toBeVisible();
@@ -50,7 +50,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
       await page.fill('[data-testid="password-input"]', TEST_USER.password);
       await page.click('[data-testid="login-button"]');
       await page.waitForURL('/');
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
     });
 
     test('should display sidebar with all navigation links', async ({ page }) => {
@@ -78,7 +78,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
 
       // Navigate to History
       await page.getByRole('link', { name: /history/i }).click();
-      await expect(page).toHaveURL('/app/history');
+      await expect(page).toHaveURL('/history');
 
       const historyLink = page.getByRole('link', { name: /history/i });
       await expect(historyLink).toHaveAttribute('aria-current', 'page');
@@ -86,16 +86,16 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
 
     test('should navigate between dashboard pages', async ({ page }) => {
       await page.getByRole('link', { name: /new scan/i }).click();
-      await expect(page).toHaveURL('/app/scan/new');
+      await expect(page).toHaveURL('/scan/new');
 
       await page.getByRole('link', { name: /history/i }).click();
-      await expect(page).toHaveURL('/app/history');
+      await expect(page).toHaveURL('/history');
 
       await page.getByRole('link', { name: /settings/i }).click();
-      await expect(page).toHaveURL('/app/settings');
+      await expect(page).toHaveURL('/settings');
 
       await page.getByRole('link', { name: /dashboard/i }).click();
-      await expect(page).toHaveURL('/app/dashboard');
+      await expect(page).toHaveURL('/dashboard');
     });
 
     test('should sign out and redirect to login', async ({ page }) => {
@@ -105,7 +105,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
       await expect(page).toHaveURL('/auth/login');
 
       // Attempt to access dashboard should redirect again
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
       await expect(page).toHaveURL('/auth/login');
     });
   });
@@ -119,7 +119,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
       await page.fill('[data-testid="password-input"]', TEST_USER.password);
       await page.click('[data-testid="login-button"]');
       await page.waitForURL('/');
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
     });
 
     test('should display header with page title', async ({ page }) => {
@@ -132,16 +132,16 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
     });
 
     test('should display correct title for each page', async ({ page }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
       await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
 
-      await page.goto('/app/scan/new');
+      await page.goto('/scan/new');
       await expect(page.getByRole('heading', { name: /new scan/i })).toBeVisible();
 
-      await page.goto('/app/history');
+      await page.goto('/history');
       await expect(page.getByRole('heading', { name: /history/i })).toBeVisible();
 
-      await page.goto('/app/settings');
+      await page.goto('/settings');
       await expect(page.getByRole('heading', { name: /settings/i })).toBeVisible();
     });
   });
@@ -156,7 +156,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
       await page.fill('[data-testid="password-input"]', TEST_USER.password);
       await page.click('[data-testid="login-button"]');
       await page.waitForURL('/');
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
     });
 
     test('should hide sidebar on mobile', async ({ page }) => {
@@ -201,7 +201,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
       await expect(mobileNav).not.toBeVisible();
 
       // Should navigate to History page
-      await expect(page).toHaveURL('/app/history');
+      await expect(page).toHaveURL('/history');
     });
   });
 
@@ -216,7 +216,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
 
     test('should display sidebar on desktop (≥1024px)', async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       const sidebar = page.getByRole('navigation');
       await expect(sidebar).toBeVisible();
@@ -224,7 +224,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
 
     test('should hide sidebar on mobile (<1024px)', async ({ page }) => {
       await page.setViewportSize({ width: 768, height: 1024 });
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       const sidebar = page.getByRole('navigation').first();
       const isVisible = await sidebar.isVisible();
@@ -235,7 +235,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
 
     test('should show hamburger menu on tablet/mobile', async ({ page }) => {
       await page.setViewportSize({ width: 768, height: 1024 });
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       const menuButton = page.getByRole('button', { name: /menu/i });
       await expect(menuButton).toBeVisible();
@@ -250,7 +250,7 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
 
       for (const viewport of breakpoints) {
         await page.setViewportSize(viewport);
-        await page.goto('/app/dashboard');
+        await page.goto('/dashboard');
 
         // Check for horizontal scrollbar
         const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -273,25 +273,25 @@ test.describe('Story 16.1: Dashboard Layout Foundation', () => {
     });
 
     test('should render Dashboard placeholder page', async ({ page }) => {
-      await page.goto('/app/dashboard');
+      await page.goto('/dashboard');
 
       await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
     });
 
     test('should render New Scan placeholder page', async ({ page }) => {
-      await page.goto('/app/scan/new');
+      await page.goto('/scan/new');
 
       await expect(page.getByRole('heading', { name: /new scan/i })).toBeVisible();
     });
 
     test('should render History placeholder page', async ({ page }) => {
-      await page.goto('/app/history');
+      await page.goto('/history');
 
       await expect(page.getByRole('heading', { name: /history/i })).toBeVisible();
     });
 
     test('should render Settings placeholder page', async ({ page }) => {
-      await page.goto('/app/settings');
+      await page.goto('/settings');
 
       await expect(page.getByRole('heading', { name: /settings/i })).toBeVisible();
     });

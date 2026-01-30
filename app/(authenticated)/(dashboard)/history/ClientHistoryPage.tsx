@@ -90,7 +90,7 @@ export function ClientHistoryPage({ sessions, error }: ClientHistoryPageProps) {
  * HistorySessionCard Component
  *
  * Displays a single optimization session in the history list.
- * Navigation goes to /app/scan/[sessionId] (new dashboard route).
+ * Navigation goes to /scan/[sessionId].
  */
 interface HistorySessionCardProps {
   session: HistorySession;

@@ -23,21 +23,21 @@ test.describe('Story 16.6: History Page E2E', () => {
     await page.fill('input[type="email"]', TEST_EMAIL);
     await page.fill('input[type="password"]', TEST_PASSWORD);
     await page.click('button[type="submit"]');
-    await page.waitForURL('/app');
+    await page.waitForURL(/\/(dashboard|scan|history|settings)/);
   });
 
   test('[P0] 16.6-E2E-001: should navigate to history page from sidebar', async ({ page }) => {
     // WHEN: Clicking history link in sidebar
-    await page.click('a[href="/app/history"]');
+    await page.click('a[href="/history"]');
 
     // THEN: Should navigate to history page
-    await expect(page).toHaveURL('/app/history');
+    await expect(page).toHaveURL('/history');
     await expect(page.locator('h1')).toContainText(/History/i);
   });
 
   test('[P0] 16.6-E2E-002: should display history sessions and navigate to session', async ({ page }) => {
     // GIVEN: User is on history page
-    await page.goto('/app/history');
+    await page.goto('/history');
 
     // WHEN: Clicking on a history session
     const firstSession = page.locator('[data-testid^="history-session"]').first();
@@ -47,12 +47,12 @@ test.describe('Story 16.6: History Page E2E', () => {
     await firstSession.click();
 
     // THEN: Should navigate to session results page
-    await expect(page).toHaveURL(`/app/scan/${sessionId}`);
+    await expect(page).toHaveURL(`/scan/${sessionId}`);
   });
 
   test('[P0] 16.6-E2E-003: should delete session from history', async ({ page }) => {
     // GIVEN: User is on history page with sessions
-    await page.goto('/app/history');
+    await page.goto('/history');
     await page.waitForSelector('[data-testid^="history-session"]');
 
     // Count initial sessions
@@ -72,7 +72,7 @@ test.describe('Story 16.6: History Page E2E', () => {
 
   test('[P0] 16.6-E2E-004: should show empty state when no sessions', async ({ page }) => {
     // GIVEN: User has no history sessions (delete all first)
-    await page.goto('/app/history');
+    await page.goto('/history');
 
     // Delete all sessions
     while (await page.locator('[data-testid^="delete-session-"]').count() > 0) {
@@ -86,12 +86,12 @@ test.describe('Story 16.6: History Page E2E', () => {
     await expect(page.locator('text=/Start New Scan/i')).toBeVisible();
   });
 
-  test('[P1] 16.6-E2E-005: should redirect old /history route to /app/history', async ({ page }) => {
+  test('[P1] 16.6-E2E-005: should redirect old /history route to /history', async ({ page }) => {
     // WHEN: Navigating to old history route
     await page.goto('/history');
 
     // THEN: Should redirect to new dashboard history route
-    await expect(page).toHaveURL('/app/history');
+    await expect(page).toHaveURL('/history');
   });
 
   test('[P1] 16.6-E2E-006: should be responsive on mobile', async ({ page }) => {
@@ -99,7 +99,7 @@ test.describe('Story 16.6: History Page E2E', () => {
     await page.setViewportSize({ width: 375, height: 667 });
 
     // WHEN: Navigating to history page
-    await page.goto('/app/history');
+    await page.goto('/history');
 
     // THEN: Page should be usable on mobile
     // Sidebar should collapse to hamburger

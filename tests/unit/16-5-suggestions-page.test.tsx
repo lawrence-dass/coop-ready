@@ -1,8 +1,8 @@
 import { describe, test, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ScoreComparisonSection } from '@/app/app/(dashboard)/scan/[sessionId]/suggestions/ScoreComparisonSection';
-import { SectionSummaryCard } from '@/app/app/(dashboard)/scan/[sessionId]/suggestions/SectionSummaryCard';
-import { SuggestionsLoadingState } from '@/app/app/(dashboard)/scan/[sessionId]/suggestions/SuggestionsLoadingState';
+import { ScoreComparisonSection } from '@/app/(authenticated)/(dashboard)/scan/[sessionId]/suggestions/ScoreComparisonSection';
+import { SectionSummaryCard } from '@/app/(authenticated)/(dashboard)/scan/[sessionId]/suggestions/SectionSummaryCard';
+import { SuggestionsLoadingState } from '@/app/(authenticated)/(dashboard)/scan/[sessionId]/suggestions/SuggestionsLoadingState';
 import '@testing-library/jest-dom/vitest';
 
 // Mock next/navigation
