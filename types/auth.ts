@@ -81,6 +81,12 @@ export type Industry =
  * Onboarding answers submitted by user
  */
 export interface OnboardingAnswers {
+  /** User's first name */
+  firstName: string;
+
+  /** User's last name */
+  lastName: string;
+
   /** User's primary career goal */
   careerGoal: CareerGoal | '';
 

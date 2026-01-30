@@ -2,7 +2,7 @@
  * Update User Preferences Server Action
  * Story 16.6: Migrate History and Settings - Task 8
  *
- * Updates user optimization preferences in the profiles table.
+ * Updates user optimization preferences in the users table.
  */
 
 'use server';
@@ -71,7 +71,7 @@ function mapModLevelToDB(displayValue: UserPreferences['modLevel']): string {
 /**
  * Update user optimization preferences
  * 
- * Updates the profiles.optimization_preferences JSONB column.
+ * Updates the users.optimization_preferences JSONB column.
  * Preserves existing preferences fields (tone, verbosity, etc.) while updating
  * only the fields provided.
  * 
@@ -115,7 +115,7 @@ export async function updateUserPreferences(
 
     // Get current preferences to preserve other fields
     const { data: currentProfile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('optimization_preferences')
       .eq('user_id', user.id)
       .single();
@@ -134,7 +134,7 @@ export async function updateUserPreferences(
 
     // Update preferences in database
     const { error: updateError } = await supabase
-      .from('profiles')
+      .from('users')
       .update({ optimization_preferences: updatedPrefs })
       .eq('user_id', user.id);
 

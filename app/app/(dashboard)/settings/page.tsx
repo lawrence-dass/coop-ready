@@ -3,7 +3,7 @@
  * Story 16.6: Migrate History and Settings
  *
  * Renders user settings page within the dashboard layout.
- * Loads user profile and preferences server-side with RLS enforcement.
+ * Loads user data and preferences server-side with RLS enforcement.
  */
 
 import type { Metadata } from 'next';
@@ -45,16 +45,22 @@ export default async function SettingsPage() {
     console.error('[Settings Page] Failed to load preferences:', prefsError);
   }
 
-  // Load privacy consent status from profiles table
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('privacy_consent_accepted, privacy_consent_accepted_at')
+  // Load privacy consent status and onboarding data from users table
+  const { data: userData } = await supabase
+    .from('users')
+    .select('privacy_consent_accepted, privacy_consent_accepted_at, first_name, last_name, onboarding_answers')
     .eq('user_id', user.id)
     .single();
 
   const privacyConsent = {
-    accepted: profileData?.privacy_consent_accepted || false,
-    acceptedAt: profileData?.privacy_consent_accepted_at || null,
+    accepted: userData?.privacy_consent_accepted || false,
+    acceptedAt: userData?.privacy_consent_accepted_at || null,
+  };
+
+  const onboardingData = {
+    firstName: userData?.first_name || null,
+    lastName: userData?.last_name || null,
+    answers: userData?.onboarding_answers || null,
   };
 
   // Pass user data to client component
@@ -67,6 +73,7 @@ export default async function SettingsPage() {
       }}
       preferences={userPreferences}
       privacyConsent={privacyConsent}
+      onboarding={onboardingData}
     />
   );
 }

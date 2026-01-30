@@ -41,9 +41,9 @@ export async function getUserPreferences(): Promise<
       };
     }
 
-    // Query profiles table for optimization_preferences
+    // Query users table for optimization_preferences
     const { data, error } = await supabase
-      .from('profiles')
+      .from('users')
       .select('optimization_preferences')
       .eq('id', user.id)
       .single();
@@ -96,7 +96,7 @@ export async function getUserPreferences(): Promise<
  *
  * This function:
  * - Validates user is authenticated
- * - Updates the optimization_preferences column in profiles table
+ * - Updates the optimization_preferences column in users table
  * - Returns the updated preferences on success
  *
  * @param preferences - The optimization preferences to save
@@ -148,7 +148,7 @@ export async function updateUserPreferences(
 
     // Update preferences in database
     const { error: updateError } = await supabase
-      .from('profiles')
+      .from('users')
       .update({
         optimization_preferences: preferences,
       })

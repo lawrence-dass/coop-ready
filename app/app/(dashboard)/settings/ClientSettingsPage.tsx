@@ -31,16 +31,28 @@ interface PrivacyConsent {
   acceptedAt: string | null;
 }
 
+interface OnboardingData {
+  firstName: string | null;
+  lastName: string | null;
+  answers: {
+    careerGoal?: string;
+    experienceLevel?: string;
+    targetIndustries?: string[];
+  } | null;
+}
+
 interface ClientSettingsPageProps {
   user: User;
   preferences: Preferences;
   privacyConsent: PrivacyConsent;
+  onboarding: OnboardingData;
 }
 
 export function ClientSettingsPage({
   user,
   preferences,
   privacyConsent,
+  onboarding,
 }: ClientSettingsPageProps) {
   // Convert null to undefined for React Hook Form compatibility
   // NOTE: RHF expects undefined for optional fields, but DB stores null
@@ -63,7 +75,14 @@ export function ClientSettingsPage({
       {/* Settings Sections */}
       <div className="space-y-6 max-w-3xl">
         {/* Profile Information */}
-        <ProfileSection email={user.email} createdAt={user.createdAt} userId={user.id} />
+        <ProfileSection
+          email={user.email}
+          createdAt={user.createdAt}
+          userId={user.id}
+          firstName={onboarding.firstName}
+          lastName={onboarding.lastName}
+          onboardingAnswers={onboarding.answers}
+        />
 
         {/* Optimization Preferences */}
         <OptimizationPreferencesSection

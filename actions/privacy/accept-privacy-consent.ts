@@ -19,11 +19,11 @@ import type { PrivacyConsentStatus } from '@/types/auth';
 /**
  * Accept privacy consent for the authenticated user
  *
- * Updates the user's profile with:
+ * Updates the user's record with:
  * - privacy_accepted = true
  * - privacy_accepted_at = current timestamp
  *
- * RLS ensures user can only update their own profile
+ * RLS ensures user can only update their own record
  */
 export async function acceptPrivacyConsent(): Promise<
   ActionResponse<PrivacyConsentStatus>
@@ -70,9 +70,9 @@ export async function acceptPrivacyConsent(): Promise<
       };
     }
 
-    // Update profile with consent status
+    // Update user record with consent status
     const { data, error } = await supabase
-      .from('profiles')
+      .from('users')
       .update({
         privacy_accepted: true,
         privacy_accepted_at: new Date().toISOString(),

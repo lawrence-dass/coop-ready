@@ -46,13 +46,17 @@ test.describe('Onboarding Flow', () => {
     // Wait for form to be visible
     await expect(page.getByTestId('onboarding-form')).toBeVisible();
 
-    // Question 1: Career Goal
+    // Step 1: Name
+    await page.getByTestId('first-name-input').fill('John');
+    await page.getByTestId('last-name-input').fill('Doe');
+
+    // Step 2: Career Goal
     await page.getByTestId('career-goal-advancing').check();
 
-    // Question 2: Experience Level
+    // Step 3: Experience Level
     await page.getByTestId('experience-level-mid').check();
 
-    // Question 3: Target Industries (select multiple)
+    // Step 4: Target Industries (select multiple)
     await page.getByTestId('industry-technology').check();
     await page.getByTestId('industry-finance').check();
 
@@ -91,6 +95,14 @@ test.describe('Onboarding Flow', () => {
 
     // Should still be on onboarding page
     await expect(page).toHaveURL('/auth/onboarding');
+  });
+
+  test('should show name input fields', async ({ page }) => {
+    await page.goto('/auth/onboarding');
+
+    // Verify name input fields are visible
+    await expect(page.getByTestId('first-name-input')).toBeVisible();
+    await expect(page.getByTestId('last-name-input')).toBeVisible();
   });
 
   test('should show all career goal options', async ({ page }) => {
@@ -133,10 +145,11 @@ test.describe('Onboarding Flow', () => {
   test('should show progress indicators', async ({ page }) => {
     await page.goto('/auth/onboarding');
 
-    // Verify step indicators are visible
-    await expect(page.getByText('Step 1 of 3')).toBeVisible();
-    await expect(page.getByText('Step 2 of 3')).toBeVisible();
-    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    // Verify step indicators are visible (now 4 steps)
+    await expect(page.getByText('Step 1 of 4')).toBeVisible();
+    await expect(page.getByText('Step 2 of 4')).toBeVisible();
+    await expect(page.getByText('Step 3 of 4')).toBeVisible();
+    await expect(page.getByText('Step 4 of 4', { exact: false })).toBeVisible();
   });
 
   test('should show welcome message', async ({ page }) => {

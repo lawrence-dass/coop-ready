@@ -23,13 +23,13 @@ export default async function OnboardingPage() {
   }
 
   // Check if user already completed onboarding
-  const { data: profile } = await supabase
-    .from('profiles')
+  const { data: userData } = await supabase
+    .from('users')
     .select('onboarding_complete')
     .eq('user_id', user.id)
     .single();
 
-  if (profile?.onboarding_complete) {
+  if (userData?.onboarding_complete) {
     redirect('/');
   }
 
