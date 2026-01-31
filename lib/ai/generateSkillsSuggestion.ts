@@ -14,7 +14,7 @@
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { SkillsSuggestion } from '@/types/suggestions';
 import { buildPreferencePrompt, getJobTypeFramingGuidance } from './preferences';
-import { getHaikuModel } from './models';
+import { getSonnetModel } from './models';
 import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
 // ============================================================================
@@ -122,7 +122,7 @@ interface SkillsLLMResponse {
  * Chain: prompt → model → jsonParser
  */
 function createSkillsSuggestionChain() {
-  const model = getHaikuModel({ temperature: 0.3, maxTokens: 2500 });
+  const model = getSonnetModel({ temperature: 0.3, maxTokens: 2500 });
   const jsonParser = createJsonParser<SkillsLLMResponse>();
 
   return skillsPrompt.pipe(model).pipe(jsonParser);

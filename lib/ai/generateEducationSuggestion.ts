@@ -16,7 +16,7 @@
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { EducationSuggestion } from '@/types/suggestions';
 import { buildPreferencePrompt, getJobTypeVerbGuidance, getJobTypeFramingGuidance } from './preferences';
-import { getHaikuModel } from './models';
+import { getSonnetModel } from './models';
 import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
 // ============================================================================
@@ -204,7 +204,7 @@ interface EducationLLMResponse {
  * Chain: prompt → model → jsonParser
  */
 function createEducationSuggestionChain() {
-  const model = getHaikuModel({ temperature: 0.3, maxTokens: 3000 });
+  const model = getSonnetModel({ temperature: 0.3, maxTokens: 3000 });
   const jsonParser = createJsonParser<EducationLLMResponse>();
 
   return educationPrompt.pipe(model).pipe(jsonParser);

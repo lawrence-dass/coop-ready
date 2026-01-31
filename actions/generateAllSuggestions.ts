@@ -19,10 +19,16 @@ import type {
   ExperienceSuggestion,
   EducationSuggestion,
 } from '@/types/suggestions';
+import type { SuggestionContext, JudgeResult, JudgeCriteriaScores } from '@/types/judge';
 import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
 import { generateEducationSuggestion } from '@/lib/ai/generateEducationSuggestion';
+import { judgeSuggestion } from '@/lib/ai/judgeSuggestion';
+import { getLLMTier } from '@/lib/ai/models';
+import { truncateAtSentence } from '@/lib/utils/truncateAtSentence';
+import { collectQualityMetrics } from '@/lib/metrics/qualityMetrics';
+import { logQualityMetrics } from '@/lib/metrics/metricsLogger';
 import { createClient } from '@/lib/supabase/server';
 import { getUserContext } from '@/lib/supabase/user-context';
 
@@ -100,6 +106,42 @@ function validateRequest(
 }
 
 // ============================================================================
+// JUDGE HELPER
+// ============================================================================
+
+/**
+ * Judge a section suggestion and return the result
+ * Gracefully handles failures (returns null instead of throwing)
+ */
+async function judgeSectionSuggestion(
+  sectionType: 'summary' | 'skills' | 'experience' | 'education',
+  suggestedText: string,
+  originalText: string,
+  jdContent: string,
+  sessionId: string
+): Promise<JudgeResult | null> {
+  try {
+    const context: SuggestionContext = {
+      original_text: truncateAtSentence(originalText, 500),
+      suggested_text: suggestedText,
+      jd_excerpt: truncateAtSentence(jdContent, 500),
+      section_type: sectionType,
+    };
+
+    const result = await judgeSuggestion(
+      suggestedText,
+      context,
+      `${sectionType}-${sessionId.substring(0, 8)}`
+    );
+
+    return result.data ?? null;
+  } catch (error) {
+    console.warn(`[SS:generateAll] Judge failed for ${sectionType}:`, error);
+    return null;
+  }
+}
+
+// ============================================================================
 // MAIN ACTION
 // ============================================================================
 
@@ -165,6 +207,7 @@ export async function generateAllSuggestions(
     console.log(
       '[SS:generateAll] Starting suggestion generation for session:',
       sessionId.slice(0, 8) + '...',
+      `[LLM_TIER=${getLLMTier()}]`,
       preferences ? `with preferences (tone: ${preferences.tone})` : 'with default preferences',
       userContext.careerGoal ? `goal=${userContext.careerGoal}` : 'no goal',
       userContext.targetIndustries?.length ? `industries=${userContext.targetIndustries.join(',')}` : 'no industries',
@@ -236,6 +279,121 @@ export async function generateAllSuggestions(
       }
     } else if (effectiveEducation && educationResult.status === 'rejected') {
       result.sectionErrors.education = educationResult.reason?.message || 'Education generation failed';
+    }
+
+    // =========================================================================
+    // JUDGE PHASE
+    // Judge all individual suggestions in parallel
+    // =========================================================================
+    console.log('[SS:generateAll] Starting judge phase...');
+
+    interface JudgeTask {
+      section: 'summary' | 'skills' | 'experience' | 'education';
+      target: unknown; // The object to augment with judge data
+      suggestedText: string;
+      originalText: string;
+    }
+
+    const judgeTasks: JudgeTask[] = [];
+
+    // Summary (single suggestion)
+    if (result.summary) {
+      judgeTasks.push({
+        section: 'summary',
+        target: result.summary,
+        suggestedText: result.summary.suggested,
+        originalText: effectiveSummary,
+      });
+    }
+
+    // Skills (each missing_but_relevant skill)
+    if (result.skills?.missing_but_relevant) {
+      for (const skillItem of result.skills.missing_but_relevant) {
+        judgeTasks.push({
+          section: 'skills',
+          target: skillItem,
+          suggestedText: `Add skill: ${skillItem.skill}. ${skillItem.reason || ''}`,
+          originalText: effectiveSkills,
+        });
+      }
+    }
+
+    // Experience (each suggested bullet)
+    if (result.experience?.experience_entries) {
+      for (const entry of result.experience.experience_entries) {
+        for (const bullet of entry.suggested_bullets) {
+          judgeTasks.push({
+            section: 'experience',
+            target: bullet,
+            suggestedText: bullet.suggested,
+            originalText: bullet.original,
+          });
+        }
+      }
+    }
+
+    // Education (each suggested bullet)
+    if (result.education?.education_entries) {
+      for (const entry of result.education.education_entries) {
+        for (const bullet of entry.suggested_bullets) {
+          judgeTasks.push({
+            section: 'education',
+            target: bullet,
+            suggestedText: bullet.suggested,
+            originalText: bullet.original || '',
+          });
+        }
+      }
+    }
+
+    // Execute all judge calls in parallel
+    const judgeResults = await Promise.allSettled(
+      judgeTasks.map(async (task, index) => {
+        const judgeResult = await judgeSectionSuggestion(
+          task.section,
+          task.suggestedText,
+          task.originalText,
+          jobDescription,
+          sessionId
+        );
+        return { index, judgeResult };
+      })
+    );
+
+    // Augment suggestions with judge data
+    const allJudgeResults: JudgeResult[] = [];
+
+    for (const settled of judgeResults) {
+      if (settled.status === 'fulfilled' && settled.value.judgeResult) {
+        const { index, judgeResult } = settled.value;
+        const task = judgeTasks[index];
+        allJudgeResults.push(judgeResult);
+
+        // Augment the target object with judge data
+        const target = task.target as {
+          judge_score?: number;
+          judge_passed?: boolean;
+          judge_reasoning?: string;
+          judge_criteria?: JudgeCriteriaScores;
+        };
+        target.judge_score = judgeResult.quality_score;
+        target.judge_passed = judgeResult.passed;
+        target.judge_reasoning = judgeResult.reasoning;
+        target.judge_criteria = judgeResult.criteria_breakdown;
+      }
+    }
+
+    // Log quality metrics (graceful degradation)
+    if (allJudgeResults.length > 0) {
+      try {
+        const passCount = allJudgeResults.filter(r => r.passed).length;
+        console.log(`[SS:generateAll] Judge results: ${passCount}/${allJudgeResults.length} passed`);
+
+        const metrics = collectQualityMetrics(allJudgeResults, 'all', sessionId);
+        await logQualityMetrics(metrics);
+      } catch (metricsError) {
+        console.error('[SS:generateAll] Metrics collection failed:', metricsError);
+      }
     }
 
     // Save successful suggestions to session using server client (for proper auth context)

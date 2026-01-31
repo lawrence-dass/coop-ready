@@ -238,6 +238,12 @@ export interface EducationBulletSuggestion {
 
   /** Brief explanation of why this suggestion helps */
   explanation?: string;
+
+  // Story 12.1: Judge fields (matching BulletSuggestion pattern)
+  judge_score?: number; // Quality score from LLM judge (0-100)
+  judge_passed?: boolean; // Whether suggestion passed validation
+  judge_reasoning?: string; // Brief explanation of the score
+  judge_criteria?: JudgeCriteriaScores; // Breakdown by criteria
 }
 
 /**

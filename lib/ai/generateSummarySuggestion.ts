@@ -14,7 +14,7 @@ import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { SummarySuggestion } from '@/types/suggestions';
 import { detectAITellPhrases } from './detectAITellPhrases';
 import { buildPreferencePrompt, getJobTypeVerbGuidance, getJobTypeFramingGuidance } from './preferences';
-import { getHaikuModel } from './models';
+import { getSonnetModel } from './models';
 import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
 // ============================================================================
@@ -107,7 +107,7 @@ interface SummaryLLMResponse {
  * Chain: prompt → model → jsonParser
  */
 function createSummarySuggestionChain() {
-  const model = getHaikuModel({ temperature: 0.3, maxTokens: 2000 });
+  const model = getSonnetModel({ temperature: 0.3, maxTokens: 2000 });
   const jsonParser = createJsonParser<SummaryLLMResponse>();
 
   return summaryPrompt.pipe(model).pipe(jsonParser);

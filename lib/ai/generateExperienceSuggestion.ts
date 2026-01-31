@@ -14,7 +14,7 @@
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { ExperienceSuggestion } from '@/types/suggestions';
 import { buildPreferencePrompt, getJobTypeVerbGuidance, getJobTypeFramingGuidance } from './preferences';
-import { getHaikuModel } from './models';
+import { getSonnetModel } from './models';
 import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
 // ============================================================================
@@ -148,7 +148,7 @@ interface ExperienceLLMResponse {
  * Chain: prompt → model → jsonParser
  */
 function createExperienceSuggestionChain() {
-  const model = getHaikuModel({ temperature: 0.4, maxTokens: 4000 });
+  const model = getSonnetModel({ temperature: 0.4, maxTokens: 4000 });
   const jsonParser = createJsonParser<ExperienceLLMResponse>();
 
   return experiencePrompt.pipe(model).pipe(jsonParser);

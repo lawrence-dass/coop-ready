@@ -71,8 +71,8 @@ export interface SuggestionContext {
   /** Relevant excerpt from job description */
   jd_excerpt: string;
 
-  /** Type of section (summary, skills, experience) */
-  section_type: 'summary' | 'skills' | 'experience';
+  /** Type of section (summary, skills, experience, education) */
+  section_type: 'summary' | 'skills' | 'experience' | 'education';
 }
 
 /**
