@@ -245,6 +245,7 @@ function calculatePriorityScore(
 - ✅ Update `ScoreComparisonSection` to show both raw and achievable points
 - ✅ Add explanation text for the 100 cap (info tooltip + blue banner)
 - ✅ Added "Maximum ATS Score Achievable!" celebration badge
+- ✅ Replaced percentage with qualitative labels ("Significant improvement", "Solid improvement", etc.)
 - No algorithm changes, just UI clarity
 
 ### Phase 2: Proportional Points ✅ IMPLEMENTED

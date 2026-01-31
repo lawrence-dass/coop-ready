@@ -31,9 +31,14 @@ export function ScoreComparisonSection({
   const projectedScore = Math.min(originalScore + potentialPoints, 100);
   const achievableGain = projectedScore - originalScore;
   const isCapped = originalScore + potentialPoints > 100;
-  const improvementPercentage = originalScore > 0
-    ? ((achievableGain / originalScore) * 100).toFixed(1)
-    : '0';
+
+  // Qualitative improvement label (avoids false precision)
+  const getImprovementLabel = (gain: number, isMax: boolean): string => {
+    if (isMax) return 'Maximum score achievable!';
+    if (gain >= 20) return 'Significant improvement';
+    if (gain >= 10) return 'Solid improvement';
+    return 'Fine-tuning adjustments';
+  };
 
   // Color coding based on original score
   const getScoreColor = (score: number) => {
@@ -127,7 +132,7 @@ export function ScoreComparisonSection({
               +{achievableGain}
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              ({improvementPercentage}% improvement)
+              {getImprovementLabel(achievableGain, projectedScore === 100)}
             </p>
           </div>
         </div>
