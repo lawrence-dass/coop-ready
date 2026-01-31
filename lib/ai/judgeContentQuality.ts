@@ -1,7 +1,7 @@
 // Story 5.2: LLM Quality Judge for Content Evaluation
-import { ChatAnthropic } from '@langchain/anthropic';
 import { ActionResponse } from '@/types';
 import type { Resume } from '@/types/optimization';
+import { getHaikuModel } from './models';
 
 const QUALITY_TIMEOUT_MS = 15000; // 15 seconds budget for quality scoring
 
@@ -50,13 +50,8 @@ async function evaluateSectionQuality(
       };
     }
 
-    // Initialize Haiku model (cost-efficient)
-    const model = new ChatAnthropic({
-      modelName: 'claude-3-5-haiku-20241022',
-      temperature: 0,
-      maxTokens: 500,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY
-    });
+    // Get shared Haiku model (cost-efficient)
+    const model = getHaikuModel({ temperature: 0, maxTokens: 500 });
 
     // Prompt with XML-wrapped user content (prompt injection defense)
     const prompt = `You are a resume quality evaluator. Rate this resume section's quality.
@@ -178,41 +173,73 @@ export async function judgeContentQuality(
   jdContent: string
 ): Promise<ActionResponse<number>> {
   try {
-    // Evaluate each section
+    // Define sections to evaluate
     const sectionTypes: Array<keyof Pick<Resume, 'summary' | 'skills' | 'experience'>> =
       ['summary', 'skills', 'experience'];
 
-    const sectionScores: number[] = [];
+    // Filter to sections that exist and have content
+    const sectionsToEvaluate = sectionTypes.filter(
+      type => parsedResume[type]?.trim()
+    );
 
-    console.log('[SS:quality] Judging content quality for sections:', sectionTypes.filter(s => parsedResume[s]?.trim()).join(', '));
-    for (const sectionType of sectionTypes) {
-      const sectionContent = parsedResume[sectionType];
-
-      // Skip sections that don't exist
-      if (!sectionContent || sectionContent.trim().length === 0) {
-        continue;
-      }
-
-      console.log(`[SS:quality] Evaluating ${sectionType} (${sectionContent.length} chars)...`);
-      const result = await evaluateSectionQuality(
-        sectionType,
-        sectionContent,
-        jdContent
-      );
-
-      if (result.error) {
-        // If any section fails, return the error (fallback handled by caller)
-        console.error(`[SS:quality] ${sectionType} evaluation failed:`, result.error.code);
-        return result;
-      }
-
-      if (result.data > 0) {
-        console.log(`[SS:quality] ${sectionType} score:`, result.data);
-        sectionScores.push(result.data);
-      }
-    }
+    console.log('[SS:quality] Judging content quality for sections:', sectionsToEvaluate.join(', '));
 
     // If no valid sections, return 0
+    if (sectionsToEvaluate.length === 0) {
+      return {
+        data: 0,
+        error: null
+      };
+    }
+
+    // Run all section evaluations in parallel (Phase 1 optimization: ~3s saved)
+    console.log(`[SS:quality] Evaluating ${sectionsToEvaluate.length} sections in parallel...`);
+    const evaluationPromises = sectionsToEvaluate.map(sectionType => {
+      const sectionContent = parsedResume[sectionType]!;
+      console.log(`[SS:quality] Starting ${sectionType} evaluation (${sectionContent.length} chars)`);
+      return evaluateSectionQuality(sectionType, sectionContent, jdContent);
+    });
+
+    const results = await Promise.allSettled(evaluationPromises);
+
+    // Process results, collect scores and handle errors gracefully
+    const sectionScores: number[] = [];
+    const errors: string[] = [];
+
+    results.forEach((result, index) => {
+      const sectionType = sectionsToEvaluate[index];
+
+      if (result.status === 'rejected') {
+        console.error(`[SS:quality] ${sectionType} evaluation rejected:`, result.reason);
+        errors.push(`${sectionType}: ${result.reason}`);
+        return;
+      }
+
+      const actionResult = result.value;
+      if (actionResult.error) {
+        console.error(`[SS:quality] ${sectionType} evaluation failed:`, actionResult.error.code);
+        errors.push(`${sectionType}: ${actionResult.error.code}`);
+        return;
+      }
+
+      if (actionResult.data && actionResult.data > 0) {
+        console.log(`[SS:quality] ${sectionType} score:`, actionResult.data);
+        sectionScores.push(actionResult.data);
+      }
+    });
+
+    // If all evaluations failed, return error
+    if (sectionScores.length === 0 && errors.length > 0) {
+      return {
+        data: null,
+        error: {
+          code: 'LLM_ERROR',
+          message: `All quality evaluations failed: ${errors.join('; ')}`
+        }
+      };
+    }
+
+    // If no valid scores (all sections were empty or scored 0), return 0
     if (sectionScores.length === 0) {
       return {
         data: 0,
@@ -220,7 +247,7 @@ export async function judgeContentQuality(
       };
     }
 
-    // Average scores across sections
+    // Average scores across successful sections
     const averageQualityScore = Math.round(
       sectionScores.reduce((sum, score) => sum + score, 0) / sectionScores.length
     );

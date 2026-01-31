@@ -10,10 +10,10 @@
  * 5. Returning structured suggestions
  */
 
-import { ChatAnthropic } from '@langchain/anthropic';
 import { ActionResponse, OptimizationPreferences } from '@/types';
 import { SkillsSuggestion } from '@/types/suggestions';
 import { buildPreferencePrompt } from './preferences';
+import { getHaikuModel } from './models';
 
 // ============================================================================
 // MAIN FUNCTION
@@ -90,13 +90,8 @@ export async function generateSkillsSuggestion(
         : resumeContent
       : '';
 
-    // Initialize LLM
-    const model = new ChatAnthropic({
-      modelName: 'claude-3-5-haiku-20241022',
-      temperature: 0.3, // Slightly creative for finding relevant skills
-      maxTokens: 2500,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    // Get shared LLM model
+    const model = getHaikuModel({ temperature: 0.3, maxTokens: 2500 });
 
     // Build prompt with XML-wrapped user content (prompt injection defense)
     const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';

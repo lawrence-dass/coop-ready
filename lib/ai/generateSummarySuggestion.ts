@@ -9,11 +9,11 @@
  * 4. Returning structured suggestions
  */
 
-import { ChatAnthropic } from '@langchain/anthropic';
 import { ActionResponse, OptimizationPreferences } from '@/types';
 import { SummarySuggestion } from '@/types/suggestions';
 import { detectAITellPhrases } from './detectAITellPhrases';
 import { buildPreferencePrompt } from './preferences';
+import { getHaikuModel } from './models';
 
 // ============================================================================
 // MAIN FUNCTION
@@ -85,13 +85,8 @@ export async function generateSummarySuggestion(
     // Detect AI-tell phrases in original summary
     const originalAITellPhrases = detectAITellPhrases(processedSummary);
 
-    // Initialize LLM
-    const model = new ChatAnthropic({
-      modelName: 'claude-3-5-haiku-20241022',
-      temperature: 0.3, // Slightly creative for natural rewrites
-      maxTokens: 2000,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    // Get shared LLM model
+    const model = getHaikuModel({ temperature: 0.3, maxTokens: 2000 });
 
     // Build prompt with XML-wrapped user content (prompt injection defense)
     const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
