@@ -22,6 +22,7 @@ import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
 import { createClient } from '@/lib/supabase/server';
+import { getUserContext } from '@/lib/supabase/user-context';
 
 // ============================================================================
 // TYPES
@@ -133,19 +134,25 @@ export async function generateAllSuggestions(
 
     const usedFallback = effectiveSummary === resumeContent || effectiveSkills === resumeContent || effectiveExperience === resumeContent;
 
+    // Fetch user context for LLM personalization (gracefully handles missing data)
+    const userContextResult = await getUserContext();
+    const userContext = userContextResult.data ?? {};
+
     console.log(
       '[SS:generateAll] Starting suggestion generation for session:',
       sessionId.slice(0, 8) + '...',
       preferences ? `with preferences (tone: ${preferences.tone})` : 'with default preferences',
+      userContext.careerGoal ? `goal=${userContext.careerGoal}` : 'no goal',
+      userContext.targetIndustries?.length ? `industries=${userContext.targetIndustries.join(',')}` : 'no industries',
       usedFallback ? '(using full resume as fallback for missing sections)' : ''
     );
 
-    // Fire all 3 generation calls in parallel (Story 11.2: pass preferences)
+    // Fire all 3 generation calls in parallel (Story 11.2: pass preferences, userContext)
     const [summaryResult, skillsResult, experienceResult] =
       await Promise.allSettled([
-        generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences),
-        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences),
-        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences),
+        generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences, userContext),
+        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences, userContext),
+        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences, userContext),
       ]);
 
     // Extract results from settled promises

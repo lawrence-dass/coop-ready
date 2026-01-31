@@ -83,6 +83,34 @@ export type ModificationLevelPreference =
   | 'aggressive'; // 60-75% change - Full rewrite, significant reorganization
 
 // ============================================================================
+// USER CONTEXT INTERFACE
+// ============================================================================
+
+/**
+ * Career goal options from onboarding
+ */
+export type CareerGoal =
+  | 'first-job'
+  | 'switching-careers'
+  | 'advancing'
+  | 'promotion'
+  | 'returning';
+
+/**
+ * User context from onboarding for LLM personalization
+ *
+ * This provides additional context beyond OptimizationPreferences
+ * to help the LLM generate more personalized suggestions.
+ * Extracted from users.onboarding_answers JSONB column.
+ */
+export interface UserContext {
+  /** User's primary career goal from onboarding */
+  careerGoal?: CareerGoal | null;
+  /** Target industries from onboarding (multiple allowed) */
+  targetIndustries?: string[];
+}
+
+// ============================================================================
 // OPTIMIZATION PREFERENCES INTERFACE
 // ============================================================================
 

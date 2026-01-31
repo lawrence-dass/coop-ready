@@ -19,6 +19,7 @@ vi.mock('@/lib/ai/generateSummarySuggestion');
 vi.mock('@/lib/ai/generateSkillsSuggestion');
 vi.mock('@/lib/ai/generateExperienceSuggestion');
 vi.mock('@/lib/supabase/sessions');
+vi.mock('@/lib/supabase/user-context');
 
 describe('Preferences Pipeline Integration (11.2-AC2)', () => {
   const techSeniorPrefs: OptimizationPreferences = {
@@ -103,6 +104,7 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       '@/lib/ai/generateExperienceSuggestion'
     );
     const { updateSession } = await import('@/lib/supabase/sessions');
+    const { getUserContext } = await import('@/lib/supabase/user-context');
 
     vi.mocked(generateSummarySuggestion).mockResolvedValue({
       data: mockSummary,
@@ -117,11 +119,14 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       error: null,
     });
     vi.mocked(updateSession).mockResolvedValue({ data: null, error: null });
+    // Mock getUserContext to return empty context (graceful fallback)
+    vi.mocked(getUserContext).mockResolvedValue({ data: {}, error: null });
 
     return {
       generateSummarySuggestion,
       generateSkillsSuggestion,
       generateExperienceSuggestion,
+      getUserContext,
     };
   }
 
@@ -140,28 +145,31 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
     expect(result.error).toBeNull();
     expect(result.data).not.toBeNull();
 
-    // Verify preferences reached generateSummarySuggestion
+    // Verify preferences reached generateSummarySuggestion (now with 5th arg: userContext)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       baseRequest.resumeSummary,
       baseRequest.jobDescription,
       undefined, // keywords
-      techSeniorPrefs
+      techSeniorPrefs,
+      {} // userContext (empty from mock)
     );
 
-    // Verify preferences reached generateSkillsSuggestion
+    // Verify preferences reached generateSkillsSuggestion (now with 5th arg: userContext)
     expect(mocks.generateSkillsSuggestion).toHaveBeenCalledWith(
       baseRequest.resumeSkills,
       baseRequest.jobDescription,
       baseRequest.resumeContent,
-      techSeniorPrefs
+      techSeniorPrefs,
+      {} // userContext (empty from mock)
     );
 
-    // Verify preferences reached generateExperienceSuggestion
+    // Verify preferences reached generateExperienceSuggestion (now with 5th arg: userContext)
     expect(mocks.generateExperienceSuggestion).toHaveBeenCalledWith(
       baseRequest.resumeExperience,
       baseRequest.jobDescription,
       baseRequest.resumeContent,
-      techSeniorPrefs
+      techSeniorPrefs,
+      {} // userContext (empty from mock)
     );
   });
 
@@ -177,26 +185,29 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       preferences: casualEntryPrefs,
     });
 
-    // Verify the different preferences were passed through
+    // Verify the different preferences were passed through (with userContext)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
       undefined,
-      casualEntryPrefs
+      casualEntryPrefs,
+      {} // userContext (empty from mock)
     );
 
     expect(mocks.generateSkillsSuggestion).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
       expect.any(String),
-      casualEntryPrefs
+      casualEntryPrefs,
+      {} // userContext (empty from mock)
     );
 
     expect(mocks.generateExperienceSuggestion).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
       expect.any(String),
-      casualEntryPrefs
+      casualEntryPrefs,
+      {} // userContext (empty from mock)
     );
   });
 
@@ -212,12 +223,13 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       // No preferences field
     });
 
-    // Verify undefined/null is passed when no preferences
+    // Verify undefined/null is passed when no preferences (with userContext)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
       undefined,
-      undefined
+      undefined,
+      {} // userContext (empty from mock)
     );
   });
 
@@ -237,7 +249,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       expect.any(String),
       expect.any(String),
       undefined,
-      null
+      null,
+      {} // userContext (empty from mock)
     );
   });
 });
@@ -477,5 +490,143 @@ describe('Story 13.4: Precedence Rules (AC8)', () => {
     expect(prompt).toContain('entry');
     expect(prompt).toContain('full-time');
     expect(prompt).toContain('AGGRESSIVE');
+  });
+});
+
+/**
+ * User Context Integration Tests
+ * Tests that career goal and target industries from onboarding are passed to LLM
+ */
+describe('UserContext Integration', () => {
+  it('should include career goal in prompt when provided', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const prefs: OptimizationPreferences = {
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'mid',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
+    };
+
+    const promptWithGoal = buildPreferencePrompt(prefs, {
+      careerGoal: 'switching-careers',
+      targetIndustries: [],
+    });
+
+    expect(promptWithGoal).toContain('Career Goal');
+    expect(promptWithGoal).toContain('transitioning to a new career');
+    expect(promptWithGoal).toContain('transferable skills');
+  });
+
+  it('should include target industries in prompt when provided', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const prefs: OptimizationPreferences = {
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'mid',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
+    };
+
+    const promptWithIndustries = buildPreferencePrompt(prefs, {
+      careerGoal: null,
+      targetIndustries: ['technology', 'finance'],
+    });
+
+    expect(promptWithIndustries).toContain('Target Industries');
+    expect(promptWithIndustries).toContain('Technology');
+    expect(promptWithIndustries).toContain('Finance');
+  });
+
+  it('should include both career goal and target industries when provided', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const prefs: OptimizationPreferences = {
+      tone: 'technical',
+      verbosity: 'concise',
+      emphasis: 'keywords',
+      industry: 'tech',
+      experienceLevel: 'senior',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
+    };
+
+    const fullPrompt = buildPreferencePrompt(prefs, {
+      careerGoal: 'advancing',
+      targetIndustries: ['technology', 'finance', 'engineering'],
+    });
+
+    // Should have career goal section
+    expect(fullPrompt).toContain('Career Goal');
+    expect(fullPrompt).toContain('advancing in their current field');
+    expect(fullPrompt).toContain('growth trajectory');
+
+    // Should have target industries section
+    expect(fullPrompt).toContain('Target Industries');
+    expect(fullPrompt).toContain('Technology');
+    expect(fullPrompt).toContain('Finance');
+    expect(fullPrompt).toContain('Engineering');
+
+    // Original preferences should still be present
+    expect(fullPrompt).toContain('technical');
+    expect(fullPrompt).toContain('senior');
+  });
+
+  it('should not include career goal section when not provided', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const prefs: OptimizationPreferences = {
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'mid',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
+    };
+
+    const promptWithoutContext = buildPreferencePrompt(prefs);
+    const promptWithEmptyContext = buildPreferencePrompt(prefs, {});
+
+    expect(promptWithoutContext).not.toContain('Career Goal');
+    expect(promptWithoutContext).not.toContain('Target Industries');
+    expect(promptWithEmptyContext).not.toContain('Career Goal');
+    expect(promptWithEmptyContext).not.toContain('Target Industries');
+  });
+
+  it('should handle all career goal values correctly', async () => {
+    const { buildPreferencePrompt } = await import('@/lib/ai/preferences');
+
+    const prefs: OptimizationPreferences = {
+      tone: 'professional',
+      verbosity: 'detailed',
+      emphasis: 'impact',
+      industry: 'generic',
+      experienceLevel: 'mid',
+      jobType: 'fulltime',
+      modificationLevel: 'moderate',
+    };
+
+    const careerGoalExpectations: Record<string, string> = {
+      'first-job': 'first professional role',
+      'switching-careers': 'transitioning to a new career',
+      'advancing': 'advancing in their current field',
+      'promotion': 'seeking a promotion',
+      'returning': 'returning to the workforce',
+    };
+
+    for (const [goal, expectedText] of Object.entries(careerGoalExpectations)) {
+      const prompt = buildPreferencePrompt(prefs, {
+        careerGoal: goal as 'first-job' | 'switching-careers' | 'advancing' | 'promotion' | 'returning',
+        targetIndustries: [],
+      });
+      expect(prompt).toContain(expectedText);
+    }
   });
 });

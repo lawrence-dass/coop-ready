@@ -30,3 +30,6 @@ export {
   getSessionByAnonymousId,
   updateSession,
 } from './sessions';
+
+// User context for LLM personalization
+export { getUserContext } from './user-context';
