@@ -1,7 +1,7 @@
 // Story 5.1: LLM Keyword Matching in Resume
-import { ChatAnthropic } from '@langchain/anthropic';
 import { ActionResponse } from '@/types';
 import { ExtractedKeyword, MatchedKeyword, KeywordAnalysisResult } from '@/types/analysis';
+import { getHaikuModel } from './models';
 
 const MATCHING_TIMEOUT_MS = 20000; // 20 seconds budget for matching
 
@@ -52,13 +52,8 @@ export async function matchKeywords(
     }
 
     console.log('[SS:match] Matching', extractedKeywords.length, 'keywords against resume (' + resumeContent.length + ' chars)');
-    // Initialize LLM
-    const model = new ChatAnthropic({
-      modelName: 'claude-3-5-haiku-20241022',
-      temperature: 0,
-      maxTokens: 4000,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY
-    });
+    // Get shared LLM model
+    const model = getHaikuModel({ temperature: 0, maxTokens: 4000 });
 
     // Prompt with XML-wrapped user content (prompt injection defense)
     const matchingPrompt = `You are a resume optimization expert analyzing keyword matches.

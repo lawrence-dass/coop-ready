@@ -1,7 +1,7 @@
 // Story 5.1: LLM Keyword Extraction from Job Description
-import { ChatAnthropic } from '@langchain/anthropic';
 import { ActionResponse } from '@/types';
 import { ExtractedKeywords, ExtractedKeyword } from '@/types/analysis';
+import { getHaikuModel } from './models';
 
 const EXTRACTION_TIMEOUT_MS = 20000; // 20 seconds budget for extraction
 
@@ -46,13 +46,8 @@ export async function extractKeywords(
       ? jobDescription.substring(0, MAX_JD_LENGTH)
       : jobDescription;
 
-    // Initialize LLM
-    const model = new ChatAnthropic({
-      modelName: 'claude-3-5-haiku-20241022',
-      temperature: 0,
-      maxTokens: 2000,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY
-    });
+    // Get shared LLM model
+    const model = getHaikuModel({ temperature: 0, maxTokens: 2000 });
 
     // Prompt with XML-wrapped user content (prompt injection defense)
     const extractionPrompt = `You are a resume optimization expert analyzing job descriptions.
