@@ -17,6 +17,7 @@ interface User {
   email: string;
   createdAt: string;
   id: string;
+  emailVerified: boolean;
 }
 
 interface Preferences {
@@ -67,6 +68,7 @@ export function ClientSettingsPage({
           email={user.email}
           firstName={onboarding.firstName}
           lastName={onboarding.lastName}
+          emailVerified={user.emailVerified}
         />
 
         {/* Onboarding Selections (Editable) */}

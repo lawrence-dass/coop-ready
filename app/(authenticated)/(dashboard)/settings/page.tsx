@@ -51,7 +51,7 @@ export default async function SettingsPage() {
   // Note: Query by 'id' to match RLS policy (auth.uid() = id)
   const { data: userData } = await supabase
     .from('users')
-    .select('email, first_name, last_name, onboarding_answers')
+    .select('email, first_name, last_name, onboarding_answers, email_verified')
     .eq('id', user.id)
     .single();
 
@@ -77,6 +77,7 @@ export default async function SettingsPage() {
         email: userEmail,
         createdAt: user.created_at,
         id: user.id,
+        emailVerified: userData?.email_verified ?? false,
       }}
       preferences={userPreferences}
       privacyConsent={privacyConsent}
