@@ -14,6 +14,7 @@ import type {
   SummarySuggestion,
   SkillsSuggestion,
   ExperienceSuggestion,
+  EducationSuggestion,
 } from '@/types/suggestions';
 import type { ATSScore } from '@/types/analysis';
 
@@ -30,6 +31,7 @@ interface SessionData {
     summary?: SummarySuggestion[];
     skills?: SkillsSuggestion[];
     experience?: ExperienceSuggestion[];
+    education?: EducationSuggestion[];
   };
   preferences: any;
   anonymousId: string | null;
@@ -40,7 +42,7 @@ interface ClientSuggestionsPageProps {
   session: SessionData;
 }
 
-type SectionType = 'summary' | 'skills' | 'experience';
+type SectionType = 'summary' | 'skills' | 'experience' | 'education';
 
 export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
   const router = useRouter();
@@ -50,6 +52,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
   const summarySuggestions = session.suggestions.summary || [];
   const skillsSuggestions = session.suggestions.skills || [];
   const experienceSuggestions = session.suggestions.experience || [];
+  const educationSuggestions = session.suggestions.education || [];
 
   // Calculate total suggestions per section
   const summarySuggestionsCount = summarySuggestions.length;
@@ -61,13 +64,19 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
       return entryTotal + (entry.suggested_bullets?.length || 0);
     }, 0);
   }, 0);
+  const educationSuggestionsCount = educationSuggestions.reduce((total, eduSugg) => {
+    return total + eduSugg.education_entries.reduce((entryTotal, entry) => {
+      return entryTotal + (entry.suggested_bullets?.length || 0);
+    }, 0);
+  }, 0);
 
   // Calculate total potential points
   const summaryPoints = summarySuggestions.reduce((sum, s) => sum + (s.point_value || 0), 0);
   const skillsPoints = skillsSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
   const experiencePoints = experienceSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
+  const educationPoints = educationSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
 
-  const totalPotentialPoints = summaryPoints + skillsPoints + experiencePoints;
+  const totalPotentialPoints = summaryPoints + skillsPoints + experiencePoints + educationPoints;
   const originalScore = session.analysis?.score.overall || 0;
 
   const handleBackToResults = () => {
@@ -98,7 +107,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
           </CardHeader>
           <CardContent>
             <Tabs value={activeSection} onValueChange={(val) => setActiveSection(val as SectionType)}>
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="summary" className="relative">
                   Summary
                   {summarySuggestionsCount > 0 && (
@@ -120,6 +129,14 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                   {experienceSuggestionsCount > 0 && (
                     <Badge variant="secondary" className="ml-2">
                       {experienceSuggestionsCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="education" className="relative">
+                  Education
+                  {educationSuggestionsCount > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {educationSuggestionsCount}
                     </Badge>
                   )}
                 </TabsTrigger>
@@ -243,6 +260,68 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             keywords={bullet.keywords_incorporated}
                             metrics={bullet.metrics_added}
                             sectionType="experience"
+                            explanation={bullet.explanation}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </TabsContent>
+
+              {/* Education Section */}
+              <TabsContent value="education" className="mt-6 space-y-6">
+                <SectionSummaryCard
+                  sectionName="Education"
+                  suggestionCount={educationSuggestionsCount}
+                  potentialPoints={educationPoints}
+                  description="Highlight relevant coursework, academic projects, and achievements that align with the job requirements"
+                />
+
+                {educationSuggestionsCount === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No education suggestions available for this session.
+                  </div>
+                )}
+
+                {educationSuggestions.map((eduSugg, index) => (
+                  <div key={`education-${index}`} className="space-y-6">
+                    {eduSugg.education_entries.map((entry, entryIndex) => (
+                      <div key={`edu-entry-${index}-${entryIndex}`} className="space-y-4">
+                        {/* Entry header */}
+                        <div className="mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {entry.degree}
+                          </h3>
+                          <p className="text-sm text-gray-600">{entry.institution}</p>
+                          <p className="text-sm text-gray-500">
+                            {entry.dates}
+                            {entry.gpa && ` | GPA: ${entry.gpa}`}
+                          </p>
+                        </div>
+
+                        {/* Relevant coursework highlight */}
+                        {eduSugg.relevant_coursework && eduSugg.relevant_coursework.length > 0 && entryIndex === 0 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                            <p className="text-sm font-medium text-blue-800">
+                              Relevant Coursework to Highlight:
+                            </p>
+                            <p className="text-sm text-blue-700 mt-1">
+                              {eduSugg.relevant_coursework.join(', ')}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Suggested bullets */}
+                        {entry.suggested_bullets.map((bullet, bulletIndex) => (
+                          <SuggestionCard
+                            key={`edu-bullet-${index}-${entryIndex}-${bulletIndex}`}
+                            suggestionId={`sug_education_${index}_${entryIndex}_${bulletIndex}`}
+                            original={bullet.original || 'Add new detail'}
+                            suggested={bullet.suggested}
+                            points={bullet.point_value}
+                            keywords={bullet.keywords_incorporated}
+                            sectionType="education"
                             explanation={bullet.explanation}
                           />
                         ))}

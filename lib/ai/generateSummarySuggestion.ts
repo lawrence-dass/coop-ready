@@ -13,7 +13,7 @@
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { SummarySuggestion } from '@/types/suggestions';
 import { detectAITellPhrases } from './detectAITellPhrases';
-import { buildPreferencePrompt } from './preferences';
+import { buildPreferencePrompt, getJobTypeVerbGuidance, getJobTypeFramingGuidance } from './preferences';
 import { getHaikuModel } from './models';
 import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
@@ -44,7 +44,9 @@ Your task is to optimize a professional summary by incorporating relevant keywor
 {jobDescription}
 </job_description>
 
+{educationSection}
 {keywordsSection}
+{jobTypeGuidance}
 {preferenceSection}
 **Instructions:**
 1. Analyze the job description and identify 2-3 most relevant keywords that align with the summary
@@ -132,6 +134,7 @@ function createSummarySuggestionChain() {
  * @param keywords - Extracted keywords from JD (optional for context)
  * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
  * @param userContext - User context from onboarding (optional, for LLM personalization)
+ * @param resumeEducation - User's education section (optional, for co-op/internship context)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSummarySuggestion(
@@ -139,7 +142,8 @@ export async function generateSummarySuggestion(
   jobDescription: string,
   keywords?: string[],
   preferences?: OptimizationPreferences | null,
-  userContext?: UserContext
+  userContext?: UserContext,
+  resumeEducation?: string
 ): Promise<ActionResponse<SummarySuggestion>> {
   // Validation
   if (!resumeSummary || resumeSummary.trim().length === 0) {
@@ -179,9 +183,20 @@ export async function generateSummarySuggestion(
   const originalAITellPhrases = detectAITellPhrases(processedSummary);
 
   // Build conditional prompt sections
+  const educationSection = resumeEducation && resumeEducation.trim().length > 0
+    ? `<education_context>\n${resumeEducation}\n</education_context>\n`
+    : '';
+
   const keywordsSection = keywords && keywords.length > 0
     ? `<extracted_keywords>\n${keywords.join(', ')}\n</extracted_keywords>`
     : '';
+
+  // Build job-type-specific guidance (injected before general preferences for prominence)
+  const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
+  const jobTypeGuidance = preferences
+    ? `${getJobTypeVerbGuidance(preferences.jobType)}\n\n${getJobTypeFramingGuidance(preferences.jobType, 'summary', hasEducation)}\n\n`
+    : '';
+
   const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
 
   // Create and invoke LCEL chain
@@ -192,7 +207,9 @@ export async function generateSummarySuggestion(
       const parsed = await chain.invoke({
         summary: processedSummary,
         jobDescription: processedJD,
+        educationSection,
         keywordsSection,
+        jobTypeGuidance,
         preferenceSection,
       });
 

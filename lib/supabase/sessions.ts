@@ -35,6 +35,7 @@ import type {
   SummarySuggestion,
   SkillsSuggestion,
   ExperienceSuggestion,
+  EducationSuggestion,
 } from '@/types/suggestions';
 
 // ============================================================================
@@ -59,6 +60,7 @@ interface SessionRow {
   summary_suggestion: SummarySuggestion | null; // Story 6.2
   skills_suggestion: SkillsSuggestion | null; // Story 6.3
   experience_suggestion: ExperienceSuggestion | null; // Story 6.4
+  education_suggestion: EducationSuggestion | null; // Story 17.6: Education suggestions
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +87,7 @@ function toOptimizationSession(row: SessionRow): OptimizationSession {
     summarySuggestion: row.summary_suggestion,
     skillsSuggestion: row.skills_suggestion,
     experienceSuggestion: row.experience_suggestion,
+    educationSuggestion: row.education_suggestion, // Story 17.6: Education suggestions
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -224,6 +227,7 @@ export async function updateSession(
     summarySuggestion?: SummarySuggestion | null; // Story 6.2
     skillsSuggestion?: SkillsSuggestion | null; // Story 6.3
     experienceSuggestion?: ExperienceSuggestion | null; // Story 6.4
+    educationSuggestion?: EducationSuggestion | null; // Story 17.6: Education suggestions
   }
 ): Promise<ActionResponse<{ success: boolean }>> {
   const supabase = createClient();
@@ -274,6 +278,10 @@ export async function updateSession(
 
     if ('experienceSuggestion' in updates) {
       dbUpdates.experience_suggestion = updates.experienceSuggestion;
+    }
+
+    if ('educationSuggestion' in updates) {
+      dbUpdates.education_suggestion = updates.educationSuggestion;
     }
 
     const { error } = await supabase

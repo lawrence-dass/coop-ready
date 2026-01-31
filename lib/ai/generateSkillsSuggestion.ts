@@ -13,7 +13,7 @@
 
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { SkillsSuggestion } from '@/types/suggestions';
-import { buildPreferencePrompt } from './preferences';
+import { buildPreferencePrompt, getJobTypeFramingGuidance } from './preferences';
 import { getHaikuModel } from './models';
 import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
@@ -46,6 +46,8 @@ Your task is to analyze a skills section and optimize it for a specific job desc
 </job_description>
 
 {resumeSection}
+{educationSection}
+{jobTypeGuidance}
 {preferenceSection}
 **Instructions:**
 1. Extract all skills from the current skills section
@@ -148,6 +150,7 @@ function createSkillsSuggestionChain() {
  * @param resumeContent - Full resume content for context
  * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
  * @param userContext - User context from onboarding (optional, for LLM personalization)
+ * @param resumeEducation - User's education section (optional, for co-op/internship context)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSkillsSuggestion(
@@ -155,7 +158,8 @@ export async function generateSkillsSuggestion(
   jobDescription: string,
   resumeContent?: string,
   preferences?: OptimizationPreferences | null,
-  userContext?: UserContext
+  userContext?: UserContext,
+  resumeEducation?: string
 ): Promise<ActionResponse<SkillsSuggestion>> {
   // Validation
   if (!resumeSkills || resumeSkills.trim().length === 0) {
@@ -201,6 +205,17 @@ export async function generateSkillsSuggestion(
   const resumeSection = processedResume
     ? `<user_content>\n${processedResume}\n</user_content>`
     : '';
+
+  const educationSection = resumeEducation && resumeEducation.trim().length > 0
+    ? `<education_context>\nConsider coursework and academic projects when suggesting skills:\n${resumeEducation}\n</education_context>\n`
+    : '';
+
+  // Build job-type-specific guidance (injected before general preferences for prominence)
+  const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
+  const jobTypeGuidance = preferences
+    ? `${getJobTypeFramingGuidance(preferences.jobType, 'skills', hasEducation)}\n\n`
+    : '';
+
   const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
 
   // Create and invoke LCEL chain
@@ -212,6 +227,8 @@ export async function generateSkillsSuggestion(
         skills: processedSkills,
         jobDescription: processedJD,
         resumeSection,
+        educationSection,
+        jobTypeGuidance,
         preferenceSection,
       });
 

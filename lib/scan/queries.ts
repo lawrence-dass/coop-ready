@@ -15,6 +15,7 @@ interface SessionData {
     summary?: any[];
     skills?: any[];
     experience?: any[];
+    education?: any[];
   } | null;
   preferences: any;
   anonymousId: string | null;
@@ -97,14 +98,22 @@ export async function getSessionById(
     const summarySuggestion = data.summary_suggestion;
     const skillsSuggestion = data.skills_suggestion;
     const experienceSuggestion = data.experience_suggestion;
+    const educationSuggestion = data.education_suggestion;
 
     // Try to use the suggestions column first, otherwise build from individual columns
     let suggestions = data.suggestions;
-    if (!suggestions && (summarySuggestion || skillsSuggestion || experienceSuggestion)) {
+    if (!suggestions && (summarySuggestion || skillsSuggestion || experienceSuggestion || educationSuggestion)) {
       suggestions = {
         summary: summarySuggestion ? [summarySuggestion] : [],
         skills: skillsSuggestion ? [skillsSuggestion] : [],
         experience: experienceSuggestion ? [experienceSuggestion] : [],
+        education: educationSuggestion ? [educationSuggestion] : [],
+      };
+    } else if (suggestions && educationSuggestion && !suggestions.education) {
+      // Ensure education is added even if suggestions exists from other columns
+      suggestions = {
+        ...suggestions,
+        education: [educationSuggestion],
       };
     }
 
