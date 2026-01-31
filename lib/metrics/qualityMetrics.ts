@@ -156,7 +156,7 @@ function calculateFailureBreakdown(results: JudgeResult[]): FailureBreakdown {
  */
 export function collectQualityMetrics(
   results: JudgeResult[],
-  section: 'summary' | 'skills' | 'experience',
+  section: 'summary' | 'skills' | 'experience' | 'education' | 'all',
   optimizationId: string
 ): QualityMetricLog {
   const passed = results.filter((r) => r.passed).length;

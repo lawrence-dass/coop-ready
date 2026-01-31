@@ -59,8 +59,8 @@ export interface QualityMetricLog {
   /** Unique identifier for this optimization */
   optimization_id: string;
 
-  /** Section type (summary, skills, experience) */
-  section: 'summary' | 'skills' | 'experience';
+  /** Section type (summary, skills, experience, education, or 'all' for combined) */
+  section: 'summary' | 'skills' | 'experience' | 'education' | 'all';
 
   /** Total suggestions evaluated */
   total_evaluated: number;
