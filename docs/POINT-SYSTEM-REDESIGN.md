@@ -241,15 +241,25 @@ function calculatePriorityScore(
 
 ## Implementation Phases
 
-### Phase 1: Transparency (Quick Win)
-- Update `ScoreComparisonSection` to show both raw and achievable points
-- Add explanation text for the 100 cap
+### Phase 1: Transparency (Quick Win) ✅ IMPLEMENTED
+- ✅ Update `ScoreComparisonSection` to show both raw and achievable points
+- ✅ Add explanation text for the 100 cap (info tooltip + blue banner)
+- ✅ Added "Maximum ATS Score Achievable!" celebration badge
+- ✅ Replaced percentage with qualitative labels ("Significant improvement", "Solid improvement", etc.)
 - No algorithm changes, just UI clarity
 
-### Phase 2: Proportional Points
-- Calculate effective points per section
-- Update `SectionSummaryCard` to show effective (not raw) points
-- Numbers now add up correctly
+### Phase 2: Proportional Points ✅ IMPLEMENTED
+- ✅ Calculate effective points per section using formula: `(rawPoints / totalRawPoints) * achievableGain`
+- ✅ Update `SectionSummaryCard` to show effective (not raw) points
+- ✅ Numbers now add up correctly to the achievable gain
+
+### Phase 2.5: Impact Tiers for Individual Suggestions ✅ IMPLEMENTED
+- ✅ Replace false-precision point values (+6, +5, +4 pts) with qualitative impact tiers
+- ✅ Three tiers: **Critical** (🔴 Required in JD), **High** (🟠 Strongly desired), **Moderate** (🟢 Nice-to-have)
+- ✅ Updated all LLM prompts (Summary, Skills, Experience, Education) to output `impact` field
+- ✅ Updated `SuggestionCard` UI to show colored impact badges
+- ✅ Section-level `total_point_value` preserved for proportional calculations
+- ✅ Backward compatible: falls back to points display if no impact tier
 
 ### Phase 3: Priority System
 - Implement priority weights by job type
@@ -320,3 +330,4 @@ function calculatePriorityScore(
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-01-31 | Claude | Initial draft |
+| 1.1 | 2026-01-31 | Claude | Phase 1+2 implemented: Transparency + Proportional Points |

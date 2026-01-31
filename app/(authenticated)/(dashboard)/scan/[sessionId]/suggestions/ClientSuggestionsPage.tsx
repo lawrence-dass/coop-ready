@@ -70,14 +70,33 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
     }, 0);
   }, 0);
 
-  // Calculate total potential points
-  const summaryPoints = summarySuggestions.reduce((sum, s) => sum + (s.point_value || 0), 0);
-  const skillsPoints = skillsSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
-  const experiencePoints = experienceSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
-  const educationPoints = educationSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
+  // Calculate raw potential points per section
+  const summaryRawPoints = summarySuggestions.reduce((sum, s) => sum + (s.point_value || 0), 0);
+  const skillsRawPoints = skillsSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
+  const experienceRawPoints = experienceSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
+  const educationRawPoints = educationSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
 
-  const totalPotentialPoints = summaryPoints + skillsPoints + experiencePoints + educationPoints;
+  const totalRawPoints = summaryRawPoints + skillsRawPoints + experienceRawPoints + educationRawPoints;
   const originalScore = session.analysis?.score.overall || 0;
+
+  // Calculate achievable gain (capped at 100)
+  const projectedScore = Math.min(originalScore + totalRawPoints, 100);
+  const achievableGain = projectedScore - originalScore;
+
+  // Calculate effective (proportional) points per section
+  // Formula: effectivePoints = (rawPoints / totalRawPoints) * achievableGain
+  const calculateEffectivePoints = (rawPoints: number): number => {
+    if (totalRawPoints === 0) return 0;
+    return Math.round((rawPoints / totalRawPoints) * achievableGain);
+  };
+
+  const summaryEffectivePoints = calculateEffectivePoints(summaryRawPoints);
+  const skillsEffectivePoints = calculateEffectivePoints(skillsRawPoints);
+  const experienceEffectivePoints = calculateEffectivePoints(experienceRawPoints);
+  const educationEffectivePoints = calculateEffectivePoints(educationRawPoints);
+
+  // For backward compatibility with ScoreComparisonSection
+  const totalPotentialPoints = totalRawPoints;
 
   const handleBackToResults = () => {
     router.push(ROUTES.APP.SCAN.SESSION(session.id));
@@ -147,7 +166,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                 <SectionSummaryCard
                   sectionName="Summary"
                   suggestionCount={summarySuggestionsCount}
-                  potentialPoints={summaryPoints}
+                  potentialPoints={summaryEffectivePoints}
                   description="Optimize your professional summary with targeted keywords and compelling language"
                 />
 
@@ -164,6 +183,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                     original={suggestion.original}
                     suggested={suggestion.suggested}
                     points={suggestion.point_value}
+                    impact={suggestion.impact}
                     keywords={suggestion.ats_keywords_added}
                     sectionType="summary"
                     explanation={suggestion.explanation}
@@ -176,7 +196,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                 <SectionSummaryCard
                   sectionName="Skills"
                   suggestionCount={skillsSuggestionsCount}
-                  potentialPoints={skillsPoints}
+                  potentialPoints={skillsEffectivePoints}
                   description="Add relevant skills from the job description to improve keyword matching"
                 />
 
@@ -211,6 +231,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             original="Not currently listed in your skills"
                             suggested={`Add: ${skillItem.skill}`}
                             points={skillItem.point_value}
+                            impact={skillItem.impact}
                             keywords={[skillItem.skill]}
                             sectionType="skills"
                             explanation={skillItem.reason}
@@ -227,7 +248,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                 <SectionSummaryCard
                   sectionName="Experience"
                   suggestionCount={experienceSuggestionsCount}
-                  potentialPoints={experiencePoints}
+                  potentialPoints={experienceEffectivePoints}
                   description="Enhance your work experience with quantified achievements and relevant keywords"
                 />
 
@@ -257,6 +278,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             original={bullet.original}
                             suggested={bullet.suggested}
                             points={bullet.point_value}
+                            impact={bullet.impact}
                             keywords={bullet.keywords_incorporated}
                             metrics={bullet.metrics_added}
                             sectionType="experience"
@@ -274,7 +296,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                 <SectionSummaryCard
                   sectionName="Education"
                   suggestionCount={educationSuggestionsCount}
-                  potentialPoints={educationPoints}
+                  potentialPoints={educationEffectivePoints}
                   description="Highlight relevant coursework, academic projects, and achievements that align with the job requirements"
                 />
 
@@ -320,6 +342,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             original={bullet.original || 'Add new detail'}
                             suggested={bullet.suggested}
                             points={bullet.point_value}
+                            impact={bullet.impact}
                             keywords={bullet.keywords_incorporated}
                             sectionType="education"
                             explanation={bullet.explanation}

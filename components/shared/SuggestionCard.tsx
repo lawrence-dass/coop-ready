@@ -11,6 +11,31 @@ import { useOptimizationStore } from '@/store/useOptimizationStore';
 import { toast } from 'sonner';
 import { Lightbulb } from 'lucide-react';
 
+/** Impact tier type */
+type ImpactTier = 'critical' | 'high' | 'moderate';
+
+/** Impact tier display configuration */
+const IMPACT_TIER_CONFIG = {
+  critical: {
+    label: 'Critical',
+    description: 'Required in job description',
+    bgColor: 'bg-red-500',
+    textColor: 'text-white',
+  },
+  high: {
+    label: 'High',
+    description: 'Strongly desired',
+    bgColor: 'bg-orange-500',
+    textColor: 'text-white',
+  },
+  moderate: {
+    label: 'Moderate',
+    description: 'Nice-to-have',
+    bgColor: 'bg-green-500',
+    textColor: 'text-white',
+  },
+} as const;
+
 export interface SuggestionCardProps {
   /** Unique ID for this suggestion */
   suggestionId: string;
@@ -21,8 +46,11 @@ export interface SuggestionCardProps {
   /** Suggested optimized text */
   suggested: string;
 
-  /** Point impact (optional) */
+  /** Point impact (optional) - deprecated, use impact instead */
   points?: number;
+
+  /** Impact tier (optional) - replaces points for display */
+  impact?: ImpactTier;
 
   /** Keywords incorporated (optional) */
   keywords?: string[];
@@ -55,6 +83,7 @@ export function SuggestionCard({
   original,
   suggested,
   points,
+  impact,
   keywords = [],
   metrics = [],
   sectionType,
@@ -90,25 +119,44 @@ export function SuggestionCard({
       className={cn('shadow-sm border-gray-200', className)}
     >
       <CardContent className="p-6">
-        {/* Point Badge with color coding: 1-3 gray, 4-7 blue, 8+ green */}
-        {points !== undefined && (
+        {/* Impact Badge - shows tier instead of points for clearer prioritization */}
+        {(impact || points !== undefined) && (
           <div className="mb-4">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge
-                  variant="default"
-                  className={cn(
-                    'text-white',
-                    points <= 3 && 'bg-gray-500',
-                    points >= 4 && points <= 7 && 'bg-blue-600',
-                    points >= 8 && 'bg-green-600'
-                  )}
-                  aria-label={`Estimated ${points} point ATS score improvement`}
-                >
-                  +{points} pts
-                </Badge>
+                {impact ? (
+                  <Badge
+                    variant="default"
+                    className={cn(
+                      IMPACT_TIER_CONFIG[impact].bgColor,
+                      IMPACT_TIER_CONFIG[impact].textColor
+                    )}
+                    aria-label={`${IMPACT_TIER_CONFIG[impact].label} impact: ${IMPACT_TIER_CONFIG[impact].description}`}
+                  >
+                    {IMPACT_TIER_CONFIG[impact].label}
+                  </Badge>
+                ) : (
+                  // Fallback to points display for backward compatibility
+                  <Badge
+                    variant="default"
+                    className={cn(
+                      'text-white',
+                      points! <= 3 && 'bg-gray-500',
+                      points! >= 4 && points! <= 7 && 'bg-blue-600',
+                      points! >= 8 && 'bg-green-600'
+                    )}
+                    aria-label={`Estimated ${points} point ATS score improvement`}
+                  >
+                    +{points} pts
+                  </Badge>
+                )}
               </TooltipTrigger>
-              <TooltipContent>Estimated point gain if you apply this suggestion</TooltipContent>
+              <TooltipContent>
+                {impact
+                  ? IMPACT_TIER_CONFIG[impact].description
+                  : 'Estimated point gain if you apply this suggestion'
+                }
+              </TooltipContent>
             </Tooltip>
           </div>
         )}

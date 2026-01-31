@@ -55,16 +55,20 @@ Your task is to analyze a skills section and optimize it for a specific job desc
 3. Find skills from the JD that are missing but relevant based on the user's experience
 4. Suggest specific skills to add (only if user has experience with them based on resume)
 5. Identify skills that might be less relevant for this role (if any)
-6. Calculate point values for each missing skill addition
+6. Assign an impact tier to each missing skill (critical/high/moderate)
 7. Provide a brief summary with total point value
 8. Include a 1-2 sentence explanation of why these skills matter for this role (reference specific JD keywords)
 
-**Point Value Calculation:**
-For each missing skill addition, estimate point impact:
-- High-priority skill explicitly in JD = 4-7 points
-- Medium-priority skill related to JD = 2-4 points
-- Nice-to-have skill tangentially related = 1-2 points
-- Skills section has moderate impact (not as high as experience bullets)
+**Impact Tier Assignment:**
+For each missing skill, assign an impact tier:
+- "critical" = Explicitly required in job description (e.g., listed as "Required" or "Must have")
+- "high" = Strongly desired or mentioned multiple times in JD
+- "moderate" = Nice-to-have or tangentially related to the role
+
+Also assign a point_value for section-level calculations:
+- critical = 5-7 points
+- high = 3-4 points
+- moderate = 1-2 points
 
 Total point value = sum of all skill additions. Realistic range: 10-25 points for skills section.
 
@@ -74,7 +78,7 @@ Total point value = sum of all skill additions. Realistic range: 10-25 points fo
 - Do NOT suggest skills unrelated to the job description
 - Skills can be technical (languages, frameworks), tools (AWS, Docker), or soft skills (Leadership)
 - Be specific with skill names (e.g., "React.js" not just "front-end")
-- Point values must be realistic and conservative
+- Impact tiers must accurately reflect JD emphasis
 - Explanation must connect suggestion to specific JD keywords (not generic phrases)
 - Keep explanation concise (1-2 sentences, max 300 chars)
 
@@ -83,14 +87,14 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
   "existing_skills": ["skill1", "skill2"],
   "matched_keywords": ["matched_skill1", "matched_skill2"],
   "missing_but_relevant": [
-    {{ "skill": "Docker", "reason": "Job requires containerization; you have DevOps experience", "point_value": 5 }}
+    {{ "skill": "Docker", "reason": "Job requires containerization; you have DevOps experience", "impact": "critical", "point_value": 6 }}
   ],
   "skill_additions": ["Docker", "Kubernetes"],
   "skill_removals": [
     {{ "skill": "SkillName", "reason": "Lower priority for this role" }}
   ],
   "total_point_value": 12,
-  "summary": "You have 8/12 key skills. Consider adding Docker and Kubernetes based on your DevOps background. Total improvement: +12 points.",
+  "summary": "You have 8/12 key skills. Consider adding Docker and Kubernetes based on your DevOps background.",
   "explanation": "Docker and Kubernetes are explicitly listed in the JD's 'Required Skills' section and align with your DevOps background."
 }}`);
 
@@ -101,7 +105,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 interface SkillsLLMResponse {
   existing_skills: string[];
   matched_keywords: string[];
-  missing_but_relevant: Array<{ skill: string; reason: string; point_value?: number }>;
+  missing_but_relevant: Array<{ skill: string; reason: string; impact?: string; point_value?: number }>;
   skill_additions: string[];
   skill_removals: Array<{ skill: string; reason: string }>;
   total_point_value?: number;
@@ -249,11 +253,12 @@ export async function generateSkillsSuggestion(
         throw new Error('Invalid summary structure from LLM');
       }
 
-      // Normalize missing_but_relevant items to ensure { skill, reason, point_value } structure
+      // Normalize missing_but_relevant items to ensure { skill, reason, impact, point_value } structure
+      const validImpactTiers = ['critical', 'high', 'moderate'];
       const normalizedMissing = Array.isArray(parsed.missing_but_relevant)
         ? parsed.missing_but_relevant.map((item) => {
             if (typeof item === 'string') {
-              return { skill: item, reason: '', point_value: undefined };
+              return { skill: item, reason: '', impact: undefined, point_value: undefined };
             }
             const pointValue = item.point_value;
             // Validate point_value if present
@@ -261,9 +266,14 @@ export async function generateSkillsSuggestion(
               typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
                 ? pointValue
                 : undefined;
+            // Validate impact tier if present
+            const validImpact = item.impact && validImpactTiers.includes(item.impact)
+              ? item.impact as 'critical' | 'high' | 'moderate'
+              : undefined;
             return {
               skill: String(item.skill || ''),
               reason: String(item.reason || ''),
+              impact: validImpact,
               point_value: validPointValue
             };
           })

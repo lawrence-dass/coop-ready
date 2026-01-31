@@ -2,13 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, ArrowRight } from 'lucide-react';
+import { TrendingUp, ArrowRight, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ScoreComparisonSectionProps {
   /** Original ATS score before optimization */
   originalScore: number;
 
-  /** Total potential points if all suggestions applied */
+  /** Total raw potential points if all suggestions applied */
   potentialPoints: number;
 }
 
@@ -17,8 +18,10 @@ interface ScoreComparisonSectionProps {
  *
  * Displays before/after ATS score comparison with improvement delta.
  * Shows visual indicators for score improvement potential.
+ * Transparently explains when score is capped at 100.
  *
  * Story 16.5: Implement Suggestions Page (AC#5)
+ * Updated: Phase 1 - Transparency for point system redesign
  */
 export function ScoreComparisonSection({
   originalScore,
@@ -26,10 +29,16 @@ export function ScoreComparisonSection({
 }: ScoreComparisonSectionProps) {
   // Calculate projected score (capped at 100)
   const projectedScore = Math.min(originalScore + potentialPoints, 100);
-  const improvementDelta = projectedScore - originalScore;
-  const improvementPercentage = originalScore > 0
-    ? ((improvementDelta / originalScore) * 100).toFixed(1)
-    : '0';
+  const achievableGain = projectedScore - originalScore;
+  const isCapped = originalScore + potentialPoints > 100;
+
+  // Qualitative improvement label (avoids false precision)
+  const getImprovementLabel = (gain: number, isMax: boolean): string => {
+    if (isMax) return 'Maximum score achievable!';
+    if (gain >= 20) return 'Significant improvement';
+    if (gain >= 10) return 'Solid improvement';
+    return 'Fine-tuning adjustments';
+  };
 
   // Color coding based on original score
   const getScoreColor = (score: number) => {
@@ -44,6 +53,9 @@ export function ScoreComparisonSection({
     if (delta >= 10) return 'text-blue-600';
     return 'text-gray-600';
   };
+
+  // Determine if reaching maximum score
+  const isMaxScore = projectedScore === 100;
 
   return (
     <Card className="border-2 border-blue-100 bg-blue-50/50">
@@ -103,21 +115,52 @@ export function ScoreComparisonSection({
 
           {/* Improvement Delta */}
           <div className="flex flex-col items-center md:ml-8">
-            <p className="text-sm font-medium text-gray-600 mb-2">Potential Gain</p>
-            <div className={`text-5xl font-bold ${getDeltaColor(improvementDelta)}`}>
-              +{improvementDelta}
+            <p className="text-sm font-medium text-gray-600 mb-2">
+              Achievable Gain
+              {isCapped && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="inline-block w-3.5 h-3.5 ml-1 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Your suggestions total +{potentialPoints} pts, but ATS scores cap at 100. You&apos;re reaching the maximum!</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </p>
+            <div className={`text-5xl font-bold ${getDeltaColor(achievableGain)}`}>
+              +{achievableGain}
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              ({improvementPercentage}% improvement)
+              {getImprovementLabel(achievableGain, projectedScore === 100)}
             </p>
           </div>
         </div>
 
+        {/* Transparency Message - shows when capped */}
+        {isCapped && (
+          <div className="mt-4 flex items-center justify-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg py-2 px-4">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            <span>
+              Total suggestion value: <strong>+{potentialPoints} pts</strong> → Achievable: <strong>+{achievableGain} pts</strong> (max score is 100)
+            </span>
+          </div>
+        )}
+
+        {/* Maximum Score Celebration */}
+        {isMaxScore && (
+          <div className="mt-4 text-center">
+            <Badge className="bg-green-600 text-white px-4 py-1">
+              🎯 Maximum ATS Score Achievable!
+            </Badge>
+          </div>
+        )}
+
         {/* Call-to-Action Message */}
-        <div className="mt-6 text-center">
+        <div className="mt-4 text-center">
           <p className="text-sm text-gray-700">
             <span className="font-semibold">
-              Apply the suggestions above to improve your ATS score by up to {improvementDelta} points.
+              Apply the suggestions below to improve your ATS score{isMaxScore ? ' to the maximum' : ` by up to ${achievableGain} points`}.
             </span>
           </p>
           <p className="text-xs text-gray-500 mt-1">
