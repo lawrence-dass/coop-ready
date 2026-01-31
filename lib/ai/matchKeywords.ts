@@ -1,25 +1,75 @@
 // Story 5.1: LLM Keyword Matching in Resume
+// Phase 2: LCEL migration
 import { ActionResponse } from '@/types';
 import { ExtractedKeyword, MatchedKeyword, KeywordAnalysisResult } from '@/types/analysis';
 import { getHaikuModel } from './models';
+import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
 const MATCHING_TIMEOUT_MS = 20000; // 20 seconds budget for matching
 
 /**
- * Helper to wrap a promise with a timeout
+ * Prompt template for keyword matching
+ * Uses XML-wrapped user content for prompt injection defense
  */
-function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`timeout: ${errorMessage}`)), ms)
-    )
-  ]);
+const matchingPrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert analyzing keyword matches.
+
+Find which of these keywords appear in the resume. Use semantic matching (e.g., "JavaScript" matches "JS", "React.js" matches "React", "team leadership" matches "led teams").
+
+<keywords>
+{keywords}
+</keywords>
+
+<resume_content>
+{resumeContent}
+</resume_content>
+
+For each keyword:
+- found: true/false
+- context: exact phrase from resume where found (if found, max 100 chars)
+- matchType: "exact" (exact string match), "fuzzy" (abbreviation/variation), or "semantic" (similar meaning)
+
+Return ONLY valid JSON in this exact format (no markdown, no explanations):
+{{
+  "matches": [
+    {{
+      "keyword": "Python",
+      "category": "technologies",
+      "found": true,
+      "context": "Developed data pipelines using Python and pandas",
+      "matchType": "exact"
+    }},
+    {{
+      "keyword": "Docker",
+      "category": "technologies",
+      "found": false,
+      "matchType": "exact"
+    }}
+  ]
+}}`);
+
+/**
+ * Response type from LLM
+ */
+interface MatchingResponse {
+  matches: MatchedKeyword[];
+}
+
+/**
+ * Create the LCEL chain for keyword matching
+ * Chain: prompt → model → jsonParser
+ */
+function createKeywordMatchingChain() {
+  const model = getHaikuModel({ temperature: 0, maxTokens: 4000 });
+  const jsonParser = createJsonParser<MatchingResponse>();
+
+  return matchingPrompt.pipe(model).pipe(jsonParser);
 }
 
 /**
  * Match extracted keywords against resume content using semantic LLM matching.
  * Supports exact, fuzzy, and semantic matches.
+ *
+ * Uses LCEL chain composition for better observability and composability.
  *
  * @param resumeContent - Parsed resume text
  * @param extractedKeywords - Keywords from job description
@@ -29,167 +79,78 @@ export async function matchKeywords(
   resumeContent: string,
   extractedKeywords: ExtractedKeyword[]
 ): Promise<ActionResponse<KeywordAnalysisResult>> {
-  try {
-    // Validation
-    if (!resumeContent || resumeContent.trim().length === 0) {
-      return {
-        data: null,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Resume content is required'
-        }
-      };
-    }
+  // Validation
+  if (!resumeContent || resumeContent.trim().length === 0) {
+    return {
+      data: null,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Resume content is required'
+      }
+    };
+  }
 
-    if (!extractedKeywords || extractedKeywords.length === 0) {
-      return {
-        data: null,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'No keywords to match'
-        }
-      };
-    }
+  if (!extractedKeywords || extractedKeywords.length === 0) {
+    return {
+      data: null,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'No keywords to match'
+      }
+    };
+  }
 
-    console.log('[SS:match] Matching', extractedKeywords.length, 'keywords against resume (' + resumeContent.length + ' chars)');
-    // Get shared LLM model
-    const model = getHaikuModel({ temperature: 0, maxTokens: 4000 });
+  console.log('[SS:match] Matching', extractedKeywords.length, 'keywords against resume (' + resumeContent.length + ' chars)');
 
-    // Prompt with XML-wrapped user content (prompt injection defense)
-    const matchingPrompt = `You are a resume optimization expert analyzing keyword matches.
+  // Create and invoke LCEL chain
+  const chain = createKeywordMatchingChain();
 
-Find which of these keywords appear in the resume. Use semantic matching (e.g., "JavaScript" matches "JS", "React.js" matches "React", "team leadership" matches "led teams").
+  console.log('[SS:match] Invoking LCEL chain (claude-haiku)...');
 
-<keywords>
-${JSON.stringify(extractedKeywords)}
-</keywords>
-
-<resume_content>
-${resumeContent}
-</resume_content>
-
-For each keyword:
-- found: true/false
-- context: exact phrase from resume where found (if found, max 100 chars)
-- matchType: "exact" (exact string match), "fuzzy" (abbreviation/variation), or "semantic" (similar meaning)
-
-Return ONLY valid JSON in this exact format (no markdown, no explanations):
-{
-  "matches": [
-    {
-      "keyword": "Python",
-      "category": "technologies",
-      "found": true,
-      "context": "Developed data pipelines using Python and pandas",
-      "matchType": "exact"
-    },
-    {
-      "keyword": "Docker",
-      "category": "technologies",
-      "found": false,
-      "matchType": "exact"
-    }
-  ]
-}`;
-
-    // Invoke LLM with timeout enforcement
-    console.log('[SS:match] Calling LLM (claude-haiku-4)...');
-    const response = await withTimeout(
-      model.invoke(matchingPrompt),
-      MATCHING_TIMEOUT_MS,
-      'Keyword matching timed out'
-    );
-    const content = response.content as string;
-    console.log('[SS:match] LLM responded, content length:', content.length);
-
-    // Parse JSON response
-    let parsed: { matches: MatchedKeyword[] };
-    try {
-      parsed = JSON.parse(content);
-    } catch (parseError) {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Failed to parse LLM response'
-        }
-      };
-    }
-
-    // Validate structure
-    if (!parsed.matches || !Array.isArray(parsed.matches)) {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Invalid match structure from LLM'
-        }
-      };
-    }
-
-    // Split into matched and missing
-    const matched = parsed.matches.filter(m => m.found);
-    const missing = parsed.matches
-      .filter(m => !m.found)
-      .map(m => {
-        // Find original keyword for importance
-        const original = extractedKeywords.find(k => k.keyword === m.keyword);
-        return {
-          keyword: m.keyword,
-          category: m.category,
-          importance: original?.importance || 'medium'
-        } as ExtractedKeyword;
+  const result = await invokeWithActionResponse(
+    async () => {
+      const response = await chain.invoke({
+        keywords: JSON.stringify(extractedKeywords),
+        resumeContent
       });
 
-    // Calculate match rate
-    const totalKeywords = extractedKeywords.length;
-    const matchedCount = matched.length;
-    const matchRate = totalKeywords > 0
-      ? Math.round((matchedCount / totalKeywords) * 100)
-      : 0;
+      // Validate structure
+      if (!response.matches || !Array.isArray(response.matches)) {
+        throw new Error('Invalid match structure from LLM');
+      }
 
-    // Return results
-    console.log('[SS:match] Match complete:', matched.length, 'matched,', missing.length, 'missing, rate:', matchRate + '%');
-    return {
-      data: {
+      // Split into matched and missing
+      const matched = response.matches.filter(m => m.found);
+      const missing = response.matches
+        .filter(m => !m.found)
+        .map(m => {
+          // Find original keyword for importance
+          const original = extractedKeywords.find(k => k.keyword === m.keyword);
+          return {
+            keyword: m.keyword,
+            category: m.category,
+            importance: original?.importance || 'medium'
+          } as ExtractedKeyword;
+        });
+
+      // Calculate match rate
+      const totalKeywords = extractedKeywords.length;
+      const matchedCount = matched.length;
+      const matchRate = totalKeywords > 0
+        ? Math.round((matchedCount / totalKeywords) * 100)
+        : 0;
+
+      console.log('[SS:match] Match complete:', matched.length, 'matched,', missing.length, 'missing, rate:', matchRate + '%');
+
+      return {
         matched,
         missing,
         matchRate,
         analyzedAt: new Date().toISOString()
-      },
-      error: null
-    };
-
-  } catch (error: unknown) {
-    // Handle timeout
-    if (error instanceof Error && error.message.includes('timeout')) {
-      return {
-        data: null,
-        error: {
-          code: 'LLM_TIMEOUT',
-          message: 'Keyword matching timed out. Please try again.'
-        }
       };
-    }
+    },
+    { timeoutMs: MATCHING_TIMEOUT_MS }
+  );
 
-    // Handle rate limiting
-    if (error instanceof Error && error.message.toLowerCase().includes('rate limit')) {
-      return {
-        data: null,
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'API rate limit exceeded. Please wait and try again.'
-        }
-      };
-    }
-
-    // Generic LLM error
-    return {
-      data: null,
-      error: {
-        code: 'LLM_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to match keywords'
-      }
-    };
-  }
+  return result;
 }

@@ -1,6 +1,7 @@
 /**
  * Summary Suggestion Generation
  * Story 6.2: Generate optimized professional summary suggestions
+ * Phase 2: LCEL migration
  *
  * Uses Claude LLM to reframe user's resume summary by:
  * 1. Incorporating relevant keywords from job description
@@ -14,97 +15,37 @@ import { SummarySuggestion } from '@/types/suggestions';
 import { detectAITellPhrases } from './detectAITellPhrases';
 import { buildPreferencePrompt } from './preferences';
 import { getHaikuModel } from './models';
+import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
 // ============================================================================
-// MAIN FUNCTION
+// CONSTANTS
+// ============================================================================
+
+const MAX_SUMMARY_LENGTH = 1000;
+const MAX_JD_LENGTH = 3000;
+
+// ============================================================================
+// PROMPT TEMPLATE
 // ============================================================================
 
 /**
- * Generate optimized summary suggestion using Claude LLM
- *
- * **Features:**
- * - Incorporates 2-3 relevant keywords from JD
- * - Reframes existing experience (no fabrication)
- * - Detects AI-tell phrases in original and suggested
- * - Applies user optimization preferences
- * - Returns structured ActionResponse
- *
- * **Security:**
- * - User content wrapped in XML tags (prompt injection defense)
- * - Server-side only (never expose API key to client)
- *
- * @param resumeSummary - User's current professional summary
- * @param jobDescription - Job description text
- * @param keywords - Extracted keywords from JD (optional for context)
- * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
- * @returns ActionResponse with suggestion or error
+ * Prompt template for summary suggestion
+ * Uses XML-wrapped user content for prompt injection defense
  */
-export async function generateSummarySuggestion(
-  resumeSummary: string,
-  jobDescription: string,
-  keywords?: string[],
-  preferences?: OptimizationPreferences | null
-): Promise<ActionResponse<SummarySuggestion>> {
-  try {
-    console.log('[SS:genSummary] Generating summary suggestion (' + resumeSummary?.length + ' chars summary, ' + jobDescription?.length + ' chars JD)');
-    // Validation
-    if (!resumeSummary || resumeSummary.trim().length === 0) {
-      return {
-        data: null,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Resume summary is required',
-        },
-      };
-    }
-
-    if (!jobDescription || jobDescription.trim().length === 0) {
-      return {
-        data: null,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Job description is required',
-        },
-      };
-    }
-
-    // Truncate very long inputs to avoid timeout
-    const MAX_SUMMARY_LENGTH = 1000;
-    const MAX_JD_LENGTH = 3000;
-
-    const processedSummary =
-      resumeSummary.length > MAX_SUMMARY_LENGTH
-        ? resumeSummary.substring(0, MAX_SUMMARY_LENGTH)
-        : resumeSummary;
-
-    const processedJD =
-      jobDescription.length > MAX_JD_LENGTH
-        ? jobDescription.substring(0, MAX_JD_LENGTH)
-        : jobDescription;
-
-    // Detect AI-tell phrases in original summary
-    const originalAITellPhrases = detectAITellPhrases(processedSummary);
-
-    // Get shared LLM model
-    const model = getHaikuModel({ temperature: 0.3, maxTokens: 2000 });
-
-    // Build prompt with XML-wrapped user content (prompt injection defense)
-    const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
-
-    const prompt = `You are a resume optimization expert specializing in professional summaries.
+const summaryPrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert specializing in professional summaries.
 
 Your task is to optimize a professional summary by incorporating relevant keywords from a job description.
 
 <user_content>
-${processedSummary}
+{summary}
 </user_content>
 
 <job_description>
-${processedJD}
+{jobDescription}
 </job_description>
 
-${keywords && keywords.length > 0 ? `<extracted_keywords>\n${keywords.join(', ')}\n</extracted_keywords>` : ''}
-${preferenceSection}
+{keywordsSection}
+{preferenceSection}
 **Instructions:**
 1. Analyze the job description and identify 2-3 most relevant keywords that align with the summary
 2. Reframe the summary to naturally incorporate these keywords
@@ -133,86 +74,166 @@ Assign point value as integer 1-12 for summary changes.
 - Keep explanation concise (1-2 sentences, max 300 chars)
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
-{
+{{
   "suggested": "Your optimized summary text here",
   "keywords_added": ["keyword1", "keyword2", "keyword3"],
   "point_value": 8,
   "explanation": "Adding AWS highlights your infrastructure experience directly mentioned in JD's 'AWS expertise required' requirement."
-}`;
+}}`);
 
-    // Invoke LLM (timeout enforced at the route level)
-    const response = await model.invoke(prompt);
-    const content = response.content as string;
+// ============================================================================
+// TYPES
+// ============================================================================
 
-    // Parse JSON response
-    let parsed: { suggested: string; keywords_added: string[]; point_value?: number; explanation?: string };
-    try {
-      parsed = JSON.parse(content);
-    } catch (parseError) {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Failed to parse LLM response',
-        },
-      };
-    }
+interface SummaryLLMResponse {
+  suggested: string;
+  keywords_added: string[];
+  point_value?: number;
+  explanation?: string;
+}
 
-    // Validate structure
-    if (!parsed.suggested || typeof parsed.suggested !== 'string') {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Invalid suggestion structure from LLM',
-        },
-      };
-    }
+// ============================================================================
+// CHAIN
+// ============================================================================
 
-    if (!parsed.keywords_added || !Array.isArray(parsed.keywords_added)) {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Invalid keywords structure from LLM',
-        },
-      };
-    }
+/**
+ * Create the LCEL chain for summary suggestion
+ * Chain: prompt → model → jsonParser
+ */
+function createSummarySuggestionChain() {
+  const model = getHaikuModel({ temperature: 0.3, maxTokens: 2000 });
+  const jsonParser = createJsonParser<SummaryLLMResponse>();
 
-    // Validate point_value if present (optional field for backwards compatibility)
-    if (parsed.point_value !== undefined && (typeof parsed.point_value !== 'number' || parsed.point_value < 0 || parsed.point_value > 100)) {
-      console.warn('[SS:genSummary] Invalid point_value from LLM, ignoring:', parsed.point_value);
-      parsed.point_value = undefined;
-    }
+  return summaryPrompt.pipe(model).pipe(jsonParser);
+}
 
-    // Handle explanation field (graceful fallback)
-    let explanation: string | undefined = undefined;
-    if (parsed.explanation !== undefined && parsed.explanation !== null) {
-      if (typeof parsed.explanation === 'string') {
-        // Truncate if too long (max 500 chars)
-        explanation = parsed.explanation.length > 500
-          ? parsed.explanation.substring(0, 497) + '...'
-          : parsed.explanation;
+// ============================================================================
+// MAIN FUNCTION
+// ============================================================================
 
-        // Validate explanation quality (log warning if generic)
-        const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
-        const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
-        if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill)/i)) {
-          console.warn('[SS:genSummary] Generic explanation detected (missing specific JD keywords):', explanation);
-        }
-      } else {
-        // Convert non-string to empty string
-        explanation = '';
-      }
-    }
-
-    // Detect AI-tell phrases in suggested summary
-    const suggestedAITellPhrases = detectAITellPhrases(parsed.suggested);
-
-    // Return suggestion
-    console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added, ', point_value:', parsed.point_value, ', explanation:', explanation ? 'present' : 'missing');
+/**
+ * Generate optimized summary suggestion using Claude LLM
+ *
+ * **Features:**
+ * - Incorporates 2-3 relevant keywords from JD
+ * - Reframes existing experience (no fabrication)
+ * - Detects AI-tell phrases in original and suggested
+ * - Applies user optimization preferences
+ * - Returns structured ActionResponse
+ *
+ * Uses LCEL chain composition for better observability and composability.
+ *
+ * **Security:**
+ * - User content wrapped in XML tags (prompt injection defense)
+ * - Server-side only (never expose API key to client)
+ *
+ * @param resumeSummary - User's current professional summary
+ * @param jobDescription - Job description text
+ * @param keywords - Extracted keywords from JD (optional for context)
+ * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
+ * @returns ActionResponse with suggestion or error
+ */
+export async function generateSummarySuggestion(
+  resumeSummary: string,
+  jobDescription: string,
+  keywords?: string[],
+  preferences?: OptimizationPreferences | null
+): Promise<ActionResponse<SummarySuggestion>> {
+  // Validation
+  if (!resumeSummary || resumeSummary.trim().length === 0) {
     return {
-      data: {
+      data: null,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Resume summary is required',
+      },
+    };
+  }
+
+  if (!jobDescription || jobDescription.trim().length === 0) {
+    return {
+      data: null,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Job description is required',
+      },
+    };
+  }
+
+  console.log('[SS:genSummary] Generating summary suggestion (' + resumeSummary?.length + ' chars summary, ' + jobDescription?.length + ' chars JD)');
+
+  // Truncate very long inputs to avoid timeout
+  const processedSummary =
+    resumeSummary.length > MAX_SUMMARY_LENGTH
+      ? resumeSummary.substring(0, MAX_SUMMARY_LENGTH)
+      : resumeSummary;
+
+  const processedJD =
+    jobDescription.length > MAX_JD_LENGTH
+      ? jobDescription.substring(0, MAX_JD_LENGTH)
+      : jobDescription;
+
+  // Detect AI-tell phrases in original summary
+  const originalAITellPhrases = detectAITellPhrases(processedSummary);
+
+  // Build conditional prompt sections
+  const keywordsSection = keywords && keywords.length > 0
+    ? `<extracted_keywords>\n${keywords.join(', ')}\n</extracted_keywords>`
+    : '';
+  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
+
+  // Create and invoke LCEL chain
+  const chain = createSummarySuggestionChain();
+
+  const result = await invokeWithActionResponse(
+    async () => {
+      const parsed = await chain.invoke({
+        summary: processedSummary,
+        jobDescription: processedJD,
+        keywordsSection,
+        preferenceSection,
+      });
+
+      // Validate structure
+      if (!parsed.suggested || typeof parsed.suggested !== 'string') {
+        throw new Error('Invalid suggestion structure from LLM');
+      }
+
+      if (!parsed.keywords_added || !Array.isArray(parsed.keywords_added)) {
+        throw new Error('Invalid keywords structure from LLM');
+      }
+
+      // Validate point_value if present
+      let pointValue = parsed.point_value;
+      if (pointValue !== undefined && (typeof pointValue !== 'number' || pointValue < 0 || pointValue > 100)) {
+        console.warn('[SS:genSummary] Invalid point_value from LLM, ignoring:', pointValue);
+        pointValue = undefined;
+      }
+
+      // Handle explanation field (graceful fallback)
+      let explanation: string | undefined = undefined;
+      if (parsed.explanation !== undefined && parsed.explanation !== null) {
+        if (typeof parsed.explanation === 'string') {
+          // Truncate if too long (max 500 chars)
+          explanation = parsed.explanation.length > 500
+            ? parsed.explanation.substring(0, 497) + '...'
+            : parsed.explanation;
+
+          // Validate explanation quality (log warning if generic)
+          const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
+          const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
+          if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill)/i)) {
+            console.warn('[SS:genSummary] Generic explanation detected (missing specific JD keywords):', explanation);
+          }
+        }
+      }
+
+      // Detect AI-tell phrases in suggested summary
+      const suggestedAITellPhrases = detectAITellPhrases(parsed.suggested);
+
+      console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added, ', point_value:', pointValue, ', explanation:', explanation ? 'present' : 'missing');
+
+      return {
         original: resumeSummary, // Return full original, not truncated
         suggested: parsed.suggested,
         ats_keywords_added: parsed.keywords_added,
@@ -220,47 +241,12 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           ...originalAITellPhrases,
           ...suggestedAITellPhrases,
         ],
-        point_value: parsed.point_value,
+        point_value: pointValue,
         explanation: explanation,
-      },
-      error: null,
-    };
-  } catch (error: unknown) {
-    // Handle timeout
-    if (error instanceof Error && error.message.includes('timeout')) {
-      return {
-        data: null,
-        error: {
-          code: 'LLM_TIMEOUT',
-          message: 'Summary generation timed out. Please try again.',
-        },
       };
-    }
+    },
+    { errorMessage: 'Failed to generate summary suggestion' }
+  );
 
-    // Handle rate limiting
-    if (
-      error instanceof Error &&
-      error.message.toLowerCase().includes('rate limit')
-    ) {
-      return {
-        data: null,
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'API rate limit exceeded. Please wait and try again.',
-        },
-      };
-    }
-
-    // Generic LLM error
-    return {
-      data: null,
-      error: {
-        code: 'LLM_ERROR',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to generate summary suggestion',
-      },
-    };
-  }
+  return result;
 }
