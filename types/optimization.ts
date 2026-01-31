@@ -173,7 +173,7 @@ export interface SuggestionFeedback {
   suggestionId: string;
 
   /** Which resume section this suggestion belongs to */
-  sectionType: 'summary' | 'skills' | 'experience';
+  sectionType: 'summary' | 'skills' | 'experience' | 'education';
 
   /** true = helpful (thumbs up), false = not helpful (thumbs down) */
   helpful: boolean;
@@ -232,6 +232,9 @@ export interface OptimizationSession {
 
   /** Experience section optimization suggestion (Story 6.4) */
   experienceSuggestion?: ExperienceSuggestion | null;
+
+  /** Education section optimization suggestion */
+  educationSuggestion?: import('./suggestions').EducationSuggestion | null;
 
   /** Generated optimization suggestions */
   suggestions?: SuggestionSet | null;

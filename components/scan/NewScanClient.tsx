@@ -252,11 +252,9 @@ export function NewScanClient() {
           useOptimizationStore.getState().setATSScore(result.data.atsScore as import('@/types/analysis').ATSScore);
         }
 
-        // Step 3b: Generate suggestions (same pattern as AnalyzeButton)
-        // This populates Zustand so /scan/[sessionId]/suggestions can display them
+        // Step 3b: Fire-and-forget suggestion generation
+        // Suggestions page handles loading state via SuggestionsLoadingState (polls every 5s)
         if (resumeContent && result.data?.keywordAnalysis) {
-          setLoadingStep('Generating suggestions...');
-
           const keywordAnalysis = result.data.keywordAnalysis as import('@/types/analysis').KeywordAnalysisResult;
 
           // Log resume sections for debugging
@@ -269,36 +267,44 @@ export function NewScanClient() {
             experienceLength: resumeContent.experience?.length || 0,
           });
 
-          const suggestionsResult = await generateAllSuggestions({
+          // Start suggestion generation in background - don't await
+          console.log('[NewScanClient] Starting background suggestion generation');
+          generateAllSuggestions({
             sessionId,
             resumeSummary: resumeContent.summary || '',
             resumeSkills: resumeContent.skills || '',
             resumeExperience: resumeContent.experience || '',
+            resumeEducation: resumeContent.education || '',
             resumeContent: rawResumeText,
             jobDescription: jobDescription || '',
             keywords: keywordAnalysis.matched?.map((k: { keyword: string }) => k.keyword),
             preferences: userPreferences,
+          }).then((suggestionsResult) => {
+            // Update Zustand store when ready (for edge cases where user stays on page)
+            if (suggestionsResult.error) {
+              console.error('[NewScanClient] Background suggestions failed:', JSON.stringify(suggestionsResult.error));
+            } else if (suggestionsResult.data) {
+              console.log('[NewScanClient] Background suggestions completed');
+              const store = useOptimizationStore.getState();
+              if (suggestionsResult.data.summary) {
+                store.setSummarySuggestion(suggestionsResult.data.summary);
+              }
+              if (suggestionsResult.data.skills) {
+                store.setSkillsSuggestion(suggestionsResult.data.skills);
+              }
+              if (suggestionsResult.data.experience) {
+                store.setExperienceSuggestion(suggestionsResult.data.experience);
+              }
+              if (suggestionsResult.data.education) {
+                store.setEducationSuggestion(suggestionsResult.data.education);
+              }
+            }
+          }).catch((err) => {
+            console.error('[NewScanClient] Background suggestion generation error:', err);
           });
-
-          if (suggestionsResult.error) {
-            console.error('[NewScanClient] Suggestions generation failed:', JSON.stringify(suggestionsResult.error));
-            // Don't fail the whole flow - suggestions are optional, user can still see results
-          } else if (suggestionsResult.data) {
-            const store = useOptimizationStore.getState();
-            if (suggestionsResult.data.summary) {
-              store.setSummarySuggestion(suggestionsResult.data.summary);
-            }
-            if (suggestionsResult.data.skills) {
-              store.setSkillsSuggestion(suggestionsResult.data.skills);
-            }
-            if (suggestionsResult.data.experience) {
-              store.setExperienceSuggestion(suggestionsResult.data.experience);
-            }
-          }
         }
 
-        // Step 4: Navigate to results page
-        setLoadingStep('Redirecting to results...');
+        // Step 4: Navigate to results page immediately (don't wait for suggestions)
         toast.success('Analysis complete!');
 
         // Navigate to scan results page

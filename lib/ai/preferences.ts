@@ -7,7 +7,7 @@
  * Story: 11.2 - Implement Optimization Preferences
  */
 
-import type { OptimizationPreferences, UserContext } from '@/types';
+import type { OptimizationPreferences, UserContext, JobTypePreference } from '@/types';
 
 /**
  * Build a prompt section describing user preferences
@@ -159,4 +159,144 @@ export function buildPreferencePrompt(
   lines.push('**Important:** Apply ALL of these preferences consistently throughout the suggestions.');
 
   return lines.join('\n');
+}
+
+/**
+ * Get job-type-specific action verb guidance
+ *
+ * Returns detailed guidance on appropriate action verbs based on whether
+ * the target position is a co-op/internship or full-time role.
+ *
+ * @param jobType - The job type preference ('coop' or 'fulltime')
+ * @returns Formatted verb guidance string for the LLM prompt
+ */
+export function getJobTypeVerbGuidance(jobType: JobTypePreference): string {
+  if (jobType === 'coop') {
+    return `**Action Verb Guidance (Co-op/Internship):**
+Use learning-focused, collaborative verbs that show growth:
+- PREFERRED: "Contributed to", "Assisted with", "Collaborated on", "Supported", "Helped develop"
+- PREFERRED: "Learned", "Gained experience in", "Developed skills in", "Built foundation in"
+- PREFERRED: "Participated in", "Worked alongside", "Applied knowledge from coursework"
+- AVOID: "Led", "Owned", "Spearheaded", "Drove" (too senior for internship context)
+- AVOID: Overstating responsibility or impact beyond intern/co-op scope
+- CONNECT work to academic learning where relevant`;
+  }
+
+  return `**Action Verb Guidance (Full-time Position):**
+Use impact-focused, ownership verbs that show results:
+- PREFERRED: "Led", "Drove", "Owned", "Delivered", "Spearheaded"
+- PREFERRED: "Architected", "Established", "Transformed", "Scaled"
+- PREFERRED: "Increased", "Reduced", "Improved", "Optimized"
+- Frame achievements with business impact and measurable outcomes
+- Show leadership, initiative, and end-to-end ownership`;
+}
+
+/**
+ * Get job-type-specific framing guidance for each section
+ *
+ * Returns section-specific guidance on how to frame content based on
+ * the target job type, with awareness of education context.
+ *
+ * @param jobType - The job type preference ('coop' or 'fulltime')
+ * @param section - The resume section ('summary', 'experience', 'skills', or 'education')
+ * @param hasEducation - Whether education data is available for context
+ * @returns Formatted framing guidance string for the LLM prompt
+ */
+export function getJobTypeFramingGuidance(
+  jobType: JobTypePreference,
+  section: 'summary' | 'experience' | 'skills' | 'education',
+  hasEducation: boolean = false
+): string {
+  if (jobType === 'coop') {
+    const guidance: Record<string, string> = {
+      summary: `**Co-op/Internship Summary Framing:**
+- Emphasize eagerness to learn and contribute
+- **IMPORTANT: Reference education prominently** (degree program, relevant coursework, expected graduation)
+- Highlight academic projects that demonstrate practical skills
+- Show enthusiasm for the industry/role
+- Mention GPA if strong (3.5+), Dean's List, academic honors
+- Tone: Humble, growth-oriented, eager to learn
+- Example: "Computer Science student at [University] with hands-on experience in..."
+- Example: "Third-year Software Engineering student seeking to apply coursework in data structures and algorithms..."
+${hasEducation ? '- Use the provided education section to personalize the summary' : ''}`,
+
+      experience: `**Co-op/Internship Experience Framing:**
+- Frame accomplishments as learning experiences
+- **Connect work experience to academic coursework** where relevant
+- Acknowledge mentorship and team collaboration
+- Highlight skills developed, not just tasks completed
+- Be realistic about scope (supported, assisted, contributed)
+- Example: "Applied algorithms learned in CS 201 to optimize..."
+- Example: "Collaborated with senior engineers to..." NOT "Led the engineering team to..."
+${hasEducation ? '- Reference relevant coursework when describing technical work' : ''}`,
+
+      skills: `**Co-op/Internship Skills Framing:**
+- Include "Familiar with" or "Exposure to" for emerging skills
+- **Highlight skills from coursework and academic projects**
+- Include academic tools (Jupyter, MATLAB, academic research tools)
+- List programming languages learned in courses
+- Balance technical skills with soft skills (communication, teamwork)
+- Show breadth of exposure over depth of mastery
+- Include relevant certifications or online courses
+${hasEducation ? '- Use education section to identify coursework-related skills' : ''}`,
+
+      education: `**Co-op/Internship Education Framing (PRIMARY CREDENTIAL):**
+- Education is the MOST IMPORTANT section for co-op/internship candidates
+- **ALWAYS suggest adding relevant coursework** even if not listed (infer from degree program)
+- Coursework should match JD keywords: databases, programming, networks, systems, etc.
+- Suggest adding GPA if strong (3.5+) - critical for entry-level positions
+- Include academic projects that demonstrate practical skills
+- Add location (city, state) for local candidate preference
+- Format graduation date consistently (Expected May 2024 or Graduated: December 2021)
+- Suggest honors, Dean's List, scholarships, relevant clubs/organizations
+- Connect academic work directly to JD requirements
+- For sparse education sections: PROACTIVELY suggest content to add
+- Example additions:
+  - "Relevant Coursework: Data Structures, Database Systems, Network Administration"
+  - "Capstone Project: Developed full-stack web application using React and Node.js"
+  - "GPA: 3.7/4.0 | Dean's List (4 semesters)"`
+    };
+    return guidance[section];
+  }
+
+  // Full-time
+  const guidance: Record<string, string> = {
+    summary: `**Full-time Position Summary Framing:**
+- Lead with years of experience and domain expertise
+- Emphasize track record of delivery and impact
+- Highlight leadership, ownership, and initiative
+- Quantify achievements where possible
+- Education is supporting context, not the lead
+- Tone: Confident, results-oriented, professional
+- Example: "Results-driven software engineer with 5+ years..."
+- Example: "Senior developer specializing in distributed systems..."`,
+
+    experience: `**Full-time Position Experience Framing:**
+- Lead with impact and business outcomes
+- Quantify results (percentages, dollar amounts, scale)
+- Show ownership and leadership (even without formal title)
+- Highlight cross-functional collaboration and stakeholder management
+- Demonstrate career progression and increasing responsibility
+- Education supports but doesn't lead the narrative
+- Example: "Led migration of 50+ microservices..." or "Drove 40% reduction in deployment time..."`,
+
+    skills: `**Full-time Position Skills Framing:**
+- Emphasize proficiency and production experience
+- Highlight advanced/expert-level skills
+- Include leadership and soft skills (mentoring, stakeholder management)
+- Show breadth AND depth in key areas
+- Include certifications and specialized expertise
+- Professional skills take precedence over academic ones`,
+
+    education: `**Full-time Position Education Framing (SUPPORTING CREDENTIAL):**
+- Education supports but doesn't lead the resume
+- Degree name and institution are most important
+- Only include GPA if recent graduate (within 2-3 years) AND strong (3.5+)
+- Coursework generally not needed unless highly specialized/relevant
+- Focus on advanced degrees, certifications, specialized training
+- Keep education section concise for experienced professionals
+- Example: "M.S. Computer Science, Stanford University, 2020"
+- Certifications and professional development can be more valuable than coursework`
+  };
+  return guidance[section];
 }

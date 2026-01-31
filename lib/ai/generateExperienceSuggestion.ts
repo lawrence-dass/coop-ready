@@ -13,7 +13,7 @@
 
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { ExperienceSuggestion } from '@/types/suggestions';
-import { buildPreferencePrompt } from './preferences';
+import { buildPreferencePrompt, getJobTypeVerbGuidance, getJobTypeFramingGuidance } from './preferences';
 import { getHaikuModel } from './models';
 import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
@@ -48,6 +48,8 @@ Your task is to optimize professional experience bullets by incorporating releva
 <user_content>
 {resumeContent}
 </user_content>
+{educationSection}
+{jobTypeGuidance}
 {preferenceSection}
 **Instructions:**
 1. Extract each work experience entry with company, role, dates, and bullets
@@ -55,7 +57,7 @@ Your task is to optimize professional experience bullets by incorporating releva
 3. Identify where metrics or quantification can be added (inferred from context, not fabricated)
 4. Maintain authenticity - ONLY enhance existing achievements, NEVER fabricate
 5. Prioritize impact, results, and quantifiable outcomes
-6. Start each bullet with a strong action verb (Led, Developed, Improved, etc.)
+6. Start each bullet with an appropriate action verb (see verb guidance above)
 7. Focus on achievements, not just tasks
 8. Calculate point value for each bullet optimization
 9. For each bullet, include 1-2 sentence explanation of how it aligns with JD requirements (reference specific keywords)
@@ -173,6 +175,7 @@ function createExperienceSuggestionChain() {
  * @param resumeContent - Full resume content for context
  * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
  * @param userContext - User context from onboarding (optional, for LLM personalization)
+ * @param resumeEducation - User's education section (optional, for co-op/internship context)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateExperienceSuggestion(
@@ -180,7 +183,8 @@ export async function generateExperienceSuggestion(
   jobDescription: string,
   resumeContent: string,
   preferences?: OptimizationPreferences | null,
-  userContext?: UserContext
+  userContext?: UserContext,
+  resumeEducation?: string
 ): Promise<ActionResponse<ExperienceSuggestion>> {
   // Validation
   if (!resumeExperience || resumeExperience.trim().length === 0) {
@@ -232,6 +236,16 @@ export async function generateExperienceSuggestion(
       : resumeContent;
 
   // Build conditional prompt sections
+  const educationSection = resumeEducation && resumeEducation.trim().length > 0
+    ? `<education_context>\nUse this to understand academic background and connect experience to coursework:\n${resumeEducation}\n</education_context>\n`
+    : '';
+
+  // Build job-type-specific guidance (injected before general preferences for prominence)
+  const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
+  const jobTypeGuidance = preferences
+    ? `${getJobTypeVerbGuidance(preferences.jobType)}\n\n${getJobTypeFramingGuidance(preferences.jobType, 'experience', hasEducation)}\n\n`
+    : '';
+
   const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
 
   // Create and invoke LCEL chain
@@ -243,6 +257,8 @@ export async function generateExperienceSuggestion(
         experience: processedExperience,
         jobDescription: processedJD,
         resumeContent: processedResume,
+        educationSection,
+        jobTypeGuidance,
         preferenceSection,
       });
 

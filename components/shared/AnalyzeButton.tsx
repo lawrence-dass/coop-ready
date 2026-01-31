@@ -42,7 +42,7 @@ export function AnalyzeButton({
   const setSummarySuggestion = useOptimizationStore((state) => state.setSummarySuggestion);
   const setSkillsSuggestion = useOptimizationStore((state) => state.setSkillsSuggestion);
   const setExperienceSuggestion = useOptimizationStore((state) => state.setExperienceSuggestion);
-  const setLoading = useOptimizationStore((state) => state.setLoading);
+  const setEducationSuggestion = useOptimizationStore((state) => state.setEducationSuggestion);
   const resumeContent = useOptimizationStore((state) => state.resumeContent);
   const jobDescription = useOptimizationStore((state) => state.jobDescription);
   const userPreferences = useOptimizationStore((state) => state.userPreferences);
@@ -87,24 +87,29 @@ export function AnalyzeButton({
 
         toast.success(`Analysis complete! Your ATS score is ${data.atsScore.overall}`);
 
-        // Story 6.9: Trigger suggestion generation after analysis
+        // Clear loading state immediately - don't wait for suggestions
+        setLoadingStep('');
+
+        // Story 6.9: Trigger suggestion generation in background (fire-and-forget)
+        // The suggestions page already handles loading state via SuggestionsLoadingState
+        // which polls every 5 seconds for updates
         if (resumeContent) {
-          setLoadingStep('Generating suggestions...');
-          setLoading(true, 'generating-suggestions');
+          console.log('[SS:ui] Starting background suggestion generation');
 
-          try {
-            const suggestionsResult = await generateAllSuggestions({
-              sessionId,
-              resumeSummary: resumeContent.summary || '',
-              resumeSkills: resumeContent.skills || '',
-              resumeExperience: resumeContent.experience || '',
-              resumeContent: resumeContent.rawText,
-              jobDescription: jobDescription || '',
-              keywords: data.keywordAnalysis?.matched?.map((k: { keyword: string }) => k.keyword),
-              preferences: userPreferences, // Story 11.2: Pass user preferences
-            });
-
+          generateAllSuggestions({
+            sessionId,
+            resumeSummary: resumeContent.summary || '',
+            resumeSkills: resumeContent.skills || '',
+            resumeExperience: resumeContent.experience || '',
+            resumeEducation: resumeContent.education || '',
+            resumeContent: resumeContent.rawText,
+            jobDescription: jobDescription || '',
+            keywords: data.keywordAnalysis?.matched?.map((k: { keyword: string }) => k.keyword),
+            preferences: userPreferences, // Story 11.2: Pass user preferences
+          }).then((suggestionsResult) => {
+            // Update Zustand store when ready (for users who stay on current page)
             if (suggestionsResult.data) {
+              console.log('[SS:ui] Background suggestions completed');
               if (suggestionsResult.data.summary) {
                 setSummarySuggestion(suggestionsResult.data.summary);
               }
@@ -113,6 +118,9 @@ export function AnalyzeButton({
               }
               if (suggestionsResult.data.experience) {
                 setExperienceSuggestion(suggestionsResult.data.experience);
+              }
+              if (suggestionsResult.data.education) {
+                setEducationSuggestion(suggestionsResult.data.education);
               }
 
               // Toast for partial failures
@@ -124,18 +132,13 @@ export function AnalyzeButton({
                 toast.error(`Some suggestions failed: ${failedSections.join(', ')}`);
               }
             } else if (suggestionsResult.error) {
-              console.error('[SS:ui] Suggestion generation failed:', suggestionsResult.error);
-              toast.error(suggestionsResult.error.message);
+              console.error('[SS:ui] Background suggestion generation failed:', suggestionsResult.error);
+              // Don't show toast for background errors - user will see loading state on suggestions page
             }
-          } catch (sugErr) {
-            console.error('[SS:ui] Suggestion generation error:', sugErr);
-            toast.error('Failed to generate suggestions');
-          } finally {
-            setLoading(false);
-            setLoadingStep('');
-          }
-        } else {
-          setLoadingStep('');
+          }).catch((err) => {
+            console.error('[SS:ui] Background suggestion generation error:', err);
+            // Don't show toast for background errors - user will see loading state on suggestions page
+          });
         }
 
       } catch (err) {

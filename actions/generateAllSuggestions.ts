@@ -2,7 +2,7 @@
  * Generate All Suggestions Server Action
  * Story 6.9: Wire Analysis-to-Suggestion Pipeline
  *
- * Orchestrates parallel generation of all 3 suggestion sections (summary, skills, experience).
+ * Orchestrates parallel generation of all 4 suggestion sections (summary, skills, experience, education).
  * Uses Promise.allSettled() so individual section failures don't block others.
  *
  * **ActionResponse Pattern:**
@@ -17,10 +17,12 @@ import type {
   SummarySuggestion,
   SkillsSuggestion,
   ExperienceSuggestion,
+  EducationSuggestion,
 } from '@/types/suggestions';
 import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
+import { generateEducationSuggestion } from '@/lib/ai/generateEducationSuggestion';
 import { createClient } from '@/lib/supabase/server';
 import { getUserContext } from '@/lib/supabase/user-context';
 
@@ -37,6 +39,8 @@ interface GenerateAllRequest {
   resumeSkills: string;
   /** Resume experience section content */
   resumeExperience: string;
+  /** Resume education section content (for co-op/internship context) */
+  resumeEducation?: string;
   /** Full resume raw text for context */
   resumeContent: string;
   /** Job description text */
@@ -51,11 +55,13 @@ export interface GenerateAllResult {
   summary: SummarySuggestion | null;
   skills: SkillsSuggestion | null;
   experience: ExperienceSuggestion | null;
+  education: EducationSuggestion | null;
   /** Errors for individual sections that failed */
   sectionErrors: {
     summary?: string;
     skills?: string;
     experience?: string;
+    education?: string;
   };
 }
 
@@ -120,6 +126,7 @@ export async function generateAllSuggestions(
       resumeSummary,
       resumeSkills,
       resumeExperience,
+      resumeEducation,
       resumeContent,
       jobDescription,
       keywords,
@@ -131,6 +138,23 @@ export async function generateAllSuggestions(
     const effectiveSummary = (resumeSummary && resumeSummary.trim().length > 0) ? resumeSummary : resumeContent;
     const effectiveSkills = (resumeSkills && resumeSkills.trim().length > 0) ? resumeSkills : resumeContent;
     const effectiveExperience = (resumeExperience && resumeExperience.trim().length > 0) ? resumeExperience : resumeContent;
+
+    // Education: Try to extract from resumeContent if not explicitly provided
+    // This is critical for co-op/internship candidates where education is primary credential
+    let effectiveEducation: string | null = null;
+    if (resumeEducation && resumeEducation.trim().length > 0) {
+      effectiveEducation = resumeEducation;
+      console.log('[SS:generateAll] Education section provided:', resumeEducation.length, 'chars, preview:', resumeEducation.substring(0, 100));
+    } else {
+      // Try to extract education from full resume content
+      const educationMatch = resumeContent.match(/(?:EDUCATION|Education|ACADEMIC|Academic)[\s\S]*?(?=(?:EXPERIENCE|Experience|SKILLS|Skills|PROJECTS|Projects|CERTIFICATIONS|$))/i);
+      if (educationMatch) {
+        effectiveEducation = educationMatch[0].trim();
+        console.log('[SS:generateAll] Education extracted from resume:', effectiveEducation.length, 'chars, preview:', effectiveEducation.substring(0, 100));
+      } else {
+        console.log('[SS:generateAll] No education section found in resume. resumeEducation was:', resumeEducation ? `"${resumeEducation.substring(0, 50)}..."` : 'null/undefined');
+      }
+    }
 
     const usedFallback = effectiveSummary === resumeContent || effectiveSkills === resumeContent || effectiveExperience === resumeContent;
 
@@ -147,12 +171,18 @@ export async function generateAllSuggestions(
       usedFallback ? '(using full resume as fallback for missing sections)' : ''
     );
 
-    // Fire all 3 generation calls in parallel (Story 11.2: pass preferences, userContext)
-    const [summaryResult, skillsResult, experienceResult] =
+    // Fire all 4 generation calls in parallel (Story 11.2: pass preferences, userContext)
+    // Pass resumeEducation for co-op/internship context awareness
+    // Education is only generated if education section exists in resume
+    const [summaryResult, skillsResult, experienceResult, educationResult] =
       await Promise.allSettled([
-        generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences, userContext),
-        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences, userContext),
-        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences, userContext),
+        generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences, userContext, resumeEducation),
+        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences, userContext, resumeEducation),
+        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences, userContext, resumeEducation),
+        // Only generate education suggestions if education section exists
+        effectiveEducation
+          ? generateEducationSuggestion(effectiveEducation, jobDescription, resumeContent, preferences, userContext)
+          : Promise.resolve({ data: null, error: null }),
       ]);
 
     // Extract results from settled promises
@@ -160,6 +190,7 @@ export async function generateAllSuggestions(
       summary: null,
       skills: null,
       experience: null,
+      education: null,
       sectionErrors: {},
     };
 
@@ -196,11 +227,23 @@ export async function generateAllSuggestions(
       result.sectionErrors.experience = experienceResult.reason?.message || 'Experience generation failed';
     }
 
+    // Process education (only if education section was present)
+    if (effectiveEducation && educationResult.status === 'fulfilled') {
+      if (educationResult.value.data) {
+        result.education = educationResult.value.data;
+      } else if (educationResult.value.error) {
+        result.sectionErrors.education = educationResult.value.error.message;
+      }
+    } else if (effectiveEducation && educationResult.status === 'rejected') {
+      result.sectionErrors.education = educationResult.reason?.message || 'Education generation failed';
+    }
+
     // Save successful suggestions to session using server client (for proper auth context)
     const dbUpdate: Record<string, unknown> = {};
     if (result.summary) dbUpdate.summary_suggestion = result.summary;
     if (result.skills) dbUpdate.skills_suggestion = result.skills;
     if (result.experience) dbUpdate.experience_suggestion = result.experience;
+    if (result.education) dbUpdate.education_suggestion = result.education;
 
     if (Object.keys(dbUpdate).length > 0) {
       try {
@@ -221,8 +264,8 @@ export async function generateAllSuggestions(
       }
     }
 
-    // Check if ALL sections failed
-    const hasAnyResult = result.summary || result.skills || result.experience;
+    // Check if ALL sections failed (education is optional, so not required for success)
+    const hasAnyResult = result.summary || result.skills || result.experience || result.education;
     if (!hasAnyResult) {
       console.error('[SS:generateAll] All sections failed:', result.sectionErrors);
       return {
@@ -238,7 +281,8 @@ export async function generateAllSuggestions(
       '[SS:generateAll] Generation complete.',
       'Summary:', result.summary ? 'OK' : 'FAILED',
       'Skills:', result.skills ? 'OK' : 'FAILED',
-      'Experience:', result.experience ? 'OK' : 'FAILED'
+      'Experience:', result.experience ? 'OK' : 'FAILED',
+      'Education:', effectiveEducation ? (result.education ? 'OK' : 'FAILED') : 'SKIPPED'
     );
 
     return { data: result, error: null };

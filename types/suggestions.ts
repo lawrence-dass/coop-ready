@@ -168,3 +168,78 @@ export interface ExperienceSuggestion {
   /** Story 14.1: 1-2 sentence explanation of why these experience changes help */
   explanation?: string;
 }
+
+// ============================================================================
+// EDUCATION SUGGESTION TYPES
+// ============================================================================
+
+/**
+ * Individual education bullet suggestion
+ * For coursework, projects, achievements, etc.
+ */
+export interface EducationBulletSuggestion {
+  /** Original bullet text (or empty if new suggestion) */
+  original: string;
+
+  /** Optimized/suggested bullet with keywords */
+  suggested: string;
+
+  /** Keywords from JD incorporated into this bullet */
+  keywords_incorporated: string[];
+
+  /** Estimated ATS score improvement for this bullet (0-10) */
+  point_value?: number;
+
+  /** Brief explanation of why this suggestion helps */
+  explanation?: string;
+}
+
+/**
+ * Individual education entry (degree/institution)
+ */
+export interface EducationEntry {
+  /** Institution name */
+  institution: string;
+
+  /** Degree/certification (e.g., "B.S. Computer Science") */
+  degree: string;
+
+  /** Dates (e.g., "2020 - 2024" or "Expected May 2025") */
+  dates: string;
+
+  /** GPA if present */
+  gpa?: string;
+
+  /** Original bullets/details from resume */
+  original_bullets: string[];
+
+  /** Suggested optimizations for this entry */
+  suggested_bullets: EducationBulletSuggestion[];
+}
+
+/**
+ * Education optimization suggestion
+ * Critical for co-op/internship candidates where education is primary credential
+ */
+export interface EducationSuggestion {
+  /** User's original education section text */
+  original: string;
+
+  /** Array of education entries with suggestions */
+  education_entries: EducationEntry[];
+
+  /** Keywords from JD that match education (coursework, degree, etc.) */
+  matched_keywords: string[];
+
+  /** Relevant coursework to highlight based on JD */
+  relevant_coursework: string[];
+
+  /** Summary of the optimization */
+  summary: string;
+
+  /** Total estimated point value improvement */
+  total_point_value?: number;
+
+  /** Explanation of why these education changes help */
+  explanation?: string;
+}

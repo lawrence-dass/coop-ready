@@ -31,7 +31,7 @@ export interface SuggestionCardProps {
   metrics?: string[];
 
   /** Section type for styling context */
-  sectionType: 'summary' | 'skills' | 'experience';
+  sectionType: 'summary' | 'skills' | 'experience' | 'education';
 
   /** Why this works explanation (optional) */
   explanation?: string;
@@ -67,7 +67,7 @@ export function SuggestionCard({
       state.getFeedbackForSuggestion(suggestionId)
   );
   const recordSuggestionFeedback = useOptimizationStore(
-    (state: { recordSuggestionFeedback: (id: string, section: 'summary' | 'skills' | 'experience', helpful: boolean | null) => Promise<void> }) =>
+    (state: { recordSuggestionFeedback: (id: string, section: 'summary' | 'skills' | 'experience' | 'education', helpful: boolean | null) => Promise<void> }) =>
       state.recordSuggestionFeedback
   );
 
