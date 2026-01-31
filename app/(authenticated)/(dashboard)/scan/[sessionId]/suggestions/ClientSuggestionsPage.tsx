@@ -183,6 +183,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                     original={suggestion.original}
                     suggested={suggestion.suggested}
                     points={suggestion.point_value}
+                    impact={suggestion.impact}
                     keywords={suggestion.ats_keywords_added}
                     sectionType="summary"
                     explanation={suggestion.explanation}
@@ -230,6 +231,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             original="Not currently listed in your skills"
                             suggested={`Add: ${skillItem.skill}`}
                             points={skillItem.point_value}
+                            impact={skillItem.impact}
                             keywords={[skillItem.skill]}
                             sectionType="skills"
                             explanation={skillItem.reason}
@@ -276,6 +278,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             original={bullet.original}
                             suggested={bullet.suggested}
                             points={bullet.point_value}
+                            impact={bullet.impact}
                             keywords={bullet.keywords_incorporated}
                             metrics={bullet.metrics_added}
                             sectionType="experience"
@@ -339,6 +342,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             original={bullet.original || 'Add new detail'}
                             suggested={bullet.suggested}
                             points={bullet.point_value}
+                            impact={bullet.impact}
                             keywords={bullet.keywords_incorporated}
                             sectionType="education"
                             explanation={bullet.explanation}

@@ -70,12 +70,16 @@ Your task is to ENHANCE and EXPAND a sparse education section by:
 5. Calculate point value for each suggestion
 6. Provide actionable summary
 
-**Point Value Calculation:**
-- Relevant Coursework line (4-6 courses matching JD) = 8-12 points
-- Academic Project with keywords = 5-8 points
-- Certification recommendations matching JD = 3-5 points
-- GPA/honors addition = 3-5 points
-- Location/formatting fixes = 1-2 points
+**Impact Tier Assignment:**
+For each education suggestion, assign an impact tier:
+- "critical" = Core coursework or academic projects directly matching JD requirements
+- "high" = Certification recommendations or strong relevant additions
+- "moderate" = Formatting fixes, location, or minor enhancements
+
+Also assign a point_value for section-level calculations:
+- critical = 8-12 points (Relevant Coursework, major Academic Projects)
+- high = 4-7 points (Certification recommendations, GPA/honors)
+- moderate = 1-3 points (Location/formatting fixes)
 - Total realistic range: 18-40 points for enhanced education section
 
 **Coursework Inference by Degree:**
@@ -118,6 +122,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           "original": "No relevant coursework listed",
           "suggested": "Relevant Coursework: Database Management, Network Administration, Systems Analysis, Web Development, IT Project Management, Programming",
           "keywords_incorporated": ["database", "network", "systems", "programming"],
+          "impact": "critical",
           "point_value": 10,
           "explanation": "Adding relevant coursework demonstrates technical foundation matching JD requirements"
         }},
@@ -125,6 +130,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           "original": "No academic projects listed",
           "suggested": "Capstone Project: Designed and implemented [project type] demonstrating skills in [relevant technologies from JD]",
           "keywords_incorporated": ["project management", "implementation"],
+          "impact": "critical",
           "point_value": 6,
           "explanation": "Academic projects show practical application of skills for entry-level roles"
         }},
@@ -132,6 +138,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           "original": "No certifications listed",
           "suggested": "Recommended Certifications: AWS Cloud Practitioner, CompTIA A+ (aligns with JD requirements for cloud and IT fundamentals)",
           "keywords_incorporated": ["AWS", "cloud", "IT"],
+          "impact": "high",
           "point_value": 4,
           "explanation": "Industry certifications validate skills beyond coursework and directly match JD keywords"
         }},
@@ -139,6 +146,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           "original": "GPA not displayed",
           "suggested": "Add GPA if 3.5+ (e.g., GPA: 3.X/4.0) - strengthens candidacy for entry-level positions",
           "keywords_incorporated": [],
+          "impact": "high",
           "point_value": 4,
           "explanation": "Strong GPA validates academic performance for employers evaluating entry-level candidates"
         }},
@@ -146,6 +154,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           "original": "Location not specified",
           "suggested": "Add location: Denver, CO",
           "keywords_incorporated": [],
+          "impact": "moderate",
           "point_value": 1,
           "explanation": "Location helps recruiters assess local candidates and reduces relocation concerns"
         }}
@@ -174,6 +183,7 @@ interface EducationLLMResponse {
       original: string;
       suggested: string;
       keywords_incorporated: string[];
+      impact?: string;
       point_value?: number;
       explanation?: string;
     }>;
@@ -333,6 +343,7 @@ export async function generateEducationSuggestion(
       }
 
       // Normalize education entries
+      const validImpactTiers = ['critical', 'high', 'moderate'];
       const normalizedEntries = parsed.education_entries.map((entry) => ({
         institution: String(entry.institution || ''),
         degree: String(entry.degree || ''),
@@ -346,6 +357,11 @@ export async function generateEducationSuggestion(
             typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
               ? pointValue
               : undefined;
+
+          // Validate impact tier if present
+          const validImpact = bullet.impact && validImpactTiers.includes(bullet.impact)
+            ? bullet.impact as 'critical' | 'high' | 'moderate'
+            : undefined;
 
           // Handle explanation field (graceful fallback)
           let explanation: string | undefined = undefined;
@@ -362,6 +378,7 @@ export async function generateEducationSuggestion(
             original: String(bullet.original || ''),
             suggested: String(bullet.suggested || ''),
             keywords_incorporated: Array.isArray(bullet.keywords_incorporated) ? bullet.keywords_incorporated : [],
+            impact: validImpact,
             point_value: validPointValue,
             explanation: explanation,
           };

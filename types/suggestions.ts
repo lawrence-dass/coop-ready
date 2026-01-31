@@ -10,6 +10,44 @@
 import type { JudgeCriteriaScores } from './judge';
 
 // ============================================================================
+// IMPACT TIER TYPE
+// ============================================================================
+
+/**
+ * Impact tier for individual suggestions
+ * Replaces numeric point_value for individual items to avoid false precision
+ * Section-level total_point_value is still used for proportional calculations
+ */
+export type ImpactTier = 'critical' | 'high' | 'moderate';
+
+/**
+ * Impact tier display configuration
+ */
+export const IMPACT_TIER_CONFIG = {
+  critical: {
+    label: 'Critical',
+    description: 'Required in job description',
+    color: 'bg-red-500',
+    textColor: 'text-red-700',
+    icon: '🔴',
+  },
+  high: {
+    label: 'High',
+    description: 'Strongly desired',
+    color: 'bg-orange-500',
+    textColor: 'text-orange-700',
+    icon: '🟠',
+  },
+  moderate: {
+    label: 'Moderate',
+    description: 'Nice-to-have',
+    color: 'bg-green-500',
+    textColor: 'text-green-700',
+    icon: '🟢',
+  },
+} as const;
+
+// ============================================================================
 // SUMMARY SUGGESTION TYPES
 // ============================================================================
 
@@ -31,7 +69,8 @@ export interface SummarySuggestion {
   suggested: string; // Optimized version with keywords
   ats_keywords_added: string[]; // Keywords from JD that were incorporated
   ai_tell_phrases_rewritten: AITellRewrite[]; // AI language that was fixed
-  point_value?: number; // Estimated ATS score improvement (0-100)
+  point_value?: number; // Estimated ATS score improvement (0-100) - used for section totals
+  impact?: ImpactTier; // Impact tier for display (replaces point_value for individual display)
 
   /** Story 14.1: 1-2 sentence explanation of why this change helps */
   explanation?: string;
@@ -53,7 +92,8 @@ export interface SummarySuggestion {
 export interface SkillItem {
   skill: string; // The skill name
   reason?: string; // Why this skill is relevant or suggested
-  point_value?: number; // Estimated ATS score improvement for this skill (0-100)
+  point_value?: number; // Estimated ATS score improvement for this skill (0-100) - used for section totals
+  impact?: ImpactTier; // Impact tier for display (replaces point_value for individual display)
 
   // Story 12.1: Judge fields (optional for backward compatibility)
   judge_score?: number; // Quality score from LLM judge (0-100)
@@ -115,8 +155,11 @@ export interface BulletSuggestion {
   /** Keywords from JD incorporated into this bullet */
   keywords_incorporated: string[];
 
-  /** Estimated ATS score improvement for this bullet (0-100) */
+  /** Estimated ATS score improvement for this bullet (0-100) - used for section totals */
   point_value?: number;
+
+  /** Impact tier for display (replaces point_value for individual display) */
+  impact?: ImpactTier;
 
   /** Story 14.1: 1-2 sentence explanation of why this change helps */
   explanation?: string;
@@ -187,8 +230,11 @@ export interface EducationBulletSuggestion {
   /** Keywords from JD incorporated into this bullet */
   keywords_incorporated: string[];
 
-  /** Estimated ATS score improvement for this bullet (0-10) */
+  /** Estimated ATS score improvement for this bullet (0-10) - used for section totals */
   point_value?: number;
+
+  /** Impact tier for display (replaces point_value for individual display) */
+  impact?: ImpactTier;
 
   /** Brief explanation of why this suggestion helps */
   explanation?: string;

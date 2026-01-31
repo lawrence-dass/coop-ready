@@ -253,6 +253,14 @@ function calculatePriorityScore(
 - ✅ Update `SectionSummaryCard` to show effective (not raw) points
 - ✅ Numbers now add up correctly to the achievable gain
 
+### Phase 2.5: Impact Tiers for Individual Suggestions ✅ IMPLEMENTED
+- ✅ Replace false-precision point values (+6, +5, +4 pts) with qualitative impact tiers
+- ✅ Three tiers: **Critical** (🔴 Required in JD), **High** (🟠 Strongly desired), **Moderate** (🟢 Nice-to-have)
+- ✅ Updated all LLM prompts (Summary, Skills, Experience, Education) to output `impact` field
+- ✅ Updated `SuggestionCard` UI to show colored impact badges
+- ✅ Section-level `total_point_value` preserved for proportional calculations
+- ✅ Backward compatible: falls back to points display if no impact tier
+
 ### Phase 3: Priority System
 - Implement priority weights by job type
 - Add impact tier badges

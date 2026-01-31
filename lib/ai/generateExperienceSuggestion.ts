@@ -59,15 +59,19 @@ Your task is to optimize professional experience bullets by incorporating releva
 5. Prioritize impact, results, and quantifiable outcomes
 6. Start each bullet with an appropriate action verb (see verb guidance above)
 7. Focus on achievements, not just tasks
-8. Calculate point value for each bullet optimization
+8. Assign an impact tier to each bullet optimization (critical/high/moderate)
 9. For each bullet, include 1-2 sentence explanation of how it aligns with JD requirements (reference specific keywords)
 
-**Point Value Calculation:**
-For each bullet suggestion, estimate point impact:
-- Major reframe with multiple keywords + metrics = 6-10 points
-- Keyword incorporation with minor metrics = 4-6 points
-- Simple keyword addition without metrics = 2-4 points
-- Experience bullets have HIGH impact (most important section for ATS)
+**Impact Tier Assignment:**
+For each bullet optimization, assign an impact tier:
+- "critical" = Major reframe with multiple keywords + metrics, directly addresses core JD requirements
+- "high" = Keyword incorporation with some metrics, strongly relevant to JD
+- "moderate" = Simple keyword addition or minor enhancement
+
+Also assign a point_value for section-level calculations:
+- critical = 6-10 points
+- high = 4-6 points
+- moderate = 2-4 points
 
 Total point value = sum of all bullet optimizations. Realistic range: 20-40 points for experience section.
 
@@ -100,6 +104,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
           "suggested": "Led cross-functional team to deliver 3-month project, incorporating [keyword], reducing deployment time by 30%",
           "metrics_added": ["3-month", "30%"],
           "keywords_incorporated": ["keyword", "cross-functional"],
+          "impact": "critical",
           "point_value": 8,
           "explanation": "Adding 'cross-functional team leadership' directly addresses JD's requirement for collaboration skills."
         }}
@@ -107,7 +112,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
     }}
   ],
   "total_point_value": 35,
-  "summary": "Reframed 8 bullets across 3 roles, added metrics to 5, incorporated 6 keywords. Total improvement: +35 points."
+  "summary": "Reframed 8 bullets across 3 roles, added metrics to 5, incorporated 6 keywords."
 }}`);
 
 // ============================================================================
@@ -125,6 +130,7 @@ interface ExperienceLLMResponse {
       suggested: string;
       metrics_added: string[];
       keywords_incorporated: string[];
+      impact?: string;
       point_value?: number;
       explanation?: string;
     }>;
@@ -283,6 +289,7 @@ export async function generateExperienceSuggestion(
       }
 
       // Normalize suggested_bullets to ensure all fields exist
+      const validImpactTiers = ['critical', 'high', 'moderate'];
       const normalizedEntries = parsed.experience_entries.map((entry) => ({
         ...entry,
         original_bullets: entry.original_bullets || [],
@@ -293,6 +300,11 @@ export async function generateExperienceSuggestion(
             typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
               ? pointValue
               : undefined;
+
+          // Validate impact tier if present
+          const validImpact = bullet.impact && validImpactTiers.includes(bullet.impact)
+            ? bullet.impact as 'critical' | 'high' | 'moderate'
+            : undefined;
 
           // Handle explanation field (graceful fallback)
           let explanation: string | undefined = undefined;
@@ -317,6 +329,7 @@ export async function generateExperienceSuggestion(
             suggested: String(bullet.suggested || ''),
             metrics_added: Array.isArray(bullet.metrics_added) ? bullet.metrics_added : [],
             keywords_incorporated: Array.isArray(bullet.keywords_incorporated) ? bullet.keywords_incorporated : [],
+            impact: validImpact,
             point_value: validPointValue,
             explanation: explanation,
           };

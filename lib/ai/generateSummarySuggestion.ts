@@ -58,14 +58,16 @@ Your task is to optimize a professional summary by incorporating relevant keywor
 7. Estimate the point value this summary optimization would add to the ATS score
 8. Include a 1-2 sentence explanation of why this summary change improves ATS alignment (reference specific JD keywords or requirements)
 
-**Point Value Calculation:**
-Consider:
-- Keyword relevance to JD (high relevance = higher points)
-- Summary is a high-impact section (baseline: 5-12 points)
-- Magnitude of change (small keyword addition = 5-7 points, major reframe with multiple keywords = 10-12 points)
-- Realistic ATS impact (be conservative, not overly optimistic)
+**Impact Tier Assignment:**
+Assign an impact tier based on magnitude of change:
+- "critical" = Major reframe with multiple high-priority keywords from JD
+- "high" = Significant keyword incorporation with some reframing
+- "moderate" = Minor keyword additions or small enhancements
 
-Assign point value as integer 1-12 for summary changes.
+Also assign a point_value for section-level calculations:
+- critical = 10-12 points
+- high = 7-9 points
+- moderate = 5-7 points
 
 **Critical Rules:**
 - Do NOT add skills or experiences not present in the original
@@ -79,6 +81,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
   "suggested": "Your optimized summary text here",
   "keywords_added": ["keyword1", "keyword2", "keyword3"],
+  "impact": "high",
   "point_value": 8,
   "explanation": "Adding AWS highlights your infrastructure experience directly mentioned in JD's 'AWS expertise required' requirement."
 }}`);
@@ -90,6 +93,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 interface SummaryLLMResponse {
   suggested: string;
   keywords_added: string[];
+  impact?: string;
   point_value?: number;
   explanation?: string;
 }
@@ -229,6 +233,12 @@ export async function generateSummarySuggestion(
         pointValue = undefined;
       }
 
+      // Validate impact tier if present
+      const validImpactTiers = ['critical', 'high', 'moderate'];
+      const validImpact = parsed.impact && validImpactTiers.includes(parsed.impact)
+        ? parsed.impact as 'critical' | 'high' | 'moderate'
+        : undefined;
+
       // Handle explanation field (graceful fallback)
       let explanation: string | undefined = undefined;
       if (parsed.explanation !== undefined && parsed.explanation !== null) {
@@ -250,7 +260,7 @@ export async function generateSummarySuggestion(
       // Detect AI-tell phrases in suggested summary
       const suggestedAITellPhrases = detectAITellPhrases(parsed.suggested);
 
-      console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added, ', point_value:', pointValue, ', explanation:', explanation ? 'present' : 'missing');
+      console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added, ', impact:', validImpact, ', point_value:', pointValue, ', explanation:', explanation ? 'present' : 'missing');
 
       return {
         original: resumeSummary, // Return full original, not truncated
@@ -260,6 +270,7 @@ export async function generateSummarySuggestion(
           ...originalAITellPhrases,
           ...suggestedAITellPhrases,
         ],
+        impact: validImpact,
         point_value: pointValue,
         explanation: explanation,
       };
