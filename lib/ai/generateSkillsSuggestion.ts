@@ -1,6 +1,7 @@
 /**
  * Skills Suggestion Generation
  * Story 6.3: Generate optimized skills section suggestions
+ * Phase 2: LCEL migration
  *
  * Uses Claude LLM to optimize user's skills section by:
  * 1. Extracting skills from resume and job description
@@ -14,102 +15,38 @@ import { ActionResponse, OptimizationPreferences } from '@/types';
 import { SkillsSuggestion } from '@/types/suggestions';
 import { buildPreferencePrompt } from './preferences';
 import { getHaikuModel } from './models';
+import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
 
 // ============================================================================
-// MAIN FUNCTION
+// CONSTANTS
+// ============================================================================
+
+const MAX_SKILLS_LENGTH = 1000;
+const MAX_JD_LENGTH = 3000;
+const MAX_RESUME_LENGTH = 4000;
+
+// ============================================================================
+// PROMPT TEMPLATE
 // ============================================================================
 
 /**
- * Generate optimized skills suggestion using Claude LLM
- *
- * **Features:**
- * - Extracts skills from resume and JD
- * - Identifies matched and missing skills
- * - Suggests additions based on user's experience
- * - Recommends removals for less relevant skills
- * - Applies user optimization preferences
- * - Returns structured ActionResponse
- *
- * **Security:**
- * - User content wrapped in XML tags (prompt injection defense)
- * - Server-side only (never expose API key to client)
- *
- * @param resumeSkills - User's current skills section
- * @param jobDescription - Job description text
- * @param resumeContent - Full resume content for context
- * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
- * @returns ActionResponse with suggestion or error
+ * Prompt template for skills suggestion
+ * Uses XML-wrapped user content for prompt injection defense
  */
-export async function generateSkillsSuggestion(
-  resumeSkills: string,
-  jobDescription: string,
-  resumeContent?: string,
-  preferences?: OptimizationPreferences | null
-): Promise<ActionResponse<SkillsSuggestion>> {
-  try {
-    // Validation
-    if (!resumeSkills || resumeSkills.trim().length === 0) {
-      return {
-        data: null,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Resume skills section is required',
-        },
-      };
-    }
-
-    if (!jobDescription || jobDescription.trim().length === 0) {
-      return {
-        data: null,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Job description is required',
-        },
-      };
-    }
-
-    console.log('[SS:genSkills] Generating skills suggestion (' + resumeSkills?.length + ' chars skills, ' + jobDescription?.length + ' chars JD)');
-    // Truncate very long inputs to avoid timeout
-    const MAX_SKILLS_LENGTH = 1000;
-    const MAX_JD_LENGTH = 3000;
-    const MAX_RESUME_LENGTH = 4000;
-
-    const processedSkills =
-      resumeSkills.length > MAX_SKILLS_LENGTH
-        ? resumeSkills.substring(0, MAX_SKILLS_LENGTH)
-        : resumeSkills;
-
-    const processedJD =
-      jobDescription.length > MAX_JD_LENGTH
-        ? jobDescription.substring(0, MAX_JD_LENGTH)
-        : jobDescription;
-
-    const processedResume = resumeContent
-      ? resumeContent.length > MAX_RESUME_LENGTH
-        ? resumeContent.substring(0, MAX_RESUME_LENGTH)
-        : resumeContent
-      : '';
-
-    // Get shared LLM model
-    const model = getHaikuModel({ temperature: 0.3, maxTokens: 2500 });
-
-    // Build prompt with XML-wrapped user content (prompt injection defense)
-    const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
-
-    const prompt = `You are a resume optimization expert specializing in skills sections.
+const skillsPrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert specializing in skills sections.
 
 Your task is to analyze a skills section and optimize it for a specific job description.
 
 <user_content>
-${processedSkills}
+{skills}
 </user_content>
 
 <job_description>
-${processedJD}
+{jobDescription}
 </job_description>
 
-${processedResume ? `<user_content>\n${processedResume}\n</user_content>` : ''}
-${preferenceSection}
+{resumeSection}
+{preferenceSection}
 **Instructions:**
 1. Extract all skills from the current skills section
 2. Identify skills from the job description that match existing skills
@@ -140,156 +77,220 @@ Total point value = sum of all skill additions. Realistic range: 10-25 points fo
 - Keep explanation concise (1-2 sentences, max 300 chars)
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
-{
+{{
   "existing_skills": ["skill1", "skill2"],
   "matched_keywords": ["matched_skill1", "matched_skill2"],
   "missing_but_relevant": [
-    { "skill": "Docker", "reason": "Job requires containerization; you have DevOps experience", "point_value": 5 }
+    {{ "skill": "Docker", "reason": "Job requires containerization; you have DevOps experience", "point_value": 5 }}
   ],
   "skill_additions": ["Docker", "Kubernetes"],
   "skill_removals": [
-    { "skill": "SkillName", "reason": "Lower priority for this role" }
+    {{ "skill": "SkillName", "reason": "Lower priority for this role" }}
   ],
   "total_point_value": 12,
   "summary": "You have 8/12 key skills. Consider adding Docker and Kubernetes based on your DevOps background. Total improvement: +12 points.",
   "explanation": "Docker and Kubernetes are explicitly listed in the JD's 'Required Skills' section and align with your DevOps background."
-}`;
+}}`);
 
-    // Invoke LLM (timeout enforced at the route level)
-    const response = await model.invoke(prompt);
-    const content = response.content as string;
+// ============================================================================
+// TYPES
+// ============================================================================
 
-    // Parse JSON response
-    let parsed: {
-      existing_skills: string[];
-      matched_keywords: string[];
-      missing_but_relevant: Array<{ skill: string; reason: string; point_value?: number }>;
-      skill_additions: string[];
-      skill_removals: Array<{ skill: string; reason: string }>;
-      total_point_value?: number;
-      summary: string;
-      explanation?: string;
-    };
+interface SkillsLLMResponse {
+  existing_skills: string[];
+  matched_keywords: string[];
+  missing_but_relevant: Array<{ skill: string; reason: string; point_value?: number }>;
+  skill_additions: string[];
+  skill_removals: Array<{ skill: string; reason: string }>;
+  total_point_value?: number;
+  summary: string;
+  explanation?: string;
+}
 
-    try {
-      parsed = JSON.parse(content);
-    } catch (parseError) {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Failed to parse LLM response',
-        },
-      };
-    }
+// ============================================================================
+// CHAIN
+// ============================================================================
 
-    // Validate structure
-    if (!parsed.existing_skills || !Array.isArray(parsed.existing_skills)) {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Invalid existing_skills structure from LLM',
-        },
-      };
-    }
+/**
+ * Create the LCEL chain for skills suggestion
+ * Chain: prompt → model → jsonParser
+ */
+function createSkillsSuggestionChain() {
+  const model = getHaikuModel({ temperature: 0.3, maxTokens: 2500 });
+  const jsonParser = createJsonParser<SkillsLLMResponse>();
 
-    if (!parsed.matched_keywords || !Array.isArray(parsed.matched_keywords)) {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Invalid matched_keywords structure from LLM',
-        },
-      };
-    }
+  return skillsPrompt.pipe(model).pipe(jsonParser);
+}
 
-    if (!parsed.skill_additions || !Array.isArray(parsed.skill_additions)) {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Invalid skill_additions structure from LLM',
-        },
-      };
-    }
+// ============================================================================
+// MAIN FUNCTION
+// ============================================================================
 
-    if (!parsed.summary || typeof parsed.summary !== 'string') {
-      return {
-        data: null,
-        error: {
-          code: 'PARSE_ERROR',
-          message: 'Invalid summary structure from LLM',
-        },
-      };
-    }
-
-    // Normalize missing_but_relevant items to ensure { skill, reason, point_value } structure
-    const normalizedMissing = Array.isArray(parsed.missing_but_relevant)
-      ? parsed.missing_but_relevant.map((item) => {
-          if (typeof item === 'string') {
-            return { skill: item, reason: '', point_value: undefined };
-          }
-          const pointValue = item.point_value;
-          // Validate point_value if present
-          const validPointValue =
-            typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
-              ? pointValue
-              : undefined;
-          return {
-            skill: String(item.skill || ''),
-            reason: String(item.reason || ''),
-            point_value: validPointValue
-          };
-        })
-      : [];
-
-    // Normalize skill_removals items to ensure { skill, reason } structure
-    const normalizedRemovals = Array.isArray(parsed.skill_removals)
-      ? parsed.skill_removals.map((item) =>
-          typeof item === 'string'
-            ? { skill: item, reason: '' }
-            : { skill: String(item.skill || ''), reason: String(item.reason || '') }
-        )
-      : [];
-
-    // Validate total_point_value if present
-    // Note: total can exceed 100 since it sums individual skill values (each 0-100)
-    const totalPointValue =
-      typeof parsed.total_point_value === 'number' &&
-      parsed.total_point_value >= 0
-        ? parsed.total_point_value
-        : undefined;
-
-    if (parsed.total_point_value !== undefined && totalPointValue === undefined) {
-      console.warn('[SS:genSkills] Invalid total_point_value from LLM, ignoring:', parsed.total_point_value);
-    }
-
-    // Handle explanation field (graceful fallback)
-    let explanation: string | undefined = undefined;
-    if (parsed.explanation !== undefined && parsed.explanation !== null) {
-      if (typeof parsed.explanation === 'string') {
-        // Truncate if too long (max 500 chars)
-        explanation = parsed.explanation.length > 500
-          ? parsed.explanation.substring(0, 497) + '...'
-          : parsed.explanation;
-
-        // Validate explanation quality (log warning if generic)
-        const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
-        const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
-        if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill)/i)) {
-          console.warn('[SS:genSkills] Generic explanation detected (missing specific JD keywords):', explanation);
-        }
-      } else {
-        // Convert non-string to empty string
-        explanation = '';
-      }
-    }
-
-    // Return suggestion
-    console.log('[SS:genSkills] Skills generated:', parsed.matched_keywords.length, 'matched,', parsed.skill_additions.length, 'additions, total_point_value:', totalPointValue, ', explanation:', explanation ? 'present' : 'missing');
+/**
+ * Generate optimized skills suggestion using Claude LLM
+ *
+ * **Features:**
+ * - Extracts skills from resume and JD
+ * - Identifies matched and missing skills
+ * - Suggests additions based on user's experience
+ * - Recommends removals for less relevant skills
+ * - Applies user optimization preferences
+ * - Returns structured ActionResponse
+ *
+ * Uses LCEL chain composition for better observability and composability.
+ *
+ * **Security:**
+ * - User content wrapped in XML tags (prompt injection defense)
+ * - Server-side only (never expose API key to client)
+ *
+ * @param resumeSkills - User's current skills section
+ * @param jobDescription - Job description text
+ * @param resumeContent - Full resume content for context
+ * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
+ * @returns ActionResponse with suggestion or error
+ */
+export async function generateSkillsSuggestion(
+  resumeSkills: string,
+  jobDescription: string,
+  resumeContent?: string,
+  preferences?: OptimizationPreferences | null
+): Promise<ActionResponse<SkillsSuggestion>> {
+  // Validation
+  if (!resumeSkills || resumeSkills.trim().length === 0) {
     return {
-      data: {
+      data: null,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Resume skills section is required',
+      },
+    };
+  }
+
+  if (!jobDescription || jobDescription.trim().length === 0) {
+    return {
+      data: null,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Job description is required',
+      },
+    };
+  }
+
+  console.log('[SS:genSkills] Generating skills suggestion (' + resumeSkills?.length + ' chars skills, ' + jobDescription?.length + ' chars JD)');
+
+  // Truncate very long inputs to avoid timeout
+  const processedSkills =
+    resumeSkills.length > MAX_SKILLS_LENGTH
+      ? resumeSkills.substring(0, MAX_SKILLS_LENGTH)
+      : resumeSkills;
+
+  const processedJD =
+    jobDescription.length > MAX_JD_LENGTH
+      ? jobDescription.substring(0, MAX_JD_LENGTH)
+      : jobDescription;
+
+  const processedResume = resumeContent
+    ? resumeContent.length > MAX_RESUME_LENGTH
+      ? resumeContent.substring(0, MAX_RESUME_LENGTH)
+      : resumeContent
+    : '';
+
+  // Build conditional prompt sections
+  const resumeSection = processedResume
+    ? `<user_content>\n${processedResume}\n</user_content>`
+    : '';
+  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
+
+  // Create and invoke LCEL chain
+  const chain = createSkillsSuggestionChain();
+
+  const result = await invokeWithActionResponse(
+    async () => {
+      const parsed = await chain.invoke({
+        skills: processedSkills,
+        jobDescription: processedJD,
+        resumeSection,
+        preferenceSection,
+      });
+
+      // Validate structure
+      if (!parsed.existing_skills || !Array.isArray(parsed.existing_skills)) {
+        throw new Error('Invalid existing_skills structure from LLM');
+      }
+
+      if (!parsed.matched_keywords || !Array.isArray(parsed.matched_keywords)) {
+        throw new Error('Invalid matched_keywords structure from LLM');
+      }
+
+      if (!parsed.skill_additions || !Array.isArray(parsed.skill_additions)) {
+        throw new Error('Invalid skill_additions structure from LLM');
+      }
+
+      if (!parsed.summary || typeof parsed.summary !== 'string') {
+        throw new Error('Invalid summary structure from LLM');
+      }
+
+      // Normalize missing_but_relevant items to ensure { skill, reason, point_value } structure
+      const normalizedMissing = Array.isArray(parsed.missing_but_relevant)
+        ? parsed.missing_but_relevant.map((item) => {
+            if (typeof item === 'string') {
+              return { skill: item, reason: '', point_value: undefined };
+            }
+            const pointValue = item.point_value;
+            // Validate point_value if present
+            const validPointValue =
+              typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
+                ? pointValue
+                : undefined;
+            return {
+              skill: String(item.skill || ''),
+              reason: String(item.reason || ''),
+              point_value: validPointValue
+            };
+          })
+        : [];
+
+      // Normalize skill_removals items to ensure { skill, reason } structure
+      const normalizedRemovals = Array.isArray(parsed.skill_removals)
+        ? parsed.skill_removals.map((item) =>
+            typeof item === 'string'
+              ? { skill: item, reason: '' }
+              : { skill: String(item.skill || ''), reason: String(item.reason || '') }
+          )
+        : [];
+
+      // Validate total_point_value if present
+      const totalPointValue =
+        typeof parsed.total_point_value === 'number' &&
+        parsed.total_point_value >= 0
+          ? parsed.total_point_value
+          : undefined;
+
+      if (parsed.total_point_value !== undefined && totalPointValue === undefined) {
+        console.warn('[SS:genSkills] Invalid total_point_value from LLM, ignoring:', parsed.total_point_value);
+      }
+
+      // Handle explanation field (graceful fallback)
+      let explanation: string | undefined = undefined;
+      if (parsed.explanation !== undefined && parsed.explanation !== null) {
+        if (typeof parsed.explanation === 'string') {
+          // Truncate if too long (max 500 chars)
+          explanation = parsed.explanation.length > 500
+            ? parsed.explanation.substring(0, 497) + '...'
+            : parsed.explanation;
+
+          // Validate explanation quality (log warning if generic)
+          const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
+          const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
+          if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill)/i)) {
+            console.warn('[SS:genSkills] Generic explanation detected (missing specific JD keywords):', explanation);
+          }
+        }
+      }
+
+      console.log('[SS:genSkills] Skills generated:', parsed.matched_keywords.length, 'matched,', parsed.skill_additions.length, 'additions, total_point_value:', totalPointValue, ', explanation:', explanation ? 'present' : 'missing');
+
+      return {
         original: resumeSkills, // Return full original, not truncated
         existing_skills: parsed.existing_skills,
         matched_keywords: parsed.matched_keywords,
@@ -299,45 +300,10 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
         total_point_value: totalPointValue,
         summary: parsed.summary,
         explanation: explanation,
-      },
-      error: null,
-    };
-  } catch (error: unknown) {
-    // Handle timeout
-    if (error instanceof Error && error.message.includes('timeout')) {
-      return {
-        data: null,
-        error: {
-          code: 'LLM_TIMEOUT',
-          message: 'Skills suggestion generation timed out. Please try again.',
-        },
       };
-    }
+    },
+    { errorMessage: 'Failed to generate skills suggestion' }
+  );
 
-    // Handle rate limiting
-    if (
-      error instanceof Error &&
-      error.message.toLowerCase().includes('rate limit')
-    ) {
-      return {
-        data: null,
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'API rate limit exceeded. Please wait and try again.',
-        },
-      };
-    }
-
-    // Generic LLM error
-    return {
-      data: null,
-      error: {
-        code: 'LLM_ERROR',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to generate skills suggestion',
-      },
-    };
-  }
+  return result;
 }
