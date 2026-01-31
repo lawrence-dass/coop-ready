@@ -5,9 +5,10 @@
  *
  * Provides auth context to the entire application and handles:
  * 1. Checking for existing sessions on mount
- * 2. Auto-signing in anonymously if no session exists
- * 3. Listening for auth state changes
- * 4. Exposing auth state via useAuth() hook
+ * 2. Listening for auth state changes
+ * 3. Exposing auth state via useAuth() hook
+ *
+ * Note: Anonymous auth has been removed. Users must sign in to use the app.
  *
  * @example
  * ```typescript
@@ -16,12 +17,12 @@
  * import { useAuth } from '@/components/providers/AuthProvider';
  *
  * function MyComponent() {
- *   const { user, isAnonymous, isLoading, error, anonymousId } = useAuth();
+ *   const { user, isAuthenticated, isLoading, error } = useAuth();
  *
  *   if (isLoading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {error}</div>;
+ *   if (!isAuthenticated) return <div>Please sign in</div>;
  *
- *   return <div>User ID: {anonymousId}</div>;
+ *   return <div>User ID: {user?.id}</div>;
  * }
  * ```
  */
@@ -69,8 +70,8 @@ interface AuthProviderProps {
 /**
  * Provides authentication context to child components.
  *
- * Automatically signs in users anonymously if they don't have a session.
- * Session persists across page refreshes via cookies.
+ * Checks for existing authenticated session on mount.
+ * Users must sign in via /auth/login to access protected routes.
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -94,21 +95,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           data: { user: existingUser },
         } = await supabase.auth.getUser();
 
-        if (existingUser) {
-          setUser(existingUser);
-          setIsLoading(false);
-        } else {
-          // Auto sign-in anonymously
-          const { data, error: signInError } =
-            await supabase.auth.signInAnonymously();
-
-          if (signInError) {
-            setError(signInError.message);
-          } else if (data.user) {
-            setUser(data.user);
-          }
-          setIsLoading(false);
-        }
+        // Set user if exists (could be null if not authenticated)
+        setUser(existingUser);
+        setIsLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Authentication failed');
         setIsLoading(false);

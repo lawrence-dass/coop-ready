@@ -202,11 +202,25 @@ export async function signup(
       }
     }
 
-    // Step 4: Return success
-    // Check if email verification is required
+    // Step 4: Check if email verification is required
     const requiresVerification =
       data.user.email_confirmed_at === null &&
       data.user.confirmation_sent_at !== null;
+
+    // Step 5: If no verification required, explicitly sign in to create session
+    // This ensures session cookies are set properly for immediate access
+    if (!requiresVerification) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        // Account was created but auto-login failed
+        // User can still log in manually
+        console.error('Auto-login after signup failed:', signInError);
+      }
+    }
 
     return {
       data: {
