@@ -7,7 +7,7 @@
  * Story: 11.2 - Implement Optimization Preferences
  */
 
-import type { OptimizationPreferences } from '@/types';
+import type { OptimizationPreferences, UserContext } from '@/types';
 
 /**
  * Build a prompt section describing user preferences
@@ -16,6 +16,7 @@ import type { OptimizationPreferences } from '@/types';
  * that guide suggestion generation according to user preferences.
  *
  * @param preferences - User's optimization preferences
+ * @param userContext - Optional user context from onboarding (career goal, target industries)
  * @returns Formatted prompt instructions as string
  *
  * @example
@@ -30,11 +31,19 @@ import type { OptimizationPreferences } from '@/types';
  *   modificationLevel: 'moderate'
  * };
  *
- * const promptSection = buildPreferencePrompt(prefs);
- * // Returns formatted instructions for the LLM
+ * const userContext: UserContext = {
+ *   careerGoal: 'advancing',
+ *   targetIndustries: ['technology', 'finance']
+ * };
+ *
+ * const promptSection = buildPreferencePrompt(prefs, userContext);
+ * // Returns formatted instructions for the LLM including career context
  * ```
  */
-export function buildPreferencePrompt(preferences: OptimizationPreferences): string {
+export function buildPreferencePrompt(
+  preferences: OptimizationPreferences,
+  userContext?: UserContext
+): string {
   const lines: string[] = [
     '**User Preferences:**',
     'Generate suggestions according to these user preferences:',
@@ -114,6 +123,36 @@ export function buildPreferencePrompt(preferences: OptimizationPreferences): str
     lines.push('- **Modification Level:** Make AGGRESSIVE changes (60-75% modification)');
     lines.push('  - Full rewrite for maximum impact');
     lines.push('  - Significant reorganization and transformation allowed');
+  }
+
+  // Career goal context from onboarding (if provided)
+  if (userContext?.careerGoal) {
+    const careerGoalInstructions: Record<string, string> = {
+      'first-job':
+        'User is seeking their **first professional role**. Emphasize transferable skills from academic projects, internships, and extracurriculars. Highlight eagerness to learn and potential.',
+      'switching-careers':
+        'User is **transitioning to a new career**. Highlight transferable skills that bridge their previous experience to this new field. Focus on adaptability and relevant crossover.',
+      'advancing':
+        'User is **advancing in their current field**. Emphasize growth trajectory, expanded responsibilities, and deepening domain expertise.',
+      'promotion':
+        'User is **seeking a promotion**. Highlight leadership potential, initiative-taking, and readiness for increased responsibility.',
+      'returning':
+        'User is **returning to the workforce**. Emphasize staying current with industry trends, relevant skills, and readiness to contribute.',
+    };
+    const instruction = careerGoalInstructions[userContext.careerGoal];
+    if (instruction) {
+      lines.push(`- **Career Goal:** ${instruction}`);
+    }
+  }
+
+  // Target industries context from onboarding (if provided)
+  if (userContext?.targetIndustries && userContext.targetIndustries.length > 0) {
+    const formatted = userContext.targetIndustries
+      .map((industry) => industry.charAt(0).toUpperCase() + industry.slice(1))
+      .join(', ');
+    lines.push(
+      `- **Target Industries:** User is targeting roles in: ${formatted}. Tailor language and keywords to resonate with these specific industries.`
+    );
   }
 
   lines.push('');

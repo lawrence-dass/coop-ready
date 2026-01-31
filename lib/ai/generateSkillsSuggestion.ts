@@ -11,7 +11,7 @@
  * 5. Returning structured suggestions
  */
 
-import { ActionResponse, OptimizationPreferences } from '@/types';
+import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { SkillsSuggestion } from '@/types/suggestions';
 import { buildPreferencePrompt } from './preferences';
 import { getHaikuModel } from './models';
@@ -147,13 +147,15 @@ function createSkillsSuggestionChain() {
  * @param jobDescription - Job description text
  * @param resumeContent - Full resume content for context
  * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
+ * @param userContext - User context from onboarding (optional, for LLM personalization)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSkillsSuggestion(
   resumeSkills: string,
   jobDescription: string,
   resumeContent?: string,
-  preferences?: OptimizationPreferences | null
+  preferences?: OptimizationPreferences | null,
+  userContext?: UserContext
 ): Promise<ActionResponse<SkillsSuggestion>> {
   // Validation
   if (!resumeSkills || resumeSkills.trim().length === 0) {
@@ -199,7 +201,7 @@ export async function generateSkillsSuggestion(
   const resumeSection = processedResume
     ? `<user_content>\n${processedResume}\n</user_content>`
     : '';
-  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
+  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
 
   // Create and invoke LCEL chain
   const chain = createSkillsSuggestionChain();

@@ -10,7 +10,7 @@
  * 4. Returning structured suggestions
  */
 
-import { ActionResponse, OptimizationPreferences } from '@/types';
+import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { SummarySuggestion } from '@/types/suggestions';
 import { detectAITellPhrases } from './detectAITellPhrases';
 import { buildPreferencePrompt } from './preferences';
@@ -131,13 +131,15 @@ function createSummarySuggestionChain() {
  * @param jobDescription - Job description text
  * @param keywords - Extracted keywords from JD (optional for context)
  * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
+ * @param userContext - User context from onboarding (optional, for LLM personalization)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSummarySuggestion(
   resumeSummary: string,
   jobDescription: string,
   keywords?: string[],
-  preferences?: OptimizationPreferences | null
+  preferences?: OptimizationPreferences | null,
+  userContext?: UserContext
 ): Promise<ActionResponse<SummarySuggestion>> {
   // Validation
   if (!resumeSummary || resumeSummary.trim().length === 0) {
@@ -180,7 +182,7 @@ export async function generateSummarySuggestion(
   const keywordsSection = keywords && keywords.length > 0
     ? `<extracted_keywords>\n${keywords.join(', ')}\n</extracted_keywords>`
     : '';
-  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences)}\n` : '';
+  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
 
   // Create and invoke LCEL chain
   const chain = createSummarySuggestionChain();
