@@ -43,6 +43,13 @@ export async function GET(request: Request) {
     );
   }
 
+  // OAuth users (Google) have verified emails - mark as verified
+  // This also ensures the user record exists (trigger should create it)
+  await supabase
+    .from('users')
+    .update({ email_verified: true })
+    .eq('id', data.session.user.id);
+
   // Check if user needs onboarding
   // New users (no record or onboarding_complete=false) should complete onboarding
   const { data: userData } = await supabase

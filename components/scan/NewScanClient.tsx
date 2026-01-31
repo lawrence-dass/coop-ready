@@ -32,6 +32,7 @@ import { JobDescriptionInput } from '@/components/shared/JobDescriptionInput';
 import { PreferencesPanel } from '@/components/scan/PreferencesPanel';
 import { ErrorDisplay } from '@/components/shared/ErrorDisplay';
 import { PrivacyConsentDialog } from '@/components/shared';
+import { EmailVerificationModal } from '@/components/shared/EmailVerificationModal';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ import { createScanSession } from '@/actions/scan/create-session';
 import { generateAllSuggestions } from '@/actions/generateAllSuggestions';
 import { usePrivacyConsent } from '@/hooks/usePrivacyConsent';
 import { acceptPrivacyConsent } from '@/actions/privacy/accept-privacy-consent';
+import { checkEmailVerified } from '@/actions/auth/send-verification-email';
 import type { ActionResponse } from '@/types';
 import { ROUTES } from '@/lib/constants/routes';
 
@@ -66,12 +68,16 @@ const ANALYSIS_TIPS = [
 
 export function NewScanClient() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [loadingStep, setLoadingStep] = useState<string>('');
   const [pendingFileForConsent, setPendingFileForConsent] = useState<File | null>(null);
   const [isPendingConsent, startConsentTransition] = useTransition();
   const [tipIndex, setTipIndex] = useState(0);
+
+  // Email verification state
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
 
   // Rotate tips while analyzing
   useEffect(() => {
@@ -86,6 +92,20 @@ export function NewScanClient() {
 
     return () => clearInterval(interval);
   }, [isPending]);
+
+  // Check email verification status on mount
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    async function checkVerification() {
+      const { data } = await checkEmailVerified();
+      if (data) {
+        setEmailVerified(data.verified);
+      }
+    }
+
+    checkVerification();
+  }, [isAuthenticated]);
 
   // Privacy consent hook
   const { privacyAccepted, refetch: refetchPrivacyConsent } = usePrivacyConsent();
@@ -197,6 +217,12 @@ export function NewScanClient() {
       try {
         // Clear any previous errors but keep inputs visible during analysis
         clearGeneralError();
+
+        // Check email verification before proceeding (for authenticated users)
+        if (isAuthenticated && emailVerified === false) {
+          setShowVerificationModal(true);
+          return;
+        }
 
         setLoadingStep('Creating session...');
 
@@ -453,6 +479,19 @@ export function NewScanClient() {
         open={showPrivacyDialog}
         onOpenChange={setShowPrivacyDialog}
         onAccept={handleAcceptConsent}
+      />
+
+      {/* Email Verification Modal */}
+      <EmailVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        onVerified={() => {
+          setEmailVerified(true);
+          setShowVerificationModal(false);
+          // Auto-trigger analyze after verification
+          handleAnalyze();
+        }}
+        email={user?.email || ''}
       />
     </div>
   );

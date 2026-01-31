@@ -202,31 +202,92 @@ export async function signup(
       }
     }
 
-    // Step 4: Check if email verification is required
+    // Step 4: Check if Supabase requires email verification (legacy check)
+    // With our new flow, Supabase email confirmation should be DISABLED
+    // so this should always be false
     const requiresVerification =
       data.user.email_confirmed_at === null &&
       data.user.confirmation_sent_at !== null;
 
-    // Step 5: If no verification required, explicitly sign in to create session
-    // This ensures session cookies are set properly for immediate access
-    if (!requiresVerification) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+    console.log('[SS:signup] signUp result:', {
+      hasSession: !!data.session,
+      emailConfirmedAt: data.user.email_confirmed_at,
+      confirmationSentAt: data.user.confirmation_sent_at,
+      requiresVerification,
+    });
+
+    // Step 5: Ensure we have a session
+    // If Supabase email confirmation is disabled, signUp creates a session
+    // If not, we need to handle it gracefully
+    if (!data.session) {
+      if (requiresVerification) {
+        // Supabase email confirmation is still enabled - old flow
+        // User must verify email before they can log in
+        return {
+          data: {
+            userId: data.user.id,
+            email: data.user.email || email,
+            requiresVerification: true,
+            emailVerificationSent: true, // Supabase sent it
+          },
+          error: null,
+        };
+      }
+
+      // No session and no verification required - try explicit sign in
+      console.log('[SS:signup] No session from signUp, attempting explicit sign in');
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError || !signInData.session) {
+        console.error('Auto-login after signup failed:', signInError?.message);
+        return {
+          data: null,
+          error: {
+            message: 'Account created successfully! Please sign in to continue.',
+            code: ERROR_CODES.AUTH_ERROR,
+          },
+        };
+      }
+    }
+
+    // Step 6: Set email_verified = false in users table (for email signups)
+    // The trigger should have created the user record, but update to ensure flag is set
+    await supabase
+      .from('users')
+      .update({
+        email_verified: false,
+        email_verification_sent_at: new Date().toISOString(),
+      })
+      .eq('id', data.user.id);
+
+    // Step 7: Send verification email via magic link
+    let emailVerificationSent = false;
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
-        password,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/verify`,
+        },
       });
 
-      if (signInError) {
-        // Account was created but auto-login failed
-        // User can still log in manually
-        console.error('Auto-login after signup failed:', signInError);
+      if (!otpError) {
+        emailVerificationSent = true;
+        console.log('[SS:signup] Verification email sent to:', email);
+      } else {
+        console.error('[SS:signup] Failed to send verification email:', otpError.message);
       }
+    } catch (err) {
+      console.error('[SS:signup] Error sending verification email:', err);
     }
 
     return {
       data: {
         userId: data.user.id,
         email: data.user.email || email,
-        requiresVerification,
+        requiresVerification: false, // User has session, can access app
+        emailVerificationSent,
       },
       error: null,
     };

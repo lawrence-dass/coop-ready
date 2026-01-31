@@ -31,8 +31,11 @@ export interface SignupResult {
   /** User's email address */
   email: string;
 
-  /** Whether email verification is required */
+  /** Whether Supabase requires email verification before login (legacy) */
   requiresVerification: boolean;
+
+  /** Whether we sent a verification email (new delayed verification flow) */
+  emailVerificationSent: boolean;
 }
 
 /**

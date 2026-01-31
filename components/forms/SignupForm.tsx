@@ -121,16 +121,22 @@ export function SignupForm({ onSuccess, onVerificationRequired }: SignupFormProp
 
       // Success
       if (data.requiresVerification) {
+        // Legacy flow: Supabase requires email verification before login
         toast.success('Verification email sent! Please check your inbox.');
         onVerificationRequired?.(data.email);
       } else {
-        toast.success('Account created successfully!');
+        // New flow: User has session, redirect to onboarding
+        // Show message about verification email if sent
+        if (data.emailVerificationSent) {
+          toast.success('Account created! Check your email to verify your address.');
+        } else {
+          toast.success('Account created successfully!');
+        }
+
         if (onSuccess) {
           onSuccess(data.userId, data.email);
         } else {
           // Full page reload to ensure session cookies are synced, then redirect
-          // This is necessary because server action cookies may not be immediately
-          // available for subsequent client-side navigations
           window.location.replace('/auth/onboarding');
         }
       }
