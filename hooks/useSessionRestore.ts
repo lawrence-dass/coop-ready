@@ -4,10 +4,10 @@
  * Restores the user's session from the database on app mount.
  *
  * **Flow:**
- * 1. Wait for auth to provide anonymousId
+ * 1. Wait for auth to provide anonymousId (user ID)
  * 2. Check database for existing session
  * 3. If found → hydrate Zustand store
- * 4. If not found → create new empty session
+ * 4. If not found → do nothing (session created by createScanSession when user starts a scan)
  *
  * **Usage:**
  * Call this hook in SessionProvider after auth is ready.
@@ -29,7 +29,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useOptimizationStore } from '@/store';
-import { getSessionByAnonymousId, createSession } from '@/lib/supabase/sessions';
+import { getSessionByAnonymousId } from '@/lib/supabase/sessions';
 
 interface UseSessionRestoreProps {
   /** Anonymous user ID from auth */
@@ -52,8 +52,8 @@ interface UseSessionRestoreReturn {
  * **Behavior:**
  * - Runs once when anonymousId becomes available
  * - Tries to load existing session
- * - Creates new session if none exists
- * - Hydrates store with session data
+ * - If no session exists, does nothing (session created when user starts a scan)
+ * - Hydrates store with session data if found
  * - Handles errors gracefully
  */
 export function useSessionRestore({
@@ -64,7 +64,6 @@ export function useSessionRestore({
   const [error, setError] = useState<string | null>(null);
 
   const loadFromSession = useOptimizationStore((state) => state.loadFromSession);
-  const setSessionId = useOptimizationStore((state) => state.setSessionId);
 
   useEffect(() => {
     // Wait for auth to finish before deciding
@@ -106,23 +105,8 @@ export function useSessionRestore({
           return;
         }
 
-        // No session found - create new one
-        console.log('[SS:session] No existing session, creating new one');
-        const { data: newSession, error: createError } =
-          await createSession(anonymousId);
-
-        if (createError) {
-          // Failed to create session
-          console.log('[SS:session] Failed to create session:', createError.message);
-          setError(createError.message);
-          toast.error(`Failed to create session: ${createError.message}`);
-          setIsRestoring(false);
-          return;
-        }
-
-        // Set the new session ID (empty session)
-        console.log('[SS:session] New session created:', newSession.id);
-        setSessionId(newSession.id);
+        // No session found - that's fine, one will be created when user starts a scan
+        console.log('[SS:session] No existing session found, user will create one when starting a scan');
         setIsRestoring(false);
       } catch (err) {
         const errorMessage =
@@ -134,7 +118,7 @@ export function useSessionRestore({
     }
 
     restoreSession();
-  }, [anonymousId, authLoading, loadFromSession, setSessionId]);
+  }, [anonymousId, authLoading, loadFromSession]);
 
   return {
     isRestoring,
