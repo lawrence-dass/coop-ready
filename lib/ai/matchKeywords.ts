@@ -10,6 +10,8 @@ const MATCHING_TIMEOUT_MS = 20000; // 20 seconds budget for matching
 /**
  * Prompt template for keyword matching
  * Uses XML-wrapped user content for prompt injection defense
+ *
+ * V2.1 Update: Added placement detection for keywords
  */
 const matchingPrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert analyzing keyword matches.
 
@@ -27,6 +29,14 @@ For each keyword:
 - found: true/false
 - context: exact phrase from resume where found (if found, max 100 chars)
 - matchType: "exact" (exact string match), "fuzzy" (abbreviation/variation), or "semantic" (similar meaning)
+- placement: Where the keyword appears in the resume (if found):
+  - "skills_section" = In a dedicated Skills/Technical Skills section
+  - "summary" = In professional summary/profile at the top
+  - "experience_bullet" = In a bullet point under work experience
+  - "experience_paragraph" = In paragraph text under experience (not bullet)
+  - "education" = In education section
+  - "projects" = In projects section
+  - "other" = Elsewhere (header, interests, etc.)
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
@@ -35,8 +45,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       "keyword": "Python",
       "category": "technologies",
       "found": true,
-      "context": "Developed data pipelines using Python and pandas",
-      "matchType": "exact"
+      "context": "Python, JavaScript, TypeScript",
+      "matchType": "exact",
+      "placement": "skills_section"
     }},
     {{
       "keyword": "Docker",
