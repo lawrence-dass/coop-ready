@@ -118,7 +118,9 @@ async function judgeSectionSuggestion(
   suggestedText: string,
   originalText: string,
   jdContent: string,
-  sessionId: string
+  sessionId: string,
+  jobType?: 'coop' | 'fulltime',
+  modificationLevel?: 'conservative' | 'moderate' | 'aggressive'
 ): Promise<JudgeResult | null> {
   try {
     const context: SuggestionContext = {
@@ -126,6 +128,8 @@ async function judgeSectionSuggestion(
       suggested_text: suggestedText,
       jd_excerpt: truncateAtSentence(jdContent, 500),
       section_type: sectionType,
+      job_type: jobType,
+      modification_level: modificationLevel,
     };
 
     const result = await judgeSuggestion(
@@ -287,6 +291,10 @@ export async function generateAllSuggestions(
     // =========================================================================
     console.log('[SS:generateAll] Starting judge phase...');
 
+    // Extract preferences for judge context
+    const jobType = preferences?.jobType;
+    const modificationLevel = preferences?.modificationLevel;
+
     interface JudgeTask {
       section: 'summary' | 'skills' | 'experience' | 'education';
       target: unknown; // The object to augment with judge data
@@ -354,7 +362,9 @@ export async function generateAllSuggestions(
           task.suggestedText,
           task.originalText,
           jobDescription,
-          sessionId
+          sessionId,
+          jobType,
+          modificationLevel
         );
         return { index, judgeResult };
       })
@@ -396,20 +406,85 @@ export async function generateAllSuggestions(
       }
     }
 
+    // =========================================================================
+    // COMPUTE JUDGE STATISTICS
+    // Aggregate stats for easier querying (following ats_score pattern)
+    // =========================================================================
+    interface SectionStats {
+      count: number;
+      passed: number;
+      avg_score: number;
+    }
+
+    function computeSectionStats(section: 'summary' | 'skills' | 'experience' | 'education'): SectionStats {
+      const sectionResults = judgeResults
+        .filter((r, i) => r.status === 'fulfilled' && r.value?.judgeResult && judgeTasks[i].section === section)
+        .map(r => (r as PromiseFulfilledResult<{ index: number; judgeResult: JudgeResult | null }>).value.judgeResult!)
+        .filter((r): r is JudgeResult => r !== null);
+
+      if (sectionResults.length === 0) {
+        return { count: 0, passed: 0, avg_score: 0 };
+      }
+
+      return {
+        count: sectionResults.length,
+        passed: sectionResults.filter(r => r.passed).length,
+        avg_score: Math.round(sectionResults.reduce((sum, r) => sum + r.quality_score, 0) / sectionResults.length),
+      };
+    }
+
+    const judgeStats = allJudgeResults.length > 0 ? {
+      total_count: allJudgeResults.length,
+      passed_count: allJudgeResults.filter(r => r.passed).length,
+      pass_rate: Math.round((allJudgeResults.filter(r => r.passed).length / allJudgeResults.length) * 100) / 100,
+      average_score: Math.round(allJudgeResults.reduce((sum, r) => sum + r.quality_score, 0) / allJudgeResults.length),
+      has_failures: allJudgeResults.some(r => !r.passed),
+      failed_sections: [...new Set(
+        judgeTasks
+          .filter((_, i) => {
+            const r = judgeResults[i];
+            return r.status === 'fulfilled' &&
+              (r as PromiseFulfilledResult<{ index: number; judgeResult: JudgeResult | null }>).value?.judgeResult &&
+              !(r as PromiseFulfilledResult<{ index: number; judgeResult: JudgeResult | null }>).value.judgeResult!.passed;
+          })
+          .map(t => t.section)
+      )],
+      by_section: {
+        summary: computeSectionStats('summary'),
+        skills: computeSectionStats('skills'),
+        experience: computeSectionStats('experience'),
+        education: computeSectionStats('education'),
+      },
+    } : null;
+
     // Save successful suggestions to session using server client (for proper auth context)
     const dbUpdate: Record<string, unknown> = {};
     if (result.summary) dbUpdate.summary_suggestion = result.summary;
     if (result.skills) dbUpdate.skills_suggestion = result.skills;
     if (result.experience) dbUpdate.experience_suggestion = result.experience;
     if (result.education) dbUpdate.education_suggestion = result.education;
+    if (judgeStats) dbUpdate.judge_stats = judgeStats;
 
     if (Object.keys(dbUpdate).length > 0) {
       try {
         const supabase = await createClient();
-        const { error: saveError } = await supabase
+        let { error: saveError } = await supabase
           .from('sessions')
           .update(dbUpdate)
           .eq('id', sessionId);
+
+        // If judge_stats column doesn't exist yet (migration not applied), retry without it
+        if (saveError?.message?.includes('judge_stats') && dbUpdate.judge_stats) {
+          console.warn('[SS:generateAll] judge_stats column not found, saving without it (run migration to enable)');
+          const dbUpdateWithoutStats = { ...dbUpdate };
+          delete dbUpdateWithoutStats.judge_stats;
+
+          const retryResult = await supabase
+            .from('sessions')
+            .update(dbUpdateWithoutStats)
+            .eq('id', sessionId);
+          saveError = retryResult.error;
+        }
 
         if (saveError) {
           console.error('[SS:generateAll] Session save failed:', saveError.message);

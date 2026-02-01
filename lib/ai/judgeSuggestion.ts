@@ -46,6 +46,33 @@ interface JudgeLLMResponse {
 // ============================================================================
 
 /**
+ * Cheap gate: Detect near-duplicate suggestions (no meaningful change)
+ * Returns true if suggestion is essentially the same as original
+ *
+ * Uses character-level Jaccard similarity for simplicity and speed.
+ * Threshold is 95% to be conservative and avoid false positives.
+ */
+function isNearDuplicate(original: string, suggested: string): boolean {
+  // Normalize for comparison
+  const normalizedOriginal = original.toLowerCase().trim().replace(/\s+/g, ' ');
+  const normalizedSuggested = suggested.toLowerCase().trim().replace(/\s+/g, ' ');
+
+  // Exact match
+  if (normalizedOriginal === normalizedSuggested) {
+    return true;
+  }
+
+  // Character-level Jaccard similarity
+  const originalChars = new Set(normalizedOriginal.split(''));
+  const suggestedChars = new Set(normalizedSuggested.split(''));
+  const intersection = [...originalChars].filter(c => suggestedChars.has(c)).length;
+  const union = new Set([...originalChars, ...suggestedChars]).size;
+  const similarity = union > 0 ? intersection / union : 0;
+
+  return similarity > 0.95; // 95% similar = near duplicate
+}
+
+/**
  * Validate criteria scores from LLM response
  */
 function validateCriteriaScores(scores: Partial<JudgeCriteriaScores>): {
@@ -137,6 +164,27 @@ export async function judgeSuggestion(
           code: 'VALIDATION_ERROR',
           message: 'Suggestion text is required',
         },
+      };
+    }
+
+    // Cheap gate: near-duplicate detection
+    if (isNearDuplicate(context.original_text, suggestion)) {
+      console.log(`[SS:judge] ${suggestionId} flagged as near-duplicate (cheap gate)`);
+      return {
+        data: {
+          suggestion_id: suggestionId,
+          quality_score: 25,
+          passed: false,
+          reasoning: 'Near-duplicate: suggestion is essentially unchanged from original',
+          criteria_breakdown: {
+            authenticity: 25, // Not fabricated
+            clarity: 0,       // No improvement
+            ats_relevance: 0, // No keyword work
+            actionability: 0, // Not actionable
+          },
+          recommendation: 'regenerate',
+        },
+        error: null,
       };
     }
 
