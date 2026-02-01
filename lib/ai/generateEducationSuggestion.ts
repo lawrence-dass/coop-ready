@@ -37,13 +37,29 @@ const MAX_RESUME_LENGTH = 4000;
  */
 const educationPrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert specializing in education sections, particularly for students and early-career professionals seeking co-op, internship, and entry-level positions.
 
-Your task is to ENHANCE and EXPAND a sparse education section by:
-1. Adding relevant coursework based on degree program and job requirements
-2. Suggesting academic projects and achievements to highlight
-3. Adding missing details (location, GPA prompt, graduation formatting)
-4. Making education a STRONG asset for the application
+**CRITICAL CONSTRAINT - ABSOLUTE RULE:**
+You MUST NEVER create, invent, or suggest adding factual claims that don't exist in the user's original education section. This includes:
+- ❌ Coursework not explicitly listed by the user
+- ❌ Projects or capstone work not mentioned by the user
+- ❌ Academic honors, awards, or achievements not stated by the user
+- ❌ GPAs, dates, or institutions not provided by the user
+- ❌ ANY content that claims the user did something they didn't list
 
-**CRITICAL:** Many students have sparse education sections with just degree/institution/date. Your job is to suggest ADDING valuable content, not just optimizing existing content.
+**WHAT YOU CAN DO:**
+✅ Reformat existing content for better ATS parsing
+✅ Suggest moving information (e.g., "Move GPA to same line as degree")
+✅ Improve phrasing of existing bullets (if user provided coursework/projects)
+✅ Mark future actions as "Recommendation:" (e.g., "Recommendation: Consider obtaining AWS Cloud Practitioner certification")
+✅ Formatting improvements (dates, location, structure)
+
+**WHAT YOU CANNOT DO:**
+❌ Add coursework lists unless user provided them
+❌ Create project descriptions unless user mentioned projects
+❌ Invent honors or achievements
+❌ Add ANY new factual claims about the past
+
+If the education section is sparse, suggest FORMATTING improvements only.
+Recommendations for FUTURE actions (certifications, courses) must be clearly marked with "Recommendation:" prefix.
 
 <user_content>
 {education}
@@ -58,114 +74,89 @@ Your task is to ENHANCE and EXPAND a sparse education section by:
 {preferenceSection}
 **Instructions:**
 1. Extract each education entry (institution, degree, dates, GPA if present)
-2. Analyze JD for degree requirements, technical skills, and coursework needs
-3. **ALWAYS generate at least 2-4 suggested bullets per entry**, even if original is sparse
-4. For each entry, suggest bullets that ADD:
-   - **Relevant Coursework:** 4-6 specific courses matching JD (e.g., "Relevant Coursework: Data Structures, Database Systems, Network Administration, Software Development")
-   - **Academic Projects:** Project description with technologies/skills from JD (e.g., "Capstone Project: Developed [type of application] using [relevant technologies]")
-   - **Certifications:** Recommend relevant certifications based on JD requirements and degree (e.g., "Recommended Certifications: AWS Cloud Practitioner, CompTIA A+")
-   - **GPA/Honors:** If GPA not shown, suggest "Add GPA if 3.5+ (strengthens entry-level candidacy)"
-   - **Location:** Add city, state if missing (e.g., "Denver, CO")
-   - **Graduation Date:** Format consistently (e.g., "Expected May 2024" or "Graduated: May 2021")
-5. Calculate point value for each suggestion
-6. Provide actionable summary
+2. Analyze JD for degree requirements and technical skills
+3. ONLY suggest improvements to EXISTING content or clearly marked future recommendations
+4. For each entry, suggest ONLY:
+   - **Formatting improvements:** Date formats, location formatting, GPA placement (ONLY if these exist in original)
+   - **Phrasing improvements:** Better wording of user's existing coursework/projects (ONLY if user listed them)
+   - **Future Recommendations:** Certifications to consider obtaining (MUST start with "Recommendation:")
+   - **Missing formatting details:** Location (ONLY if inferrable from institution name like "Stanford University" → "Stanford, CA")
+5. Calculate point value for each suggestion (formatting = 1-3 points, recommendations = 2-5 points)
+6. Provide actionable summary focused on what was improved, not what was added
+
+**Suggestion Rules (CRITICAL):**
+- Each suggestion is INDEPENDENT - base ALL suggestions on the ORIGINAL resume text provided by the user
+- The "original" field MUST contain EXACT text from the user's resume, NEVER use descriptions like "No location formatting" or "Missing X"
+- If the original text doesn't have something, use the actual text that exists (e.g., "DePaul University\n2020" not "No location")
+- Do NOT create multiple suggestions for the same change - combine related improvements into ONE suggestion
+- For location inference, the "original" should show the line WITHOUT location, "suggested" shows it WITH location
+- Maximum 2-3 suggestions per entry to avoid redundancy
 
 **Impact Tier Assignment:**
 For each education suggestion, assign an impact tier:
-- "critical" = Core coursework or academic projects directly matching JD requirements
-- "high" = Certification recommendations or strong relevant additions
-- "moderate" = Formatting fixes, location, or minor enhancements
+- "critical" = Major formatting fix affecting ATS parseability
+- "high" = Future certification recommendations aligned with JD
+- "moderate" = Minor formatting improvements (dates, location)
 
 Also assign a point_value for section-level calculations:
-- critical = 8-12 points (Relevant Coursework, major Academic Projects)
-- high = 4-7 points (Certification recommendations, GPA/honors)
-- moderate = 1-3 points (Location/formatting fixes)
-- Total realistic range: 18-40 points for enhanced education section
+- critical = 3-4 points (Major formatting fixes only)
+- high = 2-5 points (Certification recommendations for future action)
+- moderate = 1-2 points (Minor formatting fixes)
+- Total realistic range: 3-10 points for formatting improvements + recommendations
 
-**Coursework Inference by Degree:**
-- Information Technology → Database Management, Network Administration, Systems Analysis, IT Project Management, Web Development, Programming (Java/Python), Cybersecurity Fundamentals
-- Computer Science → Data Structures, Algorithms, Database Systems, Operating Systems, Software Engineering, Computer Networks
-- Software Engineering → Software Design, Agile Methodologies, Testing & QA, System Architecture, DevOps Practices
-- Business/MIS → Business Analytics, Database Management, Systems Analysis, Project Management, Business Intelligence
-- Engineering (General) → Calculus, Physics, Engineering Design, Technical Communication, Statistics
-
-**Certification Recommendations by Degree/JD:**
-- Cloud/AWS mentioned in JD → AWS Cloud Practitioner, AWS Solutions Architect Associate
-- Azure mentioned in JD → Microsoft Azure Fundamentals (AZ-900)
-- IT/Networking degree → CompTIA A+, CompTIA Network+, CompTIA Security+
-- Web Development → Meta Front-End Developer, Google UX Design
-- Data/Analytics → Google Data Analytics, IBM Data Science
-- Project Management → CAPM (entry-level PMP), Scrum Fundamentals
-- Cybersecurity → CompTIA Security+, ISC2 CC (Certified in Cybersecurity)
-- General Tech → GitHub Foundations, Google IT Support Professional
-Note: Many certifications are free/discounted for students. Recommend based on JD keywords.
+**Certification Recommendations (Future Actions Only):**
+When suggesting certifications, these must be clearly marked as "Recommendation:" and are future actions, not current credentials:
+- Cloud/AWS mentioned in JD → Recommendation: AWS Cloud Practitioner, AWS Solutions Architect Associate
+- Azure mentioned in JD → Recommendation: Microsoft Azure Fundamentals (AZ-900)
+- IT/Networking roles → Recommendation: CompTIA A+, CompTIA Network+, CompTIA Security+
+- Web Development → Recommendation: Meta Front-End Developer, Google UX Design
+- Data/Analytics → Recommendation: Google Data Analytics, IBM Data Science
+- Project Management → Recommendation: CAPM (entry-level PMP), Scrum Fundamentals
+- Cybersecurity → Recommendation: CompTIA Security+, ISC2 CC (Certified in Cybersecurity)
+Note: These are SUGGESTIONS for future action, not claims about current credentials.
 
 **Critical Rules:**
-- ALWAYS suggest at least 2 bullets, even for sparse input
-- Infer coursework from degree program - these are standard curriculum courses
-- For "original" field: use descriptive text like "No coursework listed" or "Missing relevant details"
-- Do NOT fabricate GPAs or specific grades - suggest adding if strong
-- Be specific with course names (not just "programming courses")
-- For co-op/internship: education is PRIMARY credential - maximize impact
+- NEVER fabricate coursework, projects, or achievements
+- NEVER infer coursework unless user explicitly listed it
+- For "original" field: use EXACT text from user's resume or "Formatting improvement needed"
+- Do NOT fabricate GPAs, honors, or awards - only suggest format improvements if they exist
+- Only suggest 1-3 bullets for sparse sections (formatting + recommendations only)
+- For co-op/internship: If education is sparse, focus on formatting quality and future certification recommendations
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
   "education_entries": [
     {{
-      "institution": "University of Colorado Denver",
-      "degree": "Bachelor of Science in Information Technology",
-      "dates": "2021",
+      "institution": "DePaul University",
+      "degree": "Bachelor's Degree in Information Systems",
+      "dates": "2020",
       "gpa": null,
       "original_bullets": [],
       "suggested_bullets": [
         {{
-          "original": "No relevant coursework listed",
-          "suggested": "Relevant Coursework: Database Management, Network Administration, Systems Analysis, Web Development, IT Project Management, Programming",
-          "keywords_incorporated": ["database", "network", "systems", "programming"],
-          "impact": "critical",
-          "point_value": 10,
-          "explanation": "Adding relevant coursework demonstrates technical foundation matching JD requirements"
-        }},
-        {{
-          "original": "No academic projects listed",
-          "suggested": "Capstone Project: Designed and implemented [project type] demonstrating skills in [relevant technologies from JD]",
-          "keywords_incorporated": ["project management", "implementation"],
-          "impact": "critical",
-          "point_value": 6,
-          "explanation": "Academic projects show practical application of skills for entry-level roles"
-        }},
-        {{
-          "original": "No certifications listed",
-          "suggested": "Recommended Certifications: AWS Cloud Practitioner, CompTIA A+ (aligns with JD requirements for cloud and IT fundamentals)",
-          "keywords_incorporated": ["AWS", "cloud", "IT"],
-          "impact": "high",
-          "point_value": 4,
-          "explanation": "Industry certifications validate skills beyond coursework and directly match JD keywords"
-        }},
-        {{
-          "original": "GPA not displayed",
-          "suggested": "Add GPA if 3.5+ (e.g., GPA: 3.X/4.0) - strengthens candidacy for entry-level positions",
-          "keywords_incorporated": [],
-          "impact": "high",
-          "point_value": 4,
-          "explanation": "Strong GPA validates academic performance for employers evaluating entry-level candidates"
-        }},
-        {{
-          "original": "Location not specified",
-          "suggested": "Add location: Denver, CO",
+          "original": "Bachelor's Degree in Information Systems\\nDePaul University\\n2020",
+          "suggested": "Bachelor's Degree in Information Systems | DePaul University, Chicago, IL | 2020",
           "keywords_incorporated": [],
           "impact": "moderate",
-          "point_value": 1,
-          "explanation": "Location helps recruiters assess local candidates and reduces relocation concerns"
+          "point_value": 2,
+          "explanation": "Added inferred location (Chicago, IL) and pipe separators for better ATS parseability"
+        }},
+        {{
+          "original": "User has not listed certifications or professional development",
+          "suggested": "Recommendation: Consider CompTIA A+ or AWS Cloud Practitioner to complement Information Systems degree",
+          "keywords_incorporated": ["AWS", "cloud"],
+          "impact": "high",
+          "point_value": 4,
+          "explanation": "Future certification recommendation aligned with JD IT/cloud requirements"
         }}
       ]
     }}
   ],
-  "matched_keywords": ["database", "network", "IT", "programming", "AWS", "cloud"],
-  "relevant_coursework": ["Database Management", "Network Administration", "Systems Analysis", "Web Development"],
-  "total_point_value": 25,
-  "summary": "Enhanced sparse education section with relevant coursework, capstone project, certification recommendations, and formatting improvements. Added 5 ATS-optimized elements.",
-  "explanation": "For entry-level positions, education section is primary credential. Adding specific coursework and certification recommendations matching JD requirements significantly improves ATS score and recruiter engagement."
+  "matched_keywords": ["information systems"],
+  "relevant_coursework": [],
+  "total_point_value": 6,
+  "summary": "Suggested formatting improvements (location and separators) and future certification recommendations. No content fabrication.",
+  "explanation": "Education section has solid credentials. Focused on formatting optimization and future action recommendations."
 }}`);
 
 // ============================================================================
@@ -208,6 +199,118 @@ function createEducationSuggestionChain() {
   const jsonParser = createJsonParser<EducationLLMResponse>();
 
   return educationPrompt.pipe(model).pipe(jsonParser);
+}
+
+// ============================================================================
+// VALIDATION
+// ============================================================================
+
+/**
+ * Detect invalid "original" field placeholders
+ * Returns true if original field contains placeholder text instead of actual resume content
+ */
+function hasInvalidOriginalField(original: string): boolean {
+  const placeholderPatterns = [
+    /^No (location|coursework|projects|certifications|honors|GPA|achievements?)/i,
+    /^Missing (location|coursework|details|information)/i,
+    /^Add(ing)? (location|GPA|coursework)/i,
+    /^Lacking /i,
+    /^Include /i,
+    /formatting$/i,  // "No location formatting"
+    /^User has not/i,  // "User has not listed certifications"
+  ];
+
+  for (const pattern of placeholderPatterns) {
+    if (pattern.test(original.trim())) {
+      console.warn('[INVALID ORIGINAL FIELD]', {
+        original,
+        pattern: pattern.toString()
+      });
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Detect fabrication patterns in suggestions
+ * Returns true if suggestion appears to fabricate content
+ *
+ * This acts as a safety net to catch LLM hallucinations
+ * that violate the anti-fabrication constraints.
+ */
+function detectFabrication(original: string, suggested: string): boolean {
+  const fabricationSignals = [
+    // Coursework fabrication
+    /Relevant Coursework:.*,.*,.*,/i,  // Long course lists with multiple courses
+    /Coursework: [A-Z].*[A-Z].*[A-Z]/,  // Multiple capitalized course names
+
+    // Project fabrication
+    /Capstone Project:/i,
+    /Academic Project:/i,
+    /Senior Project:/i,
+    /Thesis:/i,
+    /Developed .* (application|system|platform|tool)/i,
+    /Built .* (using|with|in)/i,
+    /Implemented .* (using|with|architecture)/i,
+    /Created .* (application|system|website)/i,
+
+    // Achievement fabrication
+    /Dean's List/i,
+    /Honor Roll/i,
+    /Academic Honors?:/i,
+    /Winner of/i,
+    /Award for/i,
+    /Hackathon (Winner|Participant|Award)/i,
+    /Outstanding Student/i,
+    /President's List/i,
+    /Magna Cum Laude/i,
+    /Summa Cum Laude/i,
+    /Cum Laude/i,
+
+    // Adding content patterns
+    /^Add(ed)? (coursework|project|honor|achievement|award)/i,
+  ];
+
+  // If original mentions "No X" or "Missing X", it's likely fabrication
+  const isAddingNew = /^(No|Missing|Lacking|Add|Include)/.test(original);
+
+  // If original is fabrication-prone AND suggested contains fabrication signals
+  if (isAddingNew) {
+    for (const pattern of fabricationSignals) {
+      if (pattern.test(suggested)) {
+        console.warn('[FABRICATION DETECTED]', {
+          original,
+          suggested: suggested.substring(0, 100),
+          pattern: pattern.toString()
+        });
+        return true;
+      }
+    }
+  }
+
+  // Check for specific fabrication keywords in suggestions
+  // Allow "Recommendation:" prefix for future actions
+  if (!suggested.startsWith('Recommendation:')) {
+    const fabricationKeywords = [
+      'Capstone Project',
+      'Dean\'s List',
+      'Hackathon',
+      'Outstanding Student',
+      'Academic Award',
+      'Honor Roll',
+    ];
+
+    for (const keyword of fabricationKeywords) {
+      if (suggested.includes(keyword)) {
+        console.warn('[FABRICATION KEYWORD DETECTED]', { keyword, suggested: suggested.substring(0, 100) });
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 // ============================================================================
@@ -350,7 +453,29 @@ export async function generateEducationSuggestion(
         dates: String(entry.dates || ''),
         gpa: entry.gpa ? String(entry.gpa) : undefined,
         original_bullets: Array.isArray(entry.original_bullets) ? entry.original_bullets : [],
-        suggested_bullets: (entry.suggested_bullets || []).map((bullet) => {
+        suggested_bullets: (entry.suggested_bullets || [])
+          .filter((bullet) => {
+            // CRITICAL: Reject fabrications
+            if (detectFabrication(bullet.original, bullet.suggested)) {
+              console.error('[FABRICATION REJECTED]', {
+                original: bullet.original,
+                suggested: bullet.suggested.substring(0, 100)
+              });
+              return false; // Filter out fabricated suggestions
+            }
+
+            // QUALITY: Reject invalid "original" field placeholders
+            if (hasInvalidOriginalField(bullet.original)) {
+              console.error('[INVALID ORIGINAL FIELD REJECTED]', {
+                original: bullet.original,
+                suggested: bullet.suggested.substring(0, 100)
+              });
+              return false; // Filter out suggestions with placeholder original text
+            }
+
+            return true;
+          })
+          .map((bullet) => {
           const pointValue = bullet.point_value;
           // Validate point_value if present
           const validPointValue =
