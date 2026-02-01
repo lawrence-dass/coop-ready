@@ -68,34 +68,65 @@ export async function calculateATSScore(
       };
     }
 
-    console.log('[SS:score] Calculating ATS score (V2 deterministic)...');
+    console.log('[SS:score] Calculating ATS score (V2.1 deterministic)...');
 
-    // Calculate V2 score (fully deterministic, no LLM calls)
-    const v2Score = calculateATSScoreV2({
-      keywordAnalysis,
-      resumeText: parsedResume.rawText,
-      parsedResume: {
-        summary: parsedResume.summary,
-        skills: parsedResume.skills,
-        experience: parsedResume.experience,
-        education: parsedResume.education,
+    // Convert keywords to V2.1 format
+    const extractedKeywords = keywordAnalysis.matched.map(m => ({
+      keyword: m.keyword,
+      category: m.category,
+      importance: 'medium' as const,
+      requirement: 'preferred' as const,
+    }));
+
+    const keywordsV21 = convertToKeywordMatchV21(
+      keywordAnalysis.matched,
+      extractedKeywords
+    );
+
+    // Extract all bullets
+    const { bullets: allBullets, sources: bulletSources } = extractAllBullets(parsedResume);
+
+    // Parse skills to array
+    const skillsArray = parsedResume.skills
+      ? parsedResume.skills.split(/[,;|•]/).map(s => s.trim()).filter(s => s.length > 0)
+      : [];
+
+    // Calculate V2.1 score with default qualifications (no LLM extraction for now)
+    const v21Score = calculateATSScoreV21({
+      keywords: keywordsV21,
+      jdQualifications: {}, // Default: no specific requirements
+      resumeQualifications: {
+        totalExperienceYears: 0, // Default: will be estimated from experience section
+        certifications: [],
       },
-      jdContent,
+      allBullets,
+      bulletSources,
+      sections: {
+        summary: parsedResume.summary,
+        skills: skillsArray,
+        experience: parsedResume.experience ? [parsedResume.experience] : undefined,
+        education: parsedResume.education,
+        projects: [],
+      },
+      resumeText: parsedResume.rawText,
+      jdText: jdContent,
+      jobType: 'fulltime', // Default: fulltime
     });
 
     console.log(
-      '[SS:score] V2 Score:', v2Score.overall,
-      '| Tier:', v2Score.tier,
-      '| Keywords:', v2Score.breakdownV2.keywords.score,
-      '| Experience:', v2Score.breakdownV2.experience.score,
-      '| Sections:', v2Score.breakdownV2.sections.score,
-      '| Format:', v2Score.breakdownV2.format.score,
-      `| (${v2Score.metadata.processingTimeMs}ms)`
+      '[SS:score] V2.1 Score:', v21Score.overall,
+      '| Tier:', v21Score.tier,
+      '| Keywords:', v21Score.breakdownV21.keywords.score,
+      '| QualFit:', v21Score.breakdownV21.qualificationFit.score,
+      '| Content:', v21Score.breakdownV21.contentQuality.score,
+      '| Sections:', v21Score.breakdownV21.sections.score,
+      '| Format:', v21Score.breakdownV21.format.score,
+      `| (${v21Score.metadata.processingTimeMs}ms)`
     );
 
-    // Return V1-compatible result (V2 fields included for consumers that want them)
+    // Return as V1-compatible ATSScore type (V2.1 fields included)
     return {
-      data: v2Score as ATSScore,
+      data: v21Score as unknown as ATSScore,
       error: null
     };
 

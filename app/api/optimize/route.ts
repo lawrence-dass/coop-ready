@@ -21,7 +21,7 @@ import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
 import type { Resume } from '@/types/optimization';
 import { extractKeywords } from '@/lib/ai/extractKeywords';
 import { matchKeywords } from '@/lib/ai/matchKeywords';
-import { calculateATSScore } from '@/lib/ai/calculateATSScore';
+import { calculateATSScore, calculateATSScoreV21Full } from '@/lib/ai/calculateATSScore';
 import { createClient } from '@/lib/supabase/server';
 import { withTimeout } from '@/lib/utils/withTimeout';
 
