@@ -3,9 +3,10 @@
 import { ScoreCircle } from './ScoreCircle';
 import { ScoreBreakdownCard } from './ScoreBreakdownCard';
 import type { ATSScore } from '@/types/analysis';
+import type { ATSScoreV21 } from '@/lib/scoring/types';
 
 export interface ATSScoreDisplayProps {
-  score?: ATSScore;
+  score?: ATSScore | ATSScoreV21;
   loading?: boolean;
   error?: { message: string; code: string } | null;
   className?: string;
@@ -95,6 +96,11 @@ export function ATSScoreDisplay({
 
   const interpretationMessage = getScoreMessage(score.overall);
 
+  // Check if this is a V2.1 score
+  const isV21Score = (s: ATSScore | ATSScoreV21): s is ATSScoreV21 => {
+    return 'metadata' in s && s.metadata?.version === 'v2.1';
+  };
+
   return (
     <div className={`space-y-6 ${className}`} data-testid="score-display">
       {/* Overall Score Display */}
@@ -112,7 +118,11 @@ export function ATSScoreDisplay({
       </div>
 
       {/* Score Breakdown */}
-      <ScoreBreakdownCard breakdown={score.breakdown} />
+      {isV21Score(score) ? (
+        <ScoreBreakdownCard scoreV21={score} />
+      ) : (
+        <ScoreBreakdownCard breakdown={score.breakdown} />
+      )}
     </div>
   );
 }
