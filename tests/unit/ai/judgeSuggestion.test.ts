@@ -334,4 +334,143 @@ describe('judgeSuggestion', () => {
 
     expect(result.data?.suggestion_id).toBe('my-test-id');
   });
+
+  // Near-duplicate detection (cheap gate) tests
+  describe('near-duplicate detection', () => {
+    it('should detect exact duplicates and skip LLM call', async () => {
+      const context: SuggestionContext = {
+        original_text: 'Senior software engineer with 5 years experience.',
+        suggested_text: 'Senior software engineer with 5 years experience.',
+        jd_excerpt: 'Looking for experience.',
+        section_type: 'summary',
+      };
+
+      const result = await judgeSuggestion(
+        context.original_text, // Same as original
+        context,
+        'test-duplicate'
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.data?.quality_score).toBe(25);
+      expect(result.data?.passed).toBe(false);
+      expect(result.data?.recommendation).toBe('regenerate');
+      expect(result.data?.reasoning).toContain('Near-duplicate');
+    });
+
+    it('should detect near-duplicates with only whitespace differences', async () => {
+      const context: SuggestionContext = {
+        original_text: 'Senior software engineer with 5 years experience.',
+        suggested_text: '  Senior   software  engineer   with 5   years experience.  ',
+        jd_excerpt: 'Looking for experience.',
+        section_type: 'summary',
+      };
+
+      const result = await judgeSuggestion(
+        context.suggested_text,
+        context,
+        'test-whitespace'
+      );
+
+      expect(result.data?.reasoning).toContain('Near-duplicate');
+      expect(result.data?.passed).toBe(false);
+    });
+
+    it('should detect near-duplicates with case differences', async () => {
+      const context: SuggestionContext = {
+        original_text: 'Senior Software Engineer with 5 years experience.',
+        suggested_text: 'senior software engineer with 5 years experience.',
+        jd_excerpt: 'Looking for experience.',
+        section_type: 'summary',
+      };
+
+      const result = await judgeSuggestion(
+        context.suggested_text,
+        context,
+        'test-case'
+      );
+
+      expect(result.data?.reasoning).toContain('Near-duplicate');
+      expect(result.data?.passed).toBe(false);
+    });
+
+    it('should NOT flag legitimately different suggestions as duplicates', async () => {
+      const { ChatAnthropic } = await import('@langchain/anthropic');
+      const mockInvoke = vi.fn().mockResolvedValue({
+        content: JSON.stringify(mockValidResponse),
+      });
+      (ChatAnthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        () => ({ invoke: mockInvoke })
+      );
+
+      const context: SuggestionContext = {
+        original_text: 'Worked on data analysis.',
+        suggested_text: 'Led data analysis initiatives, driving 20% efficiency improvements through Python automation.',
+        jd_excerpt: 'Python, data analysis, automation.',
+        section_type: 'experience',
+      };
+
+      const result = await judgeSuggestion(
+        context.suggested_text,
+        context,
+        'test-legitimate'
+      );
+
+      // Should NOT be flagged as near-duplicate
+      expect(result.data?.reasoning).not.toContain('Near-duplicate');
+      // Should call LLM and get proper score
+      expect(mockInvoke).toHaveBeenCalled();
+    });
+  });
+
+  // Context-aware judging tests
+  describe('context-aware judging', () => {
+    it('should accept job_type in context', async () => {
+      const { ChatAnthropic } = await import('@langchain/anthropic');
+      const mockInvoke = vi.fn().mockResolvedValue({
+        content: JSON.stringify(mockValidResponse),
+      });
+      (ChatAnthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        () => ({ invoke: mockInvoke })
+      );
+
+      const contextWithJobType: SuggestionContext = {
+        ...mockContext,
+        job_type: 'coop',
+      };
+
+      const result = await judgeSuggestion(
+        'Assisted with data analysis tasks',
+        contextWithJobType,
+        'test-coop'
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.data).not.toBeNull();
+    });
+
+    it('should accept modification_level in context', async () => {
+      const { ChatAnthropic } = await import('@langchain/anthropic');
+      const mockInvoke = vi.fn().mockResolvedValue({
+        content: JSON.stringify(mockValidResponse),
+      });
+      (ChatAnthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        () => ({ invoke: mockInvoke })
+      );
+
+      const contextWithModLevel: SuggestionContext = {
+        ...mockContext,
+        modification_level: 'aggressive',
+      };
+
+      const result = await judgeSuggestion(
+        'Completely rewritten suggestion with major changes',
+        contextWithModLevel,
+        'test-aggressive'
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.data).not.toBeNull();
+    });
+  });
 });

@@ -73,6 +73,12 @@ export interface SuggestionContext {
 
   /** Type of section (summary, skills, experience, education) */
   section_type: 'summary' | 'skills' | 'experience' | 'education';
+
+  /** Job type for context-aware judging (co-op vs full-time expectations) */
+  job_type?: 'coop' | 'fulltime';
+
+  /** Modification level for context-aware judging (how much change is acceptable) */
+  modification_level?: 'conservative' | 'moderate' | 'aggressive';
 }
 
 /**
