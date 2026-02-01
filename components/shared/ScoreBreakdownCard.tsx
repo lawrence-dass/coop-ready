@@ -8,12 +8,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
-import type { ScoreBreakdown } from '@/types/analysis';
+import type { ScoreBreakdown, ATSScoreV2 } from '@/types/analysis';
 import type { ATSScoreV21 } from '@/lib/scoring/types';
 
 export interface ScoreBreakdownCardProps {
   breakdown?: ScoreBreakdown; // V1 backward compatibility
-  scoreV21?: ATSScoreV21; // V2.1 full score object
+  scoreV2?: ATSScoreV2; // V2 full score object (4 components)
+  scoreV21?: ATSScoreV21; // V2.1 full score object (5 components)
   className?: string;
 }
 
@@ -22,6 +23,38 @@ interface ComponentConfig {
   description: string;
   tooltip: string;
 }
+
+// V2 Component configurations (4 components)
+const COMPONENTS_V2: Record<string, ComponentConfig> = {
+  keywords: {
+    name: 'Keywords',
+    description:
+      'Weighted keyword matching based on importance and match type (exact, fuzzy, semantic).',
+    tooltip:
+      'Measures how well your resume matches job description keywords. Higher importance keywords count more. Exact matches score higher than fuzzy or semantic matches.',
+  },
+  experience: {
+    name: 'Experience Quality',
+    description:
+      'Evaluates quantification (metrics), action verb strength, and keyword density in experience bullets.',
+    tooltip:
+      'Analyzes experience section quality: presence of quantifiable results (numbers, percentages), use of strong action verbs, and keyword usage throughout bullets.',
+  },
+  sections: {
+    name: 'Sections',
+    description:
+      'Checks for essential resume sections and evaluates content density.',
+    tooltip:
+      'Verifies presence of Summary, Skills, and Experience sections with sufficient content depth.',
+  },
+  format: {
+    name: 'Format',
+    description:
+      'Detects ATS parseability signals and penalizes outdated formats.',
+    tooltip:
+      'Assesses resume formatting for ATS compatibility: contact info, parseable dates, section headers, bullet structure. Penalizes outdated elements like "Objective" sections.',
+  },
+};
 
 // V2.1 Component configurations with descriptions from specification
 const COMPONENTS_V21: Record<string, ComponentConfig> = {
@@ -100,11 +133,13 @@ function getScoreColorClass(score: number): string {
 
 export function ScoreBreakdownCard({
   breakdown,
+  scoreV2,
   scoreV21,
   className = '',
 }: ScoreBreakdownCardProps) {
-  // Determine if we're rendering V2.1 or V1 breakdown
+  // Determine version
   const isV21 = scoreV21 && scoreV21.metadata?.version === 'v2.1';
+  const isV2 = !isV21 && scoreV2 && scoreV2.metadata?.version === 'v2';
 
   // Render V2.1 breakdown (5 components)
   if (isV21) {
@@ -131,6 +166,99 @@ export function ScoreBreakdownCard({
                 const score = Math.round(component.score);
                 const weight = component.weight;
                 const contribution = Math.round(component.weighted);
+                const colorClass = getScoreColorClass(score);
+
+                return (
+                  <div key={key} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">
+                          {config.name}
+                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                              aria-label={`More info about ${config.name}`}
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs text-xs">
+                              {config.tooltip}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <span className="text-sm text-gray-500 font-mono">
+                        ×{weight.toFixed(2)} = {contribution}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div
+                        role="progressbar"
+                        aria-valuenow={score}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${config.name} score: ${score} percent`}
+                        className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200 flex-1"
+                      >
+                        <div
+                          className={`h-full transition-all ${colorClass}`}
+                          style={{ width: `${score}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-bold w-8 text-right">
+                        {score}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-gray-500">{config.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </TooltipProvider>
+    );
+  }
+
+  // Render V2 breakdown (4 components)
+  if (isV2) {
+    const components = scoreV2.breakdownV2;
+    const componentKeys: Array<keyof typeof components> = [
+      'keywords',
+      'experience',
+      'sections',
+      'format',
+    ];
+
+    // V2 weights
+    const V2_WEIGHTS = {
+      keywords: 0.50,
+      experience: 0.20,
+      sections: 0.15,
+      format: 0.15,
+    };
+
+    return (
+      <TooltipProvider delayDuration={200}>
+        <Card className={className}>
+          <CardHeader>
+            <CardTitle>Score Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {componentKeys.map((key) => {
+                const component = components[key];
+                const config = COMPONENTS_V2[key];
+                const score = Math.round(component.score);
+                const weight = V2_WEIGHTS[key];
+                const contribution = Math.round(score * weight);
                 const colorClass = getScoreColorClass(score);
 
                 return (
