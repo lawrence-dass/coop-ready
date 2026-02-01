@@ -98,6 +98,7 @@ export { calculateQualificationFit, extractExperienceYears, checkFieldMatch, gen
 export { calculateContentQuality, extractQuantifications, classifyActionVerb, generateContentQualityActionItems } from './contentQuality';
 export { calculateSectionScoreV21, evaluateEducationQuality, generateSectionActionItemsV21 } from './sectionScore';
 export { calculateFormatScoreV21, generateFormatActionItemsV21 } from './formatScore';
+export { detectJobType } from './jobTypeDetection';
 
 // Constants - V2
 export {
