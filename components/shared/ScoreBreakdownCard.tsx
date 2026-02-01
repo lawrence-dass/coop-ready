@@ -152,6 +152,26 @@ export function ScoreBreakdownCard({
       'format',
     ];
 
+    // Get baseline weights from spec
+    const BASELINE_WEIGHTS_V21 = {
+      keywords: 0.40,
+      qualificationFit: 0.15,
+      contentQuality: 0.20,
+      sections: 0.15,
+      format: 0.10,
+    };
+
+    // Format role and seniority for display
+    const formatRole = (role: string) => {
+      return role.split('_').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+    };
+
+    const formatSeniority = (seniority: string) => {
+      return seniority.charAt(0).toUpperCase() + seniority.slice(1);
+    };
+
     return (
       <TooltipProvider delayDuration={200}>
         <Card className={className}>
@@ -159,6 +179,27 @@ export function ScoreBreakdownCard({
             <CardTitle>Score Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Role Detection Info (if weights were adjusted) */}
+            {scoreV21.metadata && (
+              (() => {
+                const actualWeights = scoreV21.metadata.weightsUsed;
+                const hasAdjustments = Object.keys(actualWeights).some(
+                  key => actualWeights[key as keyof typeof actualWeights] !== BASELINE_WEIGHTS_V21[key as keyof typeof BASELINE_WEIGHTS_V21]
+                );
+
+                return hasAdjustments ? (
+                  <div className="mb-4 p-3 bg-slate-50 rounded-lg flex items-start gap-2">
+                    <Info className="h-4 w-4 text-slate-600 mt-0.5 shrink-0" />
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Component weights adjusted for{' '}
+                      <strong>{formatRole(scoreV21.metadata.detectedRole)}</strong> role
+                      ({formatSeniority(scoreV21.metadata.detectedSeniority)} level)
+                    </p>
+                  </div>
+                ) : null;
+              })()
+            )}
+
             <div className="space-y-4">
               {componentKeys.map((key) => {
                 const component = components[key];
@@ -192,9 +233,24 @@ export function ScoreBreakdownCard({
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <span className="text-sm text-gray-500 font-mono">
-                        ×{weight.toFixed(2)} = {contribution}
-                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-sm text-gray-500 font-mono cursor-help">
+                            ×{weight.toFixed(2)} = {contribution}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {weight !== BASELINE_WEIGHTS_V21[key] ? (
+                            <p className="text-xs">
+                              Adjusted from {BASELINE_WEIGHTS_V21[key].toFixed(2)} for {formatRole(scoreV21.metadata.detectedRole)} role
+                            </p>
+                          ) : (
+                            <p className="text-xs">
+                              Baseline weight (no adjustment)
+                            </p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
 
                     <div className="flex items-center gap-3">

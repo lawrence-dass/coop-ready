@@ -4,15 +4,18 @@
  *
  * Orchestrates the LLM optimization pipeline:
  * 1. Extract keywords from job description
- * 2. Match keywords against resume
- * 3. Calculate ATS score
- * 4. Save results to session
+ * 2. Extract qualifications from JD and resume
+ * 3. Match keywords against resume
+ * 4. Detect job type (co-op vs full-time)
+ * 5. Calculate V2.1 ATS score
+ * 6. Save results to session
  *
  * **Features:**
  * - 60-second timeout with graceful handling
  * - ActionResponse pattern (never throws)
  * - Prompt injection defense (delegated to AI functions)
  * - Session persistence
+ * - V2.1 scoring with 5 components
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -22,6 +25,8 @@ import type { Resume } from '@/types/optimization';
 import { extractKeywords } from '@/lib/ai/extractKeywords';
 import { matchKeywords } from '@/lib/ai/matchKeywords';
 import { calculateATSScore, calculateATSScoreV21Full } from '@/lib/ai/calculateATSScore';
+import { extractQualificationsBoth } from '@/lib/ai/extractQualifications';
+import { detectJobType } from '@/lib/scoring';
 import { createClient } from '@/lib/supabase/server';
 import { withTimeout } from '@/lib/utils/withTimeout';
 
@@ -130,10 +135,12 @@ function validateRequest(body: unknown): ActionResponse<OptimizeRequest> {
  * Orchestrate the LLM optimization pipeline
  *
  * Pipeline steps:
- * 1. Extract keywords from JD
- * 2. Match keywords in resume
- * 3. Calculate ATS score
- * 4. Save to session
+ * 1. Extract keywords from JD (parallel)
+ * 2. Extract qualifications from JD and resume (parallel)
+ * 3. Match keywords in resume
+ * 4. Detect job type (co-op vs full-time)
+ * 5. Calculate V2.1 ATS score
+ * 6. Save to session
  *
  * @param request - Validated request data
  * @returns ActionResponse with optimization results
@@ -142,11 +149,16 @@ async function runOptimizationPipeline(
   request: OptimizeRequest
 ): Promise<ActionResponse<OptimizationResult>> {
   try {
-    // Step 1: Extract keywords from job description
-    // Note: prompt injection defense (XML wrapping) is handled by extractKeywords/matchKeywords
     console.log('[SS:optimize] Pipeline started for session:', request.session_id.slice(0, 8) + '...');
-    const keywordResult = await extractKeywords(request.jd_content);
 
+    // Step 1 & 2: Extract keywords and qualifications in parallel
+    // Note: prompt injection defense (XML wrapping) is handled by extractKeywords/extractQualifications
+    const [keywordResult, qualResult] = await Promise.all([
+      extractKeywords(request.jd_content),
+      extractQualificationsBoth(request.jd_content, request.resume_content),
+    ]);
+
+    // Check for extraction errors
     if (keywordResult.error) {
       return {
         data: null,
@@ -154,7 +166,14 @@ async function runOptimizationPipeline(
       };
     }
 
-    // Step 2: Match keywords in resume
+    if (qualResult.error) {
+      return {
+        data: null,
+        error: qualResult.error,
+      };
+    }
+
+    // Step 3: Match keywords in resume
     const matchResult = await matchKeywords(
       request.resume_content,
       keywordResult.data.keywords
@@ -167,18 +186,26 @@ async function runOptimizationPipeline(
       };
     }
 
-    // Step 3: Calculate ATS score
+    // Step 4: Detect job type (co-op vs full-time)
+    const jobType = detectJobType(request.jd_content);
+    console.log('[SS:optimize] Detected job type:', jobType);
+
+    // Step 5: Calculate V2.1 ATS score
     // Basic section extraction - full parsing handled by Epic 3.5
     const parsedResume: Resume = {
       rawText: request.resume_content,
       ...extractBasicSections(request.resume_content),
     };
 
-    const scoreResult = await calculateATSScore(
-      matchResult.data,
+    const scoreResult = await calculateATSScoreV21Full({
+      keywordMatches: matchResult.data.matched,
+      extractedKeywords: keywordResult.data.keywords,
+      jdQualifications: qualResult.data.jdQualifications,
+      resumeQualifications: qualResult.data.resumeQualifications,
       parsedResume,
-      request.jd_content
-    );
+      jdContent: request.jd_content,
+      jobType,
+    });
 
     if (scoreResult.error) {
       return {
@@ -187,13 +214,20 @@ async function runOptimizationPipeline(
       };
     }
 
-    // Step 4: Save results to session using server client
+    // Step 6: Enhance keyword analysis with ATS keyword score
+    // This helps users understand the difference between match rate (92%) and keyword score (100)
+    const enhancedKeywordAnalysis: KeywordAnalysisResult = {
+      ...matchResult.data,
+      keywordScore: Math.round(scoreResult.data.breakdown.keywordScore), // Add weighted keyword score from ATS
+    };
+
+    // Step 7: Save results to session using server client
     try {
       const supabase = await createClient();
       const { error: updateError } = await supabase
         .from('sessions')
         .update({
-          keyword_analysis: matchResult.data,
+          keyword_analysis: enhancedKeywordAnalysis,
           ats_score: scoreResult.data,
         })
         .eq('id', request.session_id);
@@ -211,7 +245,7 @@ async function runOptimizationPipeline(
     console.log('[SS:optimize] Pipeline complete. ATS score:', scoreResult.data.overall);
     return {
       data: {
-        keywordAnalysis: matchResult.data,
+        keywordAnalysis: enhancedKeywordAnalysis,
         atsScore: scoreResult.data,
         sessionId: request.session_id,
       },

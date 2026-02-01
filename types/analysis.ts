@@ -34,8 +34,12 @@ export interface MatchedKeyword {
 export interface KeywordAnalysisResult {
   matched: MatchedKeyword[]; // Keywords found in resume
   missing: ExtractedKeyword[]; // Keywords not in resume (gaps)
-  matchRate: number; // Percentage (0-100)
+  matchRate: number; // Percentage (0-100) - simple count metric
   analyzedAt: string; // ISO timestamp
+  // V2.1: Enhanced metrics for clarifying difference between match rate and keyword score
+  keywordScore?: number; // ATS keyword component score (0-100) - weighted algorithm
+  requiredCount?: { matched: number; total: number }; // Required keywords breakdown
+  preferredCount?: { matched: number; total: number }; // Preferred keywords breakdown
 }
 
 // ATS Score Types
