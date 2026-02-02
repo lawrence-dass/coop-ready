@@ -45,6 +45,7 @@ interface OptimizationResult {
   keywordAnalysis: KeywordAnalysisResult;
   atsScore: ATSScore;
   sessionId: string;
+  analysisTimeMs?: number; // Time taken to analyze resume in milliseconds
 }
 
 // ============================================================================
@@ -148,6 +149,7 @@ function validateRequest(body: unknown): ActionResponse<OptimizeRequest> {
 async function runOptimizationPipeline(
   request: OptimizeRequest
 ): Promise<ActionResponse<OptimizationResult>> {
+  const startTime = performance.now(); // Start timing
   try {
     console.log('[SS:optimize] Pipeline started for session:', request.session_id.slice(0, 8) + '...');
 
@@ -221,14 +223,47 @@ async function runOptimizationPipeline(
       keywordScore: Math.round(scoreResult.data.breakdown.keywordScore), // Add weighted keyword score from ATS
     };
 
-    // Step 7: Save results to session using server client
+    // Step 6b: Calculate pipeline metrics (before final timing)
+    const preMetricsTime = performance.now();
+    const pipelineMetrics = {
+      totalAnalysisTimeMs: Math.round(preMetricsTime - startTime),
+      contentMetrics: {
+        resumeWordCount: request.resume_content.split(/\s+/).length,
+        resumeCharCount: request.resume_content.length,
+        jdWordCount: request.jd_content.split(/\s+/).length,
+        jdCharCount: request.jd_content.length,
+      },
+      llmMetrics: {
+        totalCalls: 3, // extractKeywords + extractQualificationsBoth + matchKeywords
+        model: 'claude-3-5-haiku-20241022',
+        // Note: Actual token counts would require tracking from LangChain
+        estimatedCostUsd: 0.003, // Approximate: 3 Haiku calls @ ~$0.001 each
+      },
+      qualityMetrics: {
+        keywordMatchRate: matchResult.data.matchRate,
+        atsScoreOverall: scoreResult.data.overall,
+        atsTier: scoreResult.data.tier,
+        detectedJobType: jobType,
+      },
+    };
+
+    // Step 6c: Enhance ATS score with pipeline metrics in metadata
+    const enhancedATSScore = {
+      ...scoreResult.data,
+      metadata: {
+        ...scoreResult.data.metadata,
+        pipelineMetrics,
+      },
+    };
+
+    // Step 7: Save results to session using server client (with pipeline metrics)
     try {
       const supabase = await createClient();
       const { error: updateError } = await supabase
         .from('sessions')
         .update({
           keyword_analysis: enhancedKeywordAnalysis,
-          ats_score: scoreResult.data,
+          ats_score: enhancedATSScore, // Now includes pipelineMetrics in metadata
         })
         .eq('id', request.session_id);
 
@@ -241,13 +276,20 @@ async function runOptimizationPipeline(
       console.error('[optimize] Session update error:', updateErr);
     }
 
+    // Calculate analysis time
+    const endTime = performance.now();
+    const analysisTimeMs = Math.round(endTime - startTime);
+
     // Return results
-    console.log('[SS:optimize] Pipeline complete. ATS score:', scoreResult.data.overall);
+    console.log('[SS:optimize] Pipeline complete. ATS score:', enhancedATSScore.overall);
+    console.log(`[SS:optimize] ⏱️  Analysis completed in ${analysisTimeMs}ms (${(analysisTimeMs / 1000).toFixed(2)}s)`);
+
     return {
       data: {
         keywordAnalysis: enhancedKeywordAnalysis,
-        atsScore: scoreResult.data,
+        atsScore: enhancedATSScore, // Includes pipelineMetrics in metadata
         sessionId: request.session_id,
+        analysisTimeMs, // Include timing in response for browser console
       },
       error: null,
     };

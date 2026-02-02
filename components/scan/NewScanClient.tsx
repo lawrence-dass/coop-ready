@@ -238,7 +238,14 @@ export function NewScanClient() {
           keywordAnalysis: unknown;
           atsScore: unknown;
           sessionId: string;
+          analysisTimeMs?: number;
         }>;
+
+        // Log analysis timing in browser console
+        if (result.data?.analysisTimeMs) {
+          const timeInSeconds = (result.data.analysisTimeMs / 1000).toFixed(2);
+          console.log(`⏱️  Resume analysis completed in ${result.data.analysisTimeMs}ms (${timeInSeconds}s)`);
+        }
 
         // Check for API-level errors
         if (result.error) {
