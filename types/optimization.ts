@@ -224,6 +224,9 @@ export interface OptimizationSession {
   /** ATS compatibility score (Story 5.2) */
   atsScore?: ATSScore | null;
 
+  /** ATS score from re-uploaded resume after applying suggestions (Story 17.1) */
+  comparedAtsScore?: ATSScore | null;
+
   /** Summary section optimization suggestion (Story 6.2) */
   summarySuggestion?: SummarySuggestion | null;
 

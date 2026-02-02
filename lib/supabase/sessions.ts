@@ -57,6 +57,7 @@ interface SessionRow {
   feedback: SuggestionFeedback[] | null; // Story 7.4: Changed to array
   keyword_analysis: KeywordAnalysisResult | null; // Story 5.1
   ats_score: ATSScore | null; // Story 5.2
+  compared_ats_score: ATSScore | null; // Story 17.1: Comparison score
   summary_suggestion: SummarySuggestion | null; // Story 6.2
   skills_suggestion: SkillsSuggestion | null; // Story 6.3
   experience_suggestion: ExperienceSuggestion | null; // Story 6.4
@@ -84,6 +85,7 @@ function toOptimizationSession(row: SessionRow): OptimizationSession {
     feedback: row.feedback ?? [], // Story 7.4: Include feedback array
     keywordAnalysis: row.keyword_analysis,
     atsScore: row.ats_score,
+    comparedAtsScore: row.compared_ats_score, // Story 17.1: Comparison score
     summarySuggestion: row.summary_suggestion,
     skillsSuggestion: row.skills_suggestion,
     experienceSuggestion: row.experience_suggestion,
@@ -224,6 +226,7 @@ export async function updateSession(
     feedback?: SuggestionFeedback[]; // Story 7.4: Changed to array
     keywordAnalysis?: KeywordAnalysisResult | null; // Story 5.1
     atsScore?: ATSScore | null; // Story 5.2
+    comparedAtsScore?: ATSScore | null; // Story 17.1: Comparison score
     summarySuggestion?: SummarySuggestion | null; // Story 6.2
     skillsSuggestion?: SkillsSuggestion | null; // Story 6.3
     experienceSuggestion?: ExperienceSuggestion | null; // Story 6.4
@@ -266,6 +269,10 @@ export async function updateSession(
 
     if ('atsScore' in updates) {
       dbUpdates.ats_score = updates.atsScore;
+    }
+
+    if ('comparedAtsScore' in updates) {
+      dbUpdates.compared_ats_score = updates.comparedAtsScore;
     }
 
     if ('summarySuggestion' in updates) {
