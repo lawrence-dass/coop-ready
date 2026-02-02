@@ -1,13 +1,27 @@
 /**
  * Dashboard Queries
  * Story 16.2: Implement Dashboard Home Page
+ * Story 17.5: Dashboard Stats Calculation
  *
  * Server-side functions for fetching dashboard data
  */
 
 import { createClient } from '@/lib/supabase/server';
 import type { HistorySession } from '@/types/history';
-import type { ActionResponse } from '@/types';
+import type { ActionResponse, DashboardStats } from '@/types';
+import { ERROR_CODES } from '@/types';
+
+/**
+ * Safely extract the 'overall' score from a JSONB score object
+ * Handles null, undefined, and malformed data gracefully
+ */
+function getScoreOverall(score: unknown): number {
+  if (score && typeof score === 'object' && 'overall' in score) {
+    const overall = (score as { overall: unknown }).overall;
+    return typeof overall === 'number' ? overall : 0;
+  }
+  return 0;
+}
 
 /**
  * Fetch recent optimization sessions for the current authenticated user
@@ -34,7 +48,7 @@ export async function getRecentSessions(): Promise<
         data: null,
         error: {
           message: 'Unauthenticated',
-          code: 'VALIDATION_ERROR',
+          code: ERROR_CODES.UNAUTHORIZED,
         },
       };
     }
@@ -148,4 +162,113 @@ function countSuggestions(suggestions: any): number {
     count += suggestions.experience.length;
 
   return count;
+}
+
+/**
+ * Fetch dashboard statistics for the authenticated user
+ * Story 17.5: Dashboard Stats Calculation
+ *
+ * Calculates:
+ * - Total scans: Count of all sessions
+ * - Average ATS Score: Mean of all ats_score.overall values
+ * - Improvement Rate: Mean improvement from comparison sessions
+ *
+ * @returns Promise<ActionResponse<DashboardStats>>
+ */
+export async function getDashboardStats(): Promise<
+  ActionResponse<DashboardStats>
+> {
+  try {
+    const supabase = await createClient();
+
+    // Authenticate user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return {
+        data: null,
+        error: {
+          message: 'You must be signed in to view dashboard stats.',
+          code: ERROR_CODES.UNAUTHORIZED,
+        },
+      };
+    }
+
+    // Query ALL user sessions (not limited to recent 5)
+    // RLS policies automatically filter by user_id, but we add explicit filter for clarity
+    const { data: sessions, error: queryError } = await supabase
+      .from('sessions')
+      .select('id, ats_score, compared_ats_score')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (queryError) {
+      return {
+        data: null,
+        error: {
+          message: `Failed to load dashboard stats: ${queryError.message}`,
+          code: ERROR_CODES.VALIDATION_ERROR,
+        },
+      };
+    }
+
+    // Calculate total scans (null-safe)
+    const totalScans = (sessions ?? []).length;
+
+    // Calculate average ATS score
+    // Filter sessions with non-null ats_score, extract overall value
+    const safeSessions = sessions ?? [];
+    const sessionsWithScores = safeSessions.filter(
+      (s) => s.ats_score !== null && s.ats_score !== undefined
+    );
+
+    const averageAtsScore =
+      sessionsWithScores.length > 0
+        ? sessionsWithScores.reduce((sum, s) => {
+            // Safe access using type guard helper
+            return sum + getScoreOverall(s.ats_score);
+          }, 0) / sessionsWithScores.length
+        : null;
+
+    // Calculate improvement rate
+    // Filter sessions with BOTH ats_score AND compared_ats_score
+    const sessionsWithComparisons = safeSessions.filter(
+      (s) =>
+        s.ats_score !== null &&
+        s.ats_score !== undefined &&
+        s.compared_ats_score !== null &&
+        s.compared_ats_score !== undefined
+    );
+
+    const improvementRate =
+      sessionsWithComparisons.length > 0
+        ? sessionsWithComparisons.reduce((sum, s) => {
+            // Calculate improvement: new score - original score
+            const originalScore = getScoreOverall(s.ats_score);
+            const comparedScore = getScoreOverall(s.compared_ats_score);
+            const improvement = comparedScore - originalScore;
+            return sum + improvement;
+          }, 0) / sessionsWithComparisons.length
+        : null;
+
+    return {
+      data: {
+        totalScans,
+        averageAtsScore,
+        improvementRate,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return {
+      data: null,
+      error: {
+        message: `Failed to calculate dashboard stats: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        code: ERROR_CODES.VALIDATION_ERROR,
+      },
+    };
+  }
 }
