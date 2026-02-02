@@ -7,7 +7,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { CopyButton } from './CopyButton';
 import { FeedbackButtons } from './FeedbackButtons';
-import { useOptimizationStore } from '@/store/useOptimizationStore';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store/useOptimizationStore';
 import { toast } from 'sonner';
 import { Lightbulb } from 'lucide-react';
 
@@ -98,6 +98,11 @@ export function SuggestionCard({
   const recordSuggestionFeedback = useOptimizationStore(
     (state: { recordSuggestionFeedback: (id: string, section: 'summary' | 'skills' | 'experience' | 'education', helpful: boolean | null) => Promise<void> }) =>
       state.recordSuggestionFeedback
+  );
+
+  // Story 17.2: Track suggestion copies for comparison feature
+  const markSuggestionCopied = useOptimizationStore(
+    (state: ExtendedOptimizationStore) => state.markSuggestionCopied
   );
 
   // Handle feedback submission
@@ -273,6 +278,12 @@ export function SuggestionCard({
             variant="outline"
             size="sm"
             data-testid={`copy-${sectionType}-${suggestionIndex}`}
+            onCopy={(success) => {
+              // Story 17.2: Track when suggestion is copied
+              if (success) {
+                markSuggestionCopied(suggestionId);
+              }
+            }}
           />
         </div>
       </CardContent>

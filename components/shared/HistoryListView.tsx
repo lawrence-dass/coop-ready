@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Calendar, Briefcase, TrendingUp, Trash2 } from 'lucide-react';
-import { useOptimizationStore } from '@/store/useOptimizationStore';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store/useOptimizationStore';
 import { getOptimizationHistory } from '@/actions/history/get-optimization-history';
 import { DeleteSessionDialog } from '@/components/shared/DeleteSessionDialog';
 import { toast } from 'sonner';
@@ -37,10 +37,10 @@ import type { HistorySession } from '@/types/history';
  */
 export function HistoryListView() {
   const router = useRouter();
-  const historyItems = useOptimizationStore((state) => state.historyItems);
-  const isLoadingHistory = useOptimizationStore((state) => state.isLoadingHistory);
-  const setHistoryItems = useOptimizationStore((state) => state.setHistoryItems);
-  const setLoadingHistory = useOptimizationStore((state) => state.setLoadingHistory);
+  const historyItems = useOptimizationStore((state: ExtendedOptimizationStore) => state.historyItems);
+  const isLoadingHistory = useOptimizationStore((state: ExtendedOptimizationStore) => state.isLoadingHistory);
+  const setHistoryItems = useOptimizationStore((state: ExtendedOptimizationStore) => state.setHistoryItems);
+  const setLoadingHistory = useOptimizationStore((state: ExtendedOptimizationStore) => state.setLoadingHistory);
 
   // Fetch history on component mount
   useEffect(() => {
@@ -107,7 +107,7 @@ export function HistoryListView() {
   // Show history list
   return (
     <div className="space-y-4" data-testid="history-list">
-      {historyItems.map((session) => (
+      {historyItems.map((session: HistorySession) => (
         <HistorySessionCard
           key={session.id}
           session={session}
@@ -133,7 +133,7 @@ interface HistorySessionCardProps {
 
 function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const removeHistoryItem = useOptimizationStore((state) => state.removeHistoryItem);
+  const removeHistoryItem = useOptimizationStore((state: ExtendedOptimizationStore) => state.removeHistoryItem);
 
   // Format date for display (e.g., "Jan 24, 2:30 PM")
   const formattedDate = new Intl.DateTimeFormat('en-US', {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useOptimizationStore } from '@/store/useOptimizationStore';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store/useOptimizationStore';
 import type { SuggestionSortBy } from '@/store/useOptimizationStore';
 import { SuggestionSection } from './SuggestionSection';
 import { ScoreComparison } from './ScoreComparison';
@@ -11,6 +11,8 @@ import { AlertCircle, ArrowUpDown } from 'lucide-react';
 import { useTransition, useMemo } from 'react';
 import { toast } from 'sonner';
 import { regenerateSuggestions } from '@/actions/regenerateSuggestions';
+import type { MatchedKeyword } from '@/types/analysis';
+import type { ExperienceEntry, BulletSuggestion, SkillItem } from '@/types/suggestions';
 
 export interface SuggestionDisplayProps {
   /** Additional className */
@@ -32,36 +34,36 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
 
   // Get suggestions from Zustand store
   const summarySuggestion = useOptimizationStore(
-    (state) => state.summarySuggestion
+    (state: ExtendedOptimizationStore) => state.summarySuggestion
   );
   const skillsSuggestion = useOptimizationStore(
-    (state) => state.skillsSuggestion
+    (state: ExtendedOptimizationStore) => state.skillsSuggestion
   );
   const experienceSuggestion = useOptimizationStore(
-    (state) => state.experienceSuggestion
+    (state: ExtendedOptimizationStore) => state.experienceSuggestion
   );
 
   // Get loading state from store
-  const isLoading = useOptimizationStore((state) => state.isLoading);
-  const loadingStep = useOptimizationStore((state) => state.loadingStep);
+  const isLoading = useOptimizationStore((state: ExtendedOptimizationStore) => state.isLoading);
+  const loadingStep = useOptimizationStore((state: ExtendedOptimizationStore) => state.loadingStep);
 
   // Get original ATS score for comparison (Story 11.3)
-  const atsScore = useOptimizationStore((state) => state.atsScore);
+  const atsScore = useOptimizationStore((state: ExtendedOptimizationStore) => state.atsScore);
 
   // Get regenerating state (Story 6.7)
-  const isRegeneratingSection = useOptimizationStore((state) => state.isRegeneratingSection) || {};
-  const setRegeneratingSection = useOptimizationStore((state) => state.setRegeneratingSection);
-  const updateSectionSuggestion = useOptimizationStore((state) => state.updateSectionSuggestion);
+  const isRegeneratingSection = useOptimizationStore((state: ExtendedOptimizationStore) => state.isRegeneratingSection) || {};
+  const setRegeneratingSection = useOptimizationStore((state: ExtendedOptimizationStore) => state.setRegeneratingSection);
+  const updateSectionSuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.updateSectionSuggestion);
 
   // Get context for regeneration
-  const resumeContent = useOptimizationStore((state) => state.resumeContent);
-  const jobDescription = useOptimizationStore((state) => state.jobDescription);
-  const sessionId = useOptimizationStore((state) => state.sessionId);
-  const keywordAnalysis = useOptimizationStore((state) => state.keywordAnalysis);
+  const resumeContent = useOptimizationStore((state: ExtendedOptimizationStore) => state.resumeContent);
+  const jobDescription = useOptimizationStore((state: ExtendedOptimizationStore) => state.jobDescription);
+  const sessionId = useOptimizationStore((state: ExtendedOptimizationStore) => state.sessionId);
+  const keywordAnalysis = useOptimizationStore((state: ExtendedOptimizationStore) => state.keywordAnalysis);
 
   // Sort state (Story 11.1)
-  const suggestionSortBy = useOptimizationStore((state) => state.suggestionSortBy);
-  const setSuggestionSortBy = useOptimizationStore((state) => state.setSuggestionSortBy);
+  const suggestionSortBy = useOptimizationStore((state: ExtendedOptimizationStore) => state.suggestionSortBy);
+  const setSuggestionSortBy = useOptimizationStore((state: ExtendedOptimizationStore) => state.setSuggestionSortBy);
 
   // Determine if suggestions are being generated
   const isGenerating = isLoading && loadingStep === 'generating-suggestions';
@@ -89,7 +91,7 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
           sectionType,
           sessionId,
           resumeContent: resumeContent?.rawText || undefined,
-          keywords: keywordAnalysis?.matched.map((k) => k.keyword),
+          keywords: keywordAnalysis?.matched.map((k: MatchedKeyword) => k.keyword),
         });
 
         if (result.error) {
@@ -126,7 +128,7 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
 
   // Check if experience bullets have point values (for sort control visibility)
   const hasExperiencePointValues = experienceSuggestion?.experience_entries?.some(
-    (entry) => entry.suggested_bullets.some((b) => b.point_value !== undefined)
+    (entry: ExperienceEntry) => entry.suggested_bullets.some((b: BulletSuggestion) => b.point_value !== undefined)
   ) ?? false;
 
   // Prepare comparison sections (Story 11.4)
@@ -143,10 +145,10 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
 
     if (skillsSuggestion) {
       // Build the suggested skills list from existing + additions - removals
-      const removalNames = skillsSuggestion.skill_removals.map((r) => r.skill);
+      const removalNames = skillsSuggestion.skill_removals.map((r: SkillItem) => r.skill);
       const suggestedSkills = [
         ...skillsSuggestion.existing_skills.filter(
-          (s) => !removalNames.includes(s)
+          (s: string) => !removalNames.includes(s)
         ),
         ...skillsSuggestion.skill_additions,
       ];
@@ -165,9 +167,9 @@ export function SuggestionDisplay({ className }: SuggestionDisplayProps) {
       // For experience, we can show the full optimized experience or individual bullets
       // For now, we'll create a combined suggested text from all entries
       const suggestedExperience = experienceSuggestion.experience_entries
-        .map((entry) => {
+        .map((entry: ExperienceEntry) => {
           const bullets = entry.suggested_bullets
-            .map((b) => `• ${b.suggested}`)
+            .map((b: BulletSuggestion) => `• ${b.suggested}`)
             .join('\n');
           return `${entry.company} - ${entry.role} (${entry.dates})\n${bullets}`;
         })

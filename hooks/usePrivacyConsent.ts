@@ -21,7 +21,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useOptimizationStore } from '@/store/useOptimizationStore';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store/useOptimizationStore';
 import { getPrivacyConsent } from '@/actions/privacy/get-privacy-consent';
 
 interface UsePrivacyConsentReturn {
@@ -52,13 +52,13 @@ export function usePrivacyConsent(): UsePrivacyConsentReturn {
   const [error, setError] = useState<string | null>(null);
 
   const privacyAccepted = useOptimizationStore(
-    (state) => state.privacyAccepted
+    (state: ExtendedOptimizationStore) => state.privacyAccepted
   );
   const privacyAcceptedAt = useOptimizationStore(
-    (state) => state.privacyAcceptedAt
+    (state: ExtendedOptimizationStore) => state.privacyAcceptedAt
   );
   const setPrivacyAccepted = useOptimizationStore(
-    (state) => state.setPrivacyAccepted
+    (state: ExtendedOptimizationStore) => state.setPrivacyAccepted
   );
 
   const fetchPrivacyConsent = async () => {

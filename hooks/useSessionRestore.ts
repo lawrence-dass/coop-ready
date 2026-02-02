@@ -28,7 +28,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useOptimizationStore } from '@/store';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store';
 import { getSessionByAnonymousId } from '@/lib/supabase/sessions';
 
 interface UseSessionRestoreProps {
@@ -63,7 +63,7 @@ export function useSessionRestore({
   const [isRestoring, setIsRestoring] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadFromSession = useOptimizationStore((state) => state.loadFromSession);
+  const loadFromSession = useOptimizationStore((state: ExtendedOptimizationStore) => state.loadFromSession);
 
   useEffect(() => {
     // Wait for auth to finish before deciding

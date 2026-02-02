@@ -25,7 +25,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useOptimizationStore } from '@/store';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { ResumeUploader } from '@/components/shared/ResumeUploader';
 import { JobDescriptionInput } from '@/components/shared/JobDescriptionInput';
@@ -91,25 +91,25 @@ export function NewScanClient() {
   const { privacyAccepted, refetch: refetchPrivacyConsent } = usePrivacyConsent();
 
   // Zustand store state
-  const resumeContent = useOptimizationStore((state) => state.resumeContent);
-  const jobDescription = useOptimizationStore((state) => state.jobDescription);
-  const pendingFile = useOptimizationStore((state) => state.pendingFile);
-  const fileError = useOptimizationStore((state) => state.fileError);
-  const generalError = useOptimizationStore((state) => state.generalError);
-  const userPreferences = useOptimizationStore((state) => state.userPreferences);
-  const isExtracting = useOptimizationStore((state) => state.isExtracting);
-  const showPrivacyDialog = useOptimizationStore((state) => state.showPrivacyDialog);
+  const resumeContent = useOptimizationStore((state: ExtendedOptimizationStore) => state.resumeContent);
+  const jobDescription = useOptimizationStore((state: ExtendedOptimizationStore) => state.jobDescription);
+  const pendingFile = useOptimizationStore((state: ExtendedOptimizationStore) => state.pendingFile);
+  const fileError = useOptimizationStore((state: ExtendedOptimizationStore) => state.fileError);
+  const generalError = useOptimizationStore((state: ExtendedOptimizationStore) => state.generalError);
+  const userPreferences = useOptimizationStore((state: ExtendedOptimizationStore) => state.userPreferences);
+  const isExtracting = useOptimizationStore((state: ExtendedOptimizationStore) => state.isExtracting);
+  const showPrivacyDialog = useOptimizationStore((state: ExtendedOptimizationStore) => state.showPrivacyDialog);
 
   // Zustand store actions
-  const setPendingFile = useOptimizationStore((state) => state.setPendingFile);
-  const setFileError = useOptimizationStore((state) => state.setFileError);
-  const setJobDescription = useOptimizationStore((state) => state.setJobDescription);
-  const clearJobDescription = useOptimizationStore((state) => state.clearJobDescription);
-  const setGeneralError = useOptimizationStore((state) => state.setGeneralError);
-  const clearGeneralError = useOptimizationStore((state) => state.clearGeneralError);
-  const setShowPrivacyDialog = useOptimizationStore((state) => state.setShowPrivacyDialog);
-  const setPrivacyAccepted = useOptimizationStore((state) => state.setPrivacyAccepted);
-  const clearResumeAndResults = useOptimizationStore((state) => state.clearResumeAndResults);
+  const setPendingFile = useOptimizationStore((state: ExtendedOptimizationStore) => state.setPendingFile);
+  const setFileError = useOptimizationStore((state: ExtendedOptimizationStore) => state.setFileError);
+  const setJobDescription = useOptimizationStore((state: ExtendedOptimizationStore) => state.setJobDescription);
+  const clearJobDescription = useOptimizationStore((state: ExtendedOptimizationStore) => state.clearJobDescription);
+  const setGeneralError = useOptimizationStore((state: ExtendedOptimizationStore) => state.setGeneralError);
+  const clearGeneralError = useOptimizationStore((state: ExtendedOptimizationStore) => state.clearGeneralError);
+  const setShowPrivacyDialog = useOptimizationStore((state: ExtendedOptimizationStore) => state.setShowPrivacyDialog);
+  const setPrivacyAccepted = useOptimizationStore((state: ExtendedOptimizationStore) => state.setPrivacyAccepted);
+  const clearResumeAndResults = useOptimizationStore((state: ExtendedOptimizationStore) => state.clearResumeAndResults);
 
   // Derived state: can we analyze?
   const hasResume = !!resumeContent;

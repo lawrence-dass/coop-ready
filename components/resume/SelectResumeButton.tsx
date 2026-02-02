@@ -50,10 +50,10 @@ export function SelectResumeButton({
   const [resumeToDelete, setResumeToDelete] = useState<UserResumeOption | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const setResumeContent = useOptimizationStore((state) => state.setResumeContent);
-  const selectedResumeId = useOptimizationStore((state) => state.selectedResumeId);
-  const setSelectedResumeId = useOptimizationStore((state) => state.setSelectedResumeId);
-  const clearSelectedResume = useOptimizationStore((state) => state.clearSelectedResume);
+  const setResumeContent = useOptimizationStore((state: { setResumeContent: (resume: import('@/types/optimization').Resume | null) => void }) => state.setResumeContent);
+  const selectedResumeId = useOptimizationStore((state: { selectedResumeId: string | null }) => state.selectedResumeId);
+  const setSelectedResumeId = useOptimizationStore((state: { setSelectedResumeId: (id: string | null) => void }) => state.setSelectedResumeId);
+  const clearSelectedResume = useOptimizationStore((state: { clearSelectedResume: () => void }) => state.clearSelectedResume);
 
   // Fetch resumes function (defined before useEffect)
   const fetchResumes = async () => {

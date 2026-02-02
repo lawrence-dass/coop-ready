@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { useOptimizationStore } from '@/store';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store';
 import {
   DEFAULT_PREFERENCES,
   PREFERENCE_METADATA,
@@ -75,8 +75,8 @@ function PreferenceSelect<T extends string>({
 
 export function PreferencesPanel() {
   // Get preferences from store (or use defaults)
-  const userPreferences = useOptimizationStore((state) => state.userPreferences);
-  const setUserPreferences = useOptimizationStore((state) => state.setUserPreferences);
+  const userPreferences = useOptimizationStore((state: ExtendedOptimizationStore) => state.userPreferences);
+  const setUserPreferences = useOptimizationStore((state: ExtendedOptimizationStore) => state.setUserPreferences);
 
   // Track if we've loaded user's saved defaults
   const hasLoadedDefaults = useRef(false);

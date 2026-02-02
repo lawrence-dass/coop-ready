@@ -175,7 +175,7 @@ development_status:
   # Reference: _bmad-output/planning-artifacts/epic-17-compare-dashboard-stats.md
   epic-17: in-progress
   17-1-add-comparison-database-schema: done
-  17-2-implement-compare-upload-ui: backlog
+  17-2-implement-compare-upload-ui: done
   17-3-implement-comparison-analysis-server-action: backlog
   17-4-implement-comparison-results-display: backlog
   17-5-implement-dashboard-stats-calculation: backlog
