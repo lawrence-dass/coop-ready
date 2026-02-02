@@ -24,6 +24,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ResumeUploader } from '@/components/shared/ResumeUploader';
 import { ErrorDisplay } from '@/components/shared/ErrorDisplay';
+import { compareResume } from '@/actions/compareResume';
 
 // ============================================================================
 // TYPES
@@ -58,6 +60,7 @@ export function CompareUploadDialog({
   onOpenChange,
   sessionId,
 }: CompareUploadDialogProps) {
+  // Note: useRouter will be needed in Story 17.4 for navigation to comparison results
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<{ code: string; message: string } | null>(null);
   const [isComparing, setIsComparing] = useState(false);
@@ -73,26 +76,35 @@ export function CompareUploadDialog({
 
   /**
    * Handle file selection from uploader
+   * Story 17.3: Implements actual comparison flow
    */
   const handleFileSelect = async (file: File) => {
     setUploadedFile(file);
     setUploadError(null);
-
-    // Trigger comparison (Story 17.3 - stub for now)
     setIsComparing(true);
 
-    // TODO: Story 17.3 will implement the actual comparison flow
-    // await compareResume(sessionId, file);
-    console.log('[Story 17.2] Comparison flow will be implemented in Story 17.3', {
-      sessionId,
-      filename: file.name,
-      size: file.size,
-    });
+    try {
+      const { data, error } = await compareResume(sessionId, file);
 
-    // For now, just show loading state for 2 seconds then reset
-    setTimeout(() => {
+      if (error) {
+        setUploadError(error);
+        setIsComparing(false);
+        return;
+      }
+
+      // Success - show improvement and close dialog
+      toast.success(`Score improved by ${Math.round(data.improvementPoints)} points!`);
+      onOpenChange(false);
+
+      // Story 17.4 will add navigation to comparison results page:
+      // router.push(`/scan/${sessionId}/comparison`);
+    } catch (err) {
+      setUploadError({
+        code: 'VALIDATION_ERROR',
+        message: 'Unexpected error during comparison'
+      });
       setIsComparing(false);
-    }, 2000);
+    }
   };
 
   /**
