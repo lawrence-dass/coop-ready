@@ -33,6 +33,8 @@ export const ROUTES = {
     SCAN: {
       NEW: '/scan/new',
       SESSION: (id: string) => `/scan/${id}` as const,
+      SUGGESTIONS: (id: string) => `/scan/${id}/suggestions` as const,
+      COMPARISON: (id: string) => `/scan/${id}/comparison` as const,
     },
     HISTORY: '/history',
     SETTINGS: '/settings',

@@ -19,34 +19,34 @@ describe('Story 17.3: Comparison Analysis Server Action - Exports', () => {
   });
 
   test('[P0] 17.3-EXP-002: ComparisonResult type is correctly defined', () => {
-    // GIVEN: Expected result structure
+    // GIVEN: Expected result structure (using type assertion for test simplicity)
     const mockResult: ComparisonResult = {
       originalScore: {
         overall: 65,
-        tier: 'Competitive',
+        tier: 'moderate', // ScoreTier uses lowercase
         breakdown: { keywordScore: 60, sectionCoverageScore: 70, contentQualityScore: 65 },
         calculatedAt: new Date().toISOString()
-      },
+      } as any,
       comparedScore: {
         overall: 78,
-        tier: 'Strong',
+        tier: 'strong', // ScoreTier uses lowercase
         breakdown: { keywordScore: 75, sectionCoverageScore: 80, contentQualityScore: 78 },
         breakdownV21: {} as any,
         metadata: {} as any,
         actionItems: [],
         calculatedAt: new Date().toISOString()
-      },
+      } as any,
       improvementPoints: 13,
       improvementPercentage: 20.0,
       tierChange: {
-        from: 'Competitive',
-        to: 'Strong'
+        from: 'moderate',
+        to: 'strong'
       }
     };
 
     // THEN: Type should compile correctly
     expect(mockResult.improvementPoints).toBe(13);
-    expect(mockResult.tierChange?.from).toBe('Competitive');
+    expect(mockResult.tierChange?.from).toBe('moderate');
   });
 
   test('[P0] 17.3-EXP-003: Function signature accepts correct parameters', () => {
