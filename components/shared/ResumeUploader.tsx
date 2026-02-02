@@ -29,7 +29,7 @@ import { Upload, FileText, FileType, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { useOptimizationStore } from '@/store';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store';
 import { useResumeExtraction, MIME_TYPE_PDF, MIME_TYPE_DOCX } from '@/hooks';
 
 // ============================================================================
@@ -101,9 +101,9 @@ export function ResumeUploader({
   className,
 }: ResumeUploaderProps) {
   // Get extraction state and hook
-  const pendingFile = useOptimizationStore((state) => state.pendingFile);
-  const isExtracting = useOptimizationStore((state) => state.isExtracting);
-  const resumeContent = useOptimizationStore((state) => state.resumeContent);
+  const pendingFile = useOptimizationStore((state: ExtendedOptimizationStore) => state.pendingFile);
+  const isExtracting = useOptimizationStore((state: ExtendedOptimizationStore) => state.isExtracting);
+  const resumeContent = useOptimizationStore((state: ExtendedOptimizationStore) => state.resumeContent);
   const { extract, isPending } = useResumeExtraction();
 
   // Track which file we've already attempted to extract (H3 fix: prevent re-extraction loops)

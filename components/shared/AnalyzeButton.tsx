@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
 import { analyzeResume } from '@/actions/analyzeResume';
 import { generateAllSuggestions } from '@/actions/generateAllSuggestions';
-import { useOptimizationStore } from '@/store';
+import { useOptimizationStore, ExtendedOptimizationStore } from '@/store';
 import { toast } from 'sonner';
 import { fetchWithTimeout, TIMEOUT_MS } from '@/lib/timeoutUtils';
 
@@ -36,16 +36,16 @@ export function AnalyzeButton({
 }: AnalyzeButtonProps) {
   const [isPending, startTransition] = useTransition();
   const [loadingStep, setLoadingStep] = useState<string>('');
-  const setKeywordAnalysis = useOptimizationStore((state) => state.setKeywordAnalysis);
-  const setATSScore = useOptimizationStore((state) => state.setATSScore);
-  const setGeneralError = useOptimizationStore((state) => state.setGeneralError);
-  const setSummarySuggestion = useOptimizationStore((state) => state.setSummarySuggestion);
-  const setSkillsSuggestion = useOptimizationStore((state) => state.setSkillsSuggestion);
-  const setExperienceSuggestion = useOptimizationStore((state) => state.setExperienceSuggestion);
-  const setEducationSuggestion = useOptimizationStore((state) => state.setEducationSuggestion);
-  const resumeContent = useOptimizationStore((state) => state.resumeContent);
-  const jobDescription = useOptimizationStore((state) => state.jobDescription);
-  const userPreferences = useOptimizationStore((state) => state.userPreferences);
+  const setKeywordAnalysis = useOptimizationStore((state: ExtendedOptimizationStore) => state.setKeywordAnalysis);
+  const setATSScore = useOptimizationStore((state: ExtendedOptimizationStore) => state.setATSScore);
+  const setGeneralError = useOptimizationStore((state: ExtendedOptimizationStore) => state.setGeneralError);
+  const setSummarySuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.setSummarySuggestion);
+  const setSkillsSuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.setSkillsSuggestion);
+  const setExperienceSuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.setExperienceSuggestion);
+  const setEducationSuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.setEducationSuggestion);
+  const resumeContent = useOptimizationStore((state: ExtendedOptimizationStore) => state.resumeContent);
+  const jobDescription = useOptimizationStore((state: ExtendedOptimizationStore) => state.jobDescription);
+  const userPreferences = useOptimizationStore((state: ExtendedOptimizationStore) => state.userPreferences);
 
   // Don't show button if resume or JD is missing
   if (!hasResume || !hasJobDescription) {

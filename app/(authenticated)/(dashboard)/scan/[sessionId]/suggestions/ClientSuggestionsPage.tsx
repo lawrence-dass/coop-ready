@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Upload } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { SuggestionCard } from '@/components/shared/SuggestionCard';
 import { ScoreComparisonSection } from './ScoreComparisonSection';
 import { SectionSummaryCard } from './SectionSummaryCard';
+import { CompareUploadDialog } from '@/components/scan/CompareUploadDialog';
+import { useOptimizationStore } from '@/store';
 import { ROUTES } from '@/lib/constants/routes';
 import type {
   SummarySuggestion,
@@ -47,6 +50,10 @@ type SectionType = 'summary' | 'skills' | 'experience' | 'education';
 export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionType>('summary');
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Check if user has copied any suggestions (Story 17.2)
+  const hasAnyCopied = useOptimizationStore((state: { hasAnyCopied: () => boolean }) => state.hasAnyCopied());
 
   // Extract suggestions by section
   const summarySuggestions = session.suggestions.summary || [];
@@ -367,6 +374,19 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
           >
             Back to Results
           </Button>
+
+          {/* Story 17.2: Compare button (shown when user has copied suggestions) */}
+          {hasAnyCopied && (
+            <Button
+              onClick={() => setDialogOpen(true)}
+              size="default"
+              data-testid="compare-button"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Compare with Updated Resume
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             size="default"
@@ -377,6 +397,13 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
             Apply All Suggestions (Coming Soon)
           </Button>
         </div>
+
+        {/* Story 17.2: Comparison dialog */}
+        <CompareUploadDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          sessionId={session.id}
+        />
       </div>
     </div>
   );

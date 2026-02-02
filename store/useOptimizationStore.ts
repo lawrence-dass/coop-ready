@@ -51,8 +51,9 @@ export type SuggestionSortBy = 'relevance' | 'points-high' | 'points-low';
 
 /**
  * Extended store interface with session tracking
+ * Exported for use in component selectors
  */
-interface ExtendedOptimizationStore extends OptimizationStore {
+export interface ExtendedOptimizationStore extends OptimizationStore {
   /** Current session ID from database (null if no session) */
   sessionId: string | null;
 
@@ -131,6 +132,18 @@ interface ExtendedOptimizationStore extends OptimizationStore {
 
   /** Show privacy consent dialog (Story 15.3) */
   showPrivacyDialog: boolean;
+
+  /** Copied suggestions tracking (Story 17.2) - Set of suggestion IDs that have been copied */
+  copiedSuggestions: Set<string>;
+
+  /** Comparison file being uploaded (Story 17.2) */
+  comparisonFile: File | null;
+
+  /** Comparison in progress (Story 17.2) */
+  isComparing: boolean;
+
+  /** Comparison error (Story 17.2) */
+  comparisonError: { code: string; message: string } | null;
 
   /** Set the session ID */
   setSessionId: (id: string | null) => void;
@@ -243,6 +256,24 @@ interface ExtendedOptimizationStore extends OptimizationStore {
   /** Clear resume content and all downstream results (Issue #117) */
   clearResumeAndResults: () => void;
 
+  /** Mark a suggestion as copied (Story 17.2) */
+  markSuggestionCopied: (suggestionId: string) => void;
+
+  /** Check if any suggestions have been copied (Story 17.2) */
+  hasAnyCopied: () => boolean;
+
+  /** Set comparison file (Story 17.2) */
+  setComparisonFile: (file: File | null) => void;
+
+  /** Set comparison in progress state (Story 17.2) */
+  setIsComparing: (comparing: boolean) => void;
+
+  /** Set comparison error (Story 17.2) */
+  setComparisonError: (error: { code: string; message: string } | null) => void;
+
+  /** Clear all comparison state (Story 17.2) */
+  clearComparison: () => void;
+
   /** Hydrate store from database session */
   loadFromSession: (session: OptimizationSession) => void;
 }
@@ -260,7 +291,7 @@ interface ExtendedOptimizationStore extends OptimizationStore {
  * 3. User refreshes → Session restored → Store hydrated again
  */
 export const useOptimizationStore = create<ExtendedOptimizationStore>(
-  (set) => ({
+  (set, get) => ({
     // ============================================================================
     // INITIAL STATE
     // ============================================================================
@@ -298,6 +329,10 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     privacyAccepted: undefined, // undefined = not loaded, null = not authenticated
     privacyAcceptedAt: undefined,
     showPrivacyDialog: false,
+    copiedSuggestions: new Set<string>(),
+    comparisonFile: null,
+    isComparing: false,
+    comparisonError: null,
 
     // ============================================================================
     // DATA ACTIONS
@@ -590,6 +625,56 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
       set({ suggestionFeedback: updated });
     },
 
+    // ============================================================================
+    // COMPARISON ACTIONS (Story 17.2)
+    // ============================================================================
+
+    /**
+     * Mark a suggestion as copied (Story 17.2)
+     * Enables "Compare with Updated Resume" button
+     */
+    markSuggestionCopied: (suggestionId) =>
+      set((state) => ({
+        copiedSuggestions: new Set(state.copiedSuggestions).add(suggestionId),
+      })),
+
+    /**
+     * Check if any suggestions have been copied (Story 17.2)
+     * Used to show/hide "Compare" button
+     */
+    hasAnyCopied: (): boolean => {
+      const { copiedSuggestions } = get();
+      return copiedSuggestions.size > 0;
+    },
+
+    /**
+     * Set comparison file (Story 17.2)
+     */
+    setComparisonFile: (file) =>
+      set({ comparisonFile: file }),
+
+    /**
+     * Set comparison in progress state (Story 17.2)
+     */
+    setIsComparing: (comparing) =>
+      set({ isComparing: comparing }),
+
+    /**
+     * Set comparison error (Story 17.2)
+     */
+    setComparisonError: (error) =>
+      set({ comparisonError: error }),
+
+    /**
+     * Clear all comparison state (Story 17.2)
+     */
+    clearComparison: () =>
+      set({
+        comparisonFile: null,
+        isComparing: false,
+        comparisonError: null,
+      }),
+
     /**
      * Clear resume content and all downstream results (Issue #117)
      * Resets the uploader so user can load a new resume.
@@ -690,6 +775,10 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         privacyAccepted: undefined,
         privacyAcceptedAt: undefined,
         showPrivacyDialog: false,
+        copiedSuggestions: new Set<string>(),
+        comparisonFile: null,
+        isComparing: false,
+        comparisonError: null,
       }),
   })
 );
