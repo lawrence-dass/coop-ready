@@ -60,3 +60,4 @@ export * from './preferences';
 export * from './resume';
 export * from './store';
 export * from './history';
+export * from './dashboard';

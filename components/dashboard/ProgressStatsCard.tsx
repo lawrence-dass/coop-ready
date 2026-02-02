@@ -1,9 +1,12 @@
 /**
  * ProgressStatsCard Component
  * Story 16.2: Implement Dashboard Home Page
+ * Story 17.5: Dashboard Stats Calculation
  *
- * Displays placeholder progress statistics
- * Future enhancement: Calculate real metrics from user sessions
+ * Displays real progress statistics calculated from user sessions:
+ * - Total Scans: Count of all sessions
+ * - Average ATS Score: Mean score across all sessions
+ * - Improvement Rate: Average improvement from comparison sessions
  */
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -12,10 +15,16 @@ import { BarChart3, TrendingUp, Target } from 'lucide-react';
 interface ProgressStatsCardProps {
   totalScans?: number;
   averageAtsScore?: number | null;
+  improvementRate?: number | null;
 }
 
-export function ProgressStatsCard({ totalScans = 0, averageAtsScore }: ProgressStatsCardProps) {
+export function ProgressStatsCard({
+  totalScans = 0,
+  averageAtsScore = null,
+  improvementRate = null,
+}: ProgressStatsCardProps) {
   const hasAtsScore = averageAtsScore !== null && averageAtsScore !== undefined;
+  const hasImprovementRate = improvementRate !== null && improvementRate !== undefined;
 
   const stats = [
     {
@@ -32,9 +41,11 @@ export function ProgressStatsCard({ totalScans = 0, averageAtsScore }: ProgressS
     },
     {
       label: 'Improvement Rate',
-      value: '--',
+      value: hasImprovementRate
+        ? `${improvementRate > 0 ? '+' : ''}${Math.round(improvementRate)} pts`
+        : '--',
       icon: TrendingUp,
-      isTbd: true,
+      isTbd: !hasImprovementRate,
     },
   ];
 

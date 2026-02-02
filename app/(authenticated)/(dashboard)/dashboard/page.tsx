@@ -2,17 +2,18 @@
  * Dashboard Page
  * Story 16.2: Implement Dashboard Home Page
  * Story 17.6: Dashboard UI Cleanup
+ * Story 17.5: Dashboard Stats Calculation
  *
  * Main dashboard home page showing:
  * - Welcome message (first name only, no email)
- * - Progress stats
+ * - Progress stats (with real calculations from all sessions)
  * - Recent scans OR getting started guide
  *
  * Note: Quick action cards removed per Story 17.6 - available in sidebar
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { getRecentSessions } from '@/lib/dashboard/queries';
+import { getRecentSessions, getDashboardStats } from '@/lib/dashboard/queries';
 import { WelcomeHeader } from '@/components/dashboard/WelcomeHeader';
 import { ProgressStatsCard } from '@/components/dashboard/ProgressStatsCard';
 import { RecentScansCard } from '@/components/dashboard/RecentScansCard';
@@ -40,16 +41,24 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .single();
 
-  // Fetch recent sessions
+  // Fetch recent sessions for display
   const { data: sessions, error: sessionsError } = await getRecentSessions();
   const recentSessions = sessions || [];
-  const totalScans = recentSessions.length;
 
-  // Calculate average ATS score from sessions that have scores
-  const sessionsWithScores = recentSessions.filter(s => s.atsScore !== null && s.atsScore !== undefined);
-  const averageAtsScore = sessionsWithScores.length > 0
-    ? sessionsWithScores.reduce((sum, s) => sum + (s.atsScore || 0), 0) / sessionsWithScores.length
-    : null;
+  // Fetch dashboard stats (replaces inline calculation)
+  // Story 17.5: Calculate stats from ALL sessions, not just recent 5
+  const { data: stats, error: statsError } = await getDashboardStats();
+
+  // Handle stats error gracefully - use fallback values
+  const dashboardStats = stats ?? {
+    totalScans: recentSessions.length,
+    averageAtsScore: null,
+    improvementRate: null,
+  };
+
+  if (statsError) {
+    console.error('Failed to load dashboard stats:', statsError);
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
@@ -59,8 +68,12 @@ export default async function DashboardPage() {
         userEmail={user.email || 'user@example.com'}
       />
 
-      {/* Progress Stats - Story 17.6: Moved up, now immediately after Welcome */}
-      <ProgressStatsCard totalScans={totalScans} averageAtsScore={averageAtsScore} />
+      {/* Progress Stats - Story 17.5: Real stats from all sessions */}
+      <ProgressStatsCard
+        totalScans={dashboardStats.totalScans}
+        averageAtsScore={dashboardStats.averageAtsScore}
+        improvementRate={dashboardStats.improvementRate}
+      />
 
       {/* Recent Scans OR Getting Started Guide */}
       {sessionsError ? (
