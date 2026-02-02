@@ -6,6 +6,7 @@
  */
 
 import type { KeywordAnalysisResult, ATSScore } from './analysis';
+import type { ATSScoreV21 } from '@/lib/scoring/types';
 import type {
   SummarySuggestion,
   SkillsSuggestion,
@@ -225,7 +226,8 @@ export interface OptimizationSession {
   atsScore?: ATSScore | null;
 
   /** ATS score from re-uploaded resume after applying suggestions (Story 17.1) */
-  comparedAtsScore?: ATSScore | null;
+  /** Note: Comparison always uses V2.1 scoring, but stored as ATSScore for DB compatibility */
+  comparedAtsScore?: ATSScore | ATSScoreV21 | null;
 
   /** Summary section optimization suggestion (Story 6.2) */
   summarySuggestion?: SummarySuggestion | null;

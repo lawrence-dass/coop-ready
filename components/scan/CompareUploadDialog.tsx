@@ -23,6 +23,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -60,7 +61,7 @@ export function CompareUploadDialog({
   onOpenChange,
   sessionId,
 }: CompareUploadDialogProps) {
-  // Note: useRouter will be needed in Story 17.4 for navigation to comparison results
+  const router = useRouter();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<{ code: string; message: string } | null>(null);
   const [isComparing, setIsComparing] = useState(false);
@@ -92,12 +93,17 @@ export function CompareUploadDialog({
         return;
       }
 
-      // Success - show improvement and close dialog
-      toast.success(`Score improved by ${Math.round(data.improvementPoints)} points!`);
+      // Success - show appropriate message based on improvement direction
+      const points = Math.round(data.improvementPoints);
+      if (points > 0) {
+        toast.success(`Score improved by ${points} points!`);
+      } else if (points < 0) {
+        toast.info(`Score changed by ${points} points. View details for insights.`);
+      } else {
+        toast.info('Scores are the same. View the comparison for details.');
+      }
       onOpenChange(false);
-
-      // Story 17.4 will add navigation to comparison results page:
-      // router.push(`/scan/${sessionId}/comparison`);
+      router.push(`/scan/${sessionId}/comparison`);
     } catch (err) {
       setUploadError({
         code: 'VALIDATION_ERROR',
