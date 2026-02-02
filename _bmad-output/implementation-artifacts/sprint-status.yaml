@@ -173,11 +173,11 @@ development_status:
 
   # Epic 17: Resume Compare & Dashboard Stats (V1.5)
   # Reference: _bmad-output/planning-artifacts/epic-17-compare-dashboard-stats.md
-  epic-17: in-progress
+  epic-17: done
   17-1-add-comparison-database-schema: done
   17-2-implement-compare-upload-ui: done
   17-3-implement-comparison-analysis-server-action: done
   17-4-implement-comparison-results-display: done
   17-5-implement-dashboard-stats-calculation: done
   17-6-dashboard-ui-cleanup: done
-  17-7-epic-17-integration-and-verification-testing: backlog
+  17-7-epic-17-integration-and-verification-testing: done

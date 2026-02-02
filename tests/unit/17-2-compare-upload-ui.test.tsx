@@ -13,6 +13,32 @@ import { CompareUploadDialog } from '@/components/scan/CompareUploadDialog';
  * - P1: 2 tests (valid file handling, state reset)
  */
 
+// Mock Next.js navigation (required for useRouter)
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
+// Mock compareResume action
+vi.mock('@/actions/compareResume', () => ({
+  compareResume: vi.fn().mockResolvedValue({
+    data: {
+      improvementPoints: 10,
+      improvementPercentage: 15.4,
+      originalScore: { overall: 65 },
+      comparedScore: { overall: 75 },
+    },
+    error: null,
+  }),
+}));
+
 // Mock dependencies
 vi.mock('@/components/shared/ResumeUploader', () => ({
   ResumeUploader: ({
@@ -58,6 +84,7 @@ vi.mock('@/components/shared/ErrorDisplay', () => ({
 describe('Story 17.2: Compare Upload UI', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPush.mockClear();
   });
 
   test('[P0] 17.2-UI-001: Dialog renders with correct content', () => {
