@@ -1,0 +1,43 @@
+# Claude Context Exclusion
+# Files/directories to exclude from Claude's context to reduce pollution
+
+# Large specification files (reference only)
+docs/reference/
+docs/verification-reports/
+docs/archive/
+
+# BMAD implementation artifacts (historical)
+_bmad-output/implementation-artifacts/
+_bmad-output/archive/
+_bmad-output/traceability-matrix*.md
+_bmad-output/test-automation-summary*.md
+_bmad-output/*automation-summary.md
+
+# BMAD workflow definitions (only needed when using workflows)
+.cursor/commands/
+
+# Build outputs
+.next/
+node_modules/
+dist/
+build/
+
+# Generated files
+*.log
+.env.local
+.env
+
+# Test outputs
+playwright-report/
+coverage/
+test-results/
+
+# Git
+.git/
+
+# IDE
+.vscode/
+.idea/
+
+# Supabase local
+.supabase/

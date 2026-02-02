@@ -11,6 +11,8 @@ const MAX_JD_LENGTH = 5000;
 /**
  * Prompt template for keyword extraction
  * Uses XML-wrapped user content for prompt injection defense
+ *
+ * V2.1 Update: Added requirement classification (required vs preferred)
  */
 const extractionPrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert analyzing job descriptions.
 
@@ -28,13 +30,20 @@ Categorize keywords into:
 - soft_skills (e.g., "communication", "leadership")
 - certifications (e.g., "PMP", "AWS Certified")
 
-For each keyword, rate importance: high, medium, or low.
+For each keyword:
+1. Rate importance: high, medium, or low
+2. Classify requirement: "required" or "preferred"
+
+**Requirement Classification Rules:**
+- "required" = Appears in "Required Qualifications" section, OR uses language like "must have", "required", "essential", "need", "necessary"
+- "preferred" = Appears in "Preferred/Nice to Have" section, OR uses language like "preferred", "bonus", "plus", "ideally", "nice to have"
+- Default: If unclear, high importance = required, medium/low = preferred
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
   "keywords": [
-    {{ "keyword": "Python", "category": "technologies", "importance": "high" }},
-    {{ "keyword": "Project Management", "category": "skills", "importance": "high" }}
+    {{ "keyword": "Python", "category": "technologies", "importance": "high", "requirement": "required" }},
+    {{ "keyword": "Docker", "category": "technologies", "importance": "medium", "requirement": "preferred" }}
   ]
 }}`);
 

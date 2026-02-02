@@ -17,7 +17,8 @@
     "test:unit": "vitest",
     "test:unit:run": "vitest run",
     "test:all": "npm run test:unit:run && npm run test:e2e",
-    "test:report": "playwright show-report playwright-report"
+    "test:report": "playwright show-report playwright-report",
+    "validate:analysis": "tsx scripts/validate-analysis-quality.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

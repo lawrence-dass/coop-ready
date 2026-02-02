@@ -26,10 +26,45 @@ export function createJsonParser<T>(): RunnableLambda<AIMessage, T> {
     const content = message.content.toString().trim();
 
     // Remove markdown code blocks if present
-    const jsonText = content
+    let jsonText = content
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
+
+    // Try to extract just the JSON object/array if there's trailing text
+    // Look for the first { or [ and find its matching closing bracket
+    const firstBrace = jsonText.indexOf('{');
+    const firstBracket = jsonText.indexOf('[');
+
+    let startIndex = -1;
+    let isObject = false;
+
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+      startIndex = firstBrace;
+      isObject = true;
+    } else if (firstBracket !== -1) {
+      startIndex = firstBracket;
+      isObject = false;
+    }
+
+    if (startIndex !== -1) {
+      // Find the matching closing bracket
+      let depth = 0;
+      const openChar = isObject ? '{' : '[';
+      const closeChar = isObject ? '}' : ']';
+
+      for (let i = startIndex; i < jsonText.length; i++) {
+        if (jsonText[i] === openChar) depth++;
+        if (jsonText[i] === closeChar) {
+          depth--;
+          if (depth === 0) {
+            // Found the matching closing bracket
+            jsonText = jsonText.substring(startIndex, i + 1);
+            break;
+          }
+        }
+      }
+    }
 
     return JSON.parse(jsonText) as T;
   });

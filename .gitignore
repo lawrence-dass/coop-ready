@@ -63,3 +63,7 @@ initial_docs/
 
 # BMAD Backups
 _bmad-backup-*/
+
+# Validation test results (regenerable)
+validation-results/
+

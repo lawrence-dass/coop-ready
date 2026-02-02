@@ -1,385 +1,254 @@
-// Unit Tests for ATS Score Calculation
-// Story 5.2: Implement ATS Score Calculation
+/**
+ * Unit Tests for ATS Score Calculation
+ * Story 5.2: Implement ATS Score Calculation
+ *
+ * Updated for V2 deterministic scoring (no LLM dependency)
+ */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { calculateATSScore } from '@/lib/ai/calculateATSScore';
-import * as judgeModule from '@/lib/ai/judgeContentQuality';
-import type { KeywordAnalysisResult } from '@/types/analysis';
+import { describe, it, expect } from 'vitest';
+import { calculateATSScore, calculateATSScoreV2Full } from '@/lib/ai/calculateATSScore';
+import type { KeywordAnalysisResult, MatchedKeyword, ExtractedKeyword } from '@/types/analysis';
+import { KeywordCategory } from '@/types/analysis';
 import type { Resume } from '@/types/optimization';
 
-// Mock the judgeContentQuality function
-vi.mock('@/lib/ai/judgeContentQuality');
-
-describe('calculateATSScore', () => {
+describe('calculateATSScore (V2)', () => {
   const mockJD = 'Software Engineer position requiring Python, React, and AWS experience.';
 
+  const createMatchedKeyword = (
+    keyword: string,
+    matchType: 'exact' | 'fuzzy' | 'semantic' = 'exact'
+  ): MatchedKeyword => ({
+    keyword,
+    category: KeywordCategory.SKILLS,
+    found: true,
+    matchType,
+  });
+
+  const createMissingKeyword = (
+    keyword: string,
+    importance: 'high' | 'medium' | 'low' = 'medium'
+  ): ExtractedKeyword => ({
+    keyword,
+    category: KeywordCategory.SKILLS,
+    importance,
+  });
+
+  // Well-structured resume for testing
   const mockParsedResume: Resume = {
-    rawText: 'Full resume text here',
-    summary: 'Experienced software engineer',
-    skills: 'Python, React, AWS, Docker',
-    experience: 'Led development of web applications using React and Python'
+    rawText: `John Doe
+john.doe@example.com | (555) 123-4567
+
+SUMMARY
+Experienced software engineer with 8 years of experience building scalable web applications.
+Proven track record of leading cross-functional teams and delivering complex projects.
+
+SKILLS
+Python, React, AWS, Docker, Kubernetes, TypeScript, JavaScript, Node.js
+
+EXPERIENCE
+Senior Software Engineer | Tech Company | Jan 2020 - Present
+• Led development of microservices architecture reducing latency by 40%
+• Built scalable API handling 1M requests daily using Python and AWS
+• Drove adoption of React frontend reducing page load time by 50%
+• Delivered features ahead of schedule increasing user engagement by 25%
+• Mentored team of 5 junior developers on best practices
+• Implemented CI/CD pipelines reducing deployment time from 2 hours to 15 minutes
+• Designed distributed database architecture supporting 10x traffic growth
+• Created automated testing framework achieving 90% code coverage`,
+    summary: 'Experienced software engineer with 8 years of experience building scalable web applications. Proven track record of leading cross-functional teams and delivering complex projects.',
+    skills: 'Python, React, AWS, Docker, Kubernetes, TypeScript, JavaScript, Node.js',
+    experience: `Senior Software Engineer | Tech Company | Jan 2020 - Present
+• Led development of microservices architecture reducing latency by 40%
+• Built scalable API handling 1M requests daily using Python and AWS
+• Drove adoption of React frontend reducing page load time by 50%
+• Delivered features ahead of schedule increasing user engagement by 25%
+• Mentored team of 5 junior developers on best practices
+• Implemented CI/CD pipelines reducing deployment time from 2 hours to 15 minutes
+• Designed distributed database architecture supporting 10x traffic growth
+• Created automated testing framework achieving 90% code coverage`
   };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  describe('Keyword Score Calculation', () => {
-    it('[P0] should calculate keyword score from match rate - 100% match', async () => {
+  describe('V2 Deterministic Scoring', () => {
+    it('[P0] should return a valid score object', async () => {
       const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
+        matched: [
+          createMatchedKeyword('Python'),
+          createMatchedKeyword('React'),
+          createMatchedKeyword('AWS'),
+        ],
         missing: [],
         matchRate: 100,
         analyzedAt: new Date().toISOString()
       };
-
-      // Mock quality judge to return 80
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 80,
-        error: null
-      });
 
       const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
 
       expect(result.error).toBeNull();
       expect(result.data).not.toBeNull();
-      expect(result.data!.breakdown.keywordScore).toBe(100);
+      expect(result.data!.overall).toBeGreaterThanOrEqual(0);
+      expect(result.data!.overall).toBeLessThanOrEqual(100);
+      expect(result.data!.breakdown).toBeDefined();
+      expect(result.data!.calculatedAt).toBeDefined();
     });
 
-    it('[P0] should calculate keyword score from match rate - 50% match', async () => {
+    it('[P0] should include V1 compatible breakdown', async () => {
       const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 50,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 75,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.keywordScore).toBe(50);
-    });
-
-    it('[P1] should calculate keyword score from match rate - 0% match', async () => {
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 0,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 60,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.keywordScore).toBe(0);
-    });
-  });
-
-  describe('Section Coverage Score Calculation', () => {
-    it('[P0] should score 100 when all required sections present', async () => {
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 80,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 85,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.sectionCoverageScore).toBe(100);
-    });
-
-    it('[P1] should score 67 when one section missing (2/3)', async () => {
-      const resumeMissingSkills: Resume = {
-        rawText: 'Resume text',
-        summary: 'Summary here',
-        skills: undefined, // Missing
-        experience: 'Experience here'
-      };
-
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 75,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 80,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, resumeMissingSkills, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.sectionCoverageScore).toBe(67); // Rounded 2/3
-    });
-
-    it('[P1] should score 33 when two sections missing (1/3)', async () => {
-      const resumeMinimal: Resume = {
-        rawText: 'Resume text',
-        summary: undefined,
-        skills: 'Python, React',
-        experience: undefined
-      };
-
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 60,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 70,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, resumeMinimal, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.sectionCoverageScore).toBe(33); // Rounded 1/3
-    });
-
-    it('[P2] should score 0 when all sections missing', async () => {
-      const resumeEmpty: Resume = {
-        rawText: 'Some raw text',
-        summary: undefined,
-        skills: undefined,
-        experience: undefined
-      };
-
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 40,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 50,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, resumeEmpty, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.sectionCoverageScore).toBe(0);
-    });
-
-    it('[P2] should ignore empty string sections', async () => {
-      const resumeEmptyStrings: Resume = {
-        rawText: 'Resume text',
-        summary: '',
-        skills: '   ', // Whitespace only
-        experience: 'Experience section'
-      };
-
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 70,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 75,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, resumeEmptyStrings, mockJD);
-
-      expect(result.error).toBeNull();
-      // Only experience is present, so 1/3 = 33
-      expect(result.data!.breakdown.sectionCoverageScore).toBe(33);
-    });
-  });
-
-  describe('Content Quality Score Integration', () => {
-    it('[P0] should use quality score from LLM judge', async () => {
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 85,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 92,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.contentQualityScore).toBe(92);
-    });
-
-    it('[P1] should set quality score to 0 when LLM judge returns 0', async () => {
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 60,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 0,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.contentQualityScore).toBe(0);
-    });
-  });
-
-  describe('Weighted Score Combination', () => {
-    it('[P0] should calculate correct weighted overall score', async () => {
-      // Keyword: 80, Section: 100, Quality: 90
-      // Overall = (80 * 0.50) + (100 * 0.25) + (90 * 0.25)
-      //         = 40 + 25 + 22.5 = 87.5 → 88 (rounded)
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 80,
-        analyzedAt: new Date().toISOString()
-      };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 90,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.keywordScore).toBe(80);
-      expect(result.data!.breakdown.sectionCoverageScore).toBe(100);
-      expect(result.data!.breakdown.contentQualityScore).toBe(90);
-      expect(result.data!.overall).toBe(88); // Rounded from 87.5
-    });
-
-    it('[P0] should handle perfect score (100)', async () => {
-      const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
+        matched: [createMatchedKeyword('Python')],
         missing: [],
         matchRate: 100,
         analyzedAt: new Date().toISOString()
       };
 
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 100,
-        error: null
-      });
-
       const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
 
       expect(result.error).toBeNull();
-      expect(result.data!.overall).toBe(100);
+      expect(result.data!.breakdown.keywordScore).toBeDefined();
+      expect(result.data!.breakdown.sectionCoverageScore).toBeDefined();
+      expect(result.data!.breakdown.contentQualityScore).toBeDefined();
     });
 
-    it('[P1] should handle low scores correctly', async () => {
-      // Keyword: 20, Section: 33, Quality: 40
-      // Overall = (20 * 0.50) + (33 * 0.25) + (40 * 0.25)
-      //         = 10 + 8.25 + 10 = 28.25 → 28 (rounded)
+    it('[P0] should be fully deterministic (no LLM variance)', async () => {
       const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
-        missing: [],
-        matchRate: 20,
+        matched: [
+          createMatchedKeyword('Python'),
+          createMatchedKeyword('React'),
+        ],
+        missing: [createMissingKeyword('AWS', 'medium')],
+        matchRate: 67,
         analyzedAt: new Date().toISOString()
       };
 
-      const resumeMinimal: Resume = {
-        rawText: 'Resume text',
+      // Run multiple times and verify same result
+      const result1 = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
+      const result2 = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
+      const result3 = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
+
+      expect(result1.data!.overall).toBe(result2.data!.overall);
+      expect(result2.data!.overall).toBe(result3.data!.overall);
+      expect(result1.data!.breakdown.keywordScore).toBe(result2.data!.breakdown.keywordScore);
+    });
+  });
+
+  describe('Keyword Score Impact', () => {
+    it('[P0] should score higher with more keyword matches', async () => {
+      const fewMatches: KeywordAnalysisResult = {
+        matched: [createMatchedKeyword('Python')],
+        missing: [
+          createMissingKeyword('React', 'high'),
+          createMissingKeyword('AWS', 'high'),
+        ],
+        matchRate: 33,
+        analyzedAt: new Date().toISOString()
+      };
+
+      const manyMatches: KeywordAnalysisResult = {
+        matched: [
+          createMatchedKeyword('Python'),
+          createMatchedKeyword('React'),
+          createMatchedKeyword('AWS'),
+        ],
+        missing: [],
+        matchRate: 100,
+        analyzedAt: new Date().toISOString()
+      };
+
+      const fewResult = await calculateATSScore(fewMatches, mockParsedResume, mockJD);
+      const manyResult = await calculateATSScore(manyMatches, mockParsedResume, mockJD);
+
+      expect(manyResult.data!.overall).toBeGreaterThan(fewResult.data!.overall);
+    });
+
+    it('[P0] should score lower with semantic matches vs exact', async () => {
+      const semanticMatches: KeywordAnalysisResult = {
+        matched: [
+          createMatchedKeyword('Python', 'semantic'),
+          createMatchedKeyword('React', 'semantic'),
+        ],
+        missing: [],
+        matchRate: 100,
+        analyzedAt: new Date().toISOString()
+      };
+
+      const exactMatches: KeywordAnalysisResult = {
+        matched: [
+          createMatchedKeyword('Python', 'exact'),
+          createMatchedKeyword('React', 'exact'),
+        ],
+        missing: [],
+        matchRate: 100,
+        analyzedAt: new Date().toISOString()
+      };
+
+      const semanticResult = await calculateATSScore(semanticMatches, mockParsedResume, mockJD);
+      const exactResult = await calculateATSScore(exactMatches, mockParsedResume, mockJD);
+
+      expect(exactResult.data!.breakdown.keywordScore).toBeGreaterThan(
+        semanticResult.data!.breakdown.keywordScore
+      );
+    });
+  });
+
+  describe('Section Score Impact', () => {
+    it('[P0] should score higher with complete sections', async () => {
+      const keywordAnalysis: KeywordAnalysisResult = {
+        matched: [createMatchedKeyword('Python')],
+        missing: [],
+        matchRate: 100,
+        analyzedAt: new Date().toISOString()
+      };
+
+      // Resume with all sections
+      const completeResult = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
+
+      // Resume missing sections
+      const incompleteResume: Resume = {
+        rawText: 'Some text',
         summary: undefined,
         skills: 'Python',
         experience: undefined
       };
+      const incompleteResult = await calculateATSScore(keywordAnalysis, incompleteResume, mockJD);
 
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 40,
-        error: null
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, resumeMinimal, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.overall).toBe(28);
+      expect(completeResult.data!.breakdown.sectionCoverageScore).toBeGreaterThan(
+        incompleteResult.data!.breakdown.sectionCoverageScore
+      );
     });
   });
 
-  describe('Fallback Scoring (Quality Judge Fails)', () => {
-    it('[P1] should use fallback scoring when quality judge times out', async () => {
-      // Keyword: 70, Section: 100, Quality: timeout
-      // Fallback: (70 * 0.67) + (100 * 0.33) = 46.9 + 33 = 79.9 → 80 (rounded)
+  describe('V2 Full Response', () => {
+    it('[P0] should return V2 extended fields', async () => {
       const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
+        matched: [createMatchedKeyword('Python')],
         missing: [],
-        matchRate: 70,
+        matchRate: 100,
         analyzedAt: new Date().toISOString()
       };
 
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: null,
-        error: {
-          code: 'LLM_TIMEOUT',
-          message: 'Quality evaluation timed out'
-        }
-      });
-
-      const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
+      const result = await calculateATSScoreV2Full(keywordAnalysis, mockParsedResume, mockJD);
 
       expect(result.error).toBeNull();
-      expect(result.data!.breakdown.keywordScore).toBe(70);
-      expect(result.data!.breakdown.sectionCoverageScore).toBe(100);
-      expect(result.data!.breakdown.contentQualityScore).toBe(0); // Indicates unavailable
-      expect(result.data!.overall).toBe(80); // Fallback calculation
+      expect(result.data!.tier).toBeDefined();
+      expect(result.data!.breakdownV2).toBeDefined();
+      expect(result.data!.actionItems).toBeDefined();
+      expect(result.data!.metadata.version).toBe('v2');
+      expect(result.data!.metadata.algorithmHash).toBeDefined();
+      expect(result.data!.metadata.processingTimeMs).toBeGreaterThanOrEqual(0);
     });
 
-    it('[P1] should use fallback scoring when quality judge returns error', async () => {
+    it('[P0] should include role context', async () => {
       const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
+        matched: [createMatchedKeyword('Python')],
         missing: [],
-        matchRate: 60,
+        matchRate: 100,
         analyzedAt: new Date().toISOString()
       };
 
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: null,
-        error: {
-          code: 'LLM_ERROR',
-          message: 'LLM failed'
-        }
-      });
+      const result = await calculateATSScoreV2Full(keywordAnalysis, mockParsedResume, mockJD);
 
-      const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
-
-      expect(result.error).toBeNull();
-      expect(result.data!.breakdown.contentQualityScore).toBe(0);
-      // Fallback: (60 * 0.67) + (100 * 0.33) = 73
-      expect(result.data!.overall).toBe(73);
+      expect(result.data!.roleContext).toBeDefined();
+      expect(result.data!.roleContext.roleType).toBeDefined();
+      expect(result.data!.roleContext.seniorityLevel).toBeDefined();
+      expect(result.data!.roleContext.weights).toBeDefined();
     });
   });
 
@@ -469,11 +338,6 @@ describe('calculateATSScore', () => {
         analyzedAt: new Date().toISOString()
       };
 
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 85,
-        error: null
-      });
-
       const beforeCall = new Date().getTime();
       const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
       const afterCall = new Date().getTime();
@@ -488,16 +352,11 @@ describe('calculateATSScore', () => {
 
     it('[P2] should return scores in range 0-100', async () => {
       const keywordAnalysis: KeywordAnalysisResult = {
-        matched: [],
+        matched: [createMatchedKeyword('Python')],
         missing: [],
-        matchRate: 99.7, // Edge case: non-integer
+        matchRate: 100,
         analyzedAt: new Date().toISOString()
       };
-
-      vi.mocked(judgeModule.judgeContentQuality).mockResolvedValue({
-        data: 99.4,
-        error: null
-      });
 
       const result = await calculateATSScore(keywordAnalysis, mockParsedResume, mockJD);
 
@@ -510,6 +369,57 @@ describe('calculateATSScore', () => {
       expect(result.data!.breakdown.sectionCoverageScore).toBeLessThanOrEqual(100);
       expect(result.data!.breakdown.contentQualityScore).toBeGreaterThanOrEqual(0);
       expect(result.data!.breakdown.contentQualityScore).toBeLessThanOrEqual(100);
+    });
+  });
+
+  describe('Calibration', () => {
+    it('[P0] well-optimized resume should score strong or excellent tier', async () => {
+      const keywordAnalysis: KeywordAnalysisResult = {
+        matched: [
+          createMatchedKeyword('Python', 'exact'),
+          createMatchedKeyword('React', 'exact'),
+          createMatchedKeyword('AWS', 'exact'),
+          createMatchedKeyword('Docker', 'exact'),
+          createMatchedKeyword('Kubernetes', 'exact'),
+        ],
+        missing: [],
+        matchRate: 100,
+        analyzedAt: new Date().toISOString()
+      };
+
+      const result = await calculateATSScoreV2Full(keywordAnalysis, mockParsedResume, mockJD);
+
+      expect(result.error).toBeNull();
+      // Well-optimized resume should be at least strong tier (70+)
+      expect(result.data!.overall).toBeGreaterThanOrEqual(70);
+      expect(['strong', 'excellent']).toContain(result.data!.tier);
+    });
+
+    it('[P0] weak resume should score moderate or weak tier', async () => {
+      const keywordAnalysis: KeywordAnalysisResult = {
+        matched: [createMatchedKeyword('Python', 'semantic')],
+        missing: [
+          createMissingKeyword('React', 'high'),
+          createMissingKeyword('AWS', 'high'),
+          createMissingKeyword('Docker', 'medium'),
+        ],
+        matchRate: 25,
+        analyzedAt: new Date().toISOString()
+      };
+
+      const weakResume: Resume = {
+        rawText: 'Developer. Worked on projects.',
+        summary: 'Developer',
+        skills: 'Python',
+        experience: 'Worked on projects'
+      };
+
+      const result = await calculateATSScoreV2Full(keywordAnalysis, weakResume, mockJD);
+
+      expect(result.error).toBeNull();
+      // Weak resume should be below 70 (moderate or weak tier)
+      expect(result.data!.overall).toBeLessThan(70);
+      expect(['moderate', 'weak']).toContain(result.data!.tier);
     });
   });
 });

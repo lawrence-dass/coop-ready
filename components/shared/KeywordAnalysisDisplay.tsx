@@ -4,9 +4,15 @@
 // Story 5.4: Enhanced with Gap Analysis Display
 import { useState } from 'react';
 import { KeywordAnalysisResult, KeywordCategory } from '@/types/analysis';
-import { CheckCircle2, AlertCircle, TrendingUp, PartyPopper, ChevronDown } from 'lucide-react';
+import { CheckCircle2, AlertCircle, TrendingUp, PartyPopper, ChevronDown, Info } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { GapSummaryCard } from './GapSummaryCard';
 import { PriorityFilterChips, PriorityFilter } from './PriorityFilterChips';
 import { MissingKeywordItem } from './MissingKeywordItem';
@@ -25,7 +31,7 @@ interface KeywordAnalysisDisplayProps {
  * - Missing keywords grouped by category with importance
  */
 export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps) {
-  const { matched, missing, matchRate } = analysis;
+  const { matched, missing, matchRate, keywordScore, requiredCount, preferredCount } = analysis;
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [matchedOpen, setMatchedOpen] = useState(false);
 
@@ -76,47 +82,102 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
   };
 
   return (
-    <div className="space-y-6">
-      {/* Match Rate Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Keyword Analysis Results
-          </CardTitle>
-          <CardDescription>
-            Analyzed {matched.length + missing.length} keywords from job description
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="mb-2 flex items-baseline gap-2">
-                <span className={`text-4xl font-bold ${getMatchRateColor(matchRate)}`}>
-                  {matchRate}%
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {getMatchRateLabel(matchRate)}
+    <TooltipProvider delayDuration={200}>
+      <div className="space-y-6">
+        {/* Keyword Analysis Results - Enhanced with dual metrics */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Keyword Analysis Results
+            </CardTitle>
+            <CardDescription>
+              Analyzed {matched.length + missing.length} keywords from job description
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* PRIMARY METRIC: Keyword Score (if available) */}
+            {keywordScore !== undefined && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Keyword Score</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className={`text-4xl font-bold ${getMatchRateColor(keywordScore)}`}>
+                        {keywordScore}/100
+                      </p>
+                      <p className={`text-sm ${getMatchRateColor(keywordScore)}`}>
+                        {getMatchRateLabel(keywordScore)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        aria-label="More info about Keyword Score"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">
+                        Your keyword score weighs matches by importance and placement.
+                        All required keywords matched perfectly!
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            )}
+
+            {/* SEPARATOR (if keyword score shown) */}
+            {keywordScore !== undefined && <div className="border-t border-gray-200 my-4" />}
+
+            {/* SECONDARY DETAILS: Match breakdown */}
+            <div className="space-y-3">
+              {/* Required keywords */}
+              {requiredCount && requiredCount.total > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Required keywords:</span>
+                  <span className={`text-sm font-medium ${requiredCount.matched === requiredCount.total ? 'text-green-600' : 'text-amber-600'}`}>
+                    {requiredCount.matched}/{requiredCount.total}
+                    {requiredCount.matched === requiredCount.total && ' ✓'}
+                  </span>
+                </div>
+              )}
+
+              {/* Preferred keywords */}
+              {preferredCount && preferredCount.total > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Preferred keywords:</span>
+                  <span className="text-sm font-medium">
+                    {preferredCount.matched}/{preferredCount.total}
+                  </span>
+                </div>
+              )}
+
+              {/* Overall match rate */}
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span className="text-sm">Overall match rate:</span>
+                <span className="text-sm">
+                  {matched.length}/{matched.length + missing.length} ({matchRate}%)
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                <div
-                  className={`h-full ${
-                    matchRate >= 70 ? 'bg-green-600' : matchRate >= 50 ? 'bg-yellow-600' : 'bg-red-600'
-                  }`}
-                  style={{ width: `${matchRate}%` }}
-                />
+            </div>
+
+            {/* EXPLANATION (if scores differ) */}
+            {keywordScore !== undefined && matchRate !== keywordScore && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-xs text-blue-900 leading-relaxed">
+                  💡 <strong>Why the difference?</strong> Your keyword score is {keywordScore}/100 because all high-importance required keywords matched perfectly. The {matchRate}% match rate shows you&apos;re missing {missing.length} {missing.length === 1 ? 'keyword' : 'keywords'}, which {missing.length === 1 ? 'is a' : 'are'} low-priority preferred term{missing.length === 1 ? '' : 's'}.
+                </p>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Match Rate</p>
-              <p className="text-lg font-semibold">
-                {matched.length} / {matched.length + missing.length}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
 
       {/* NEW: Gap Summary Dashboard */}
       {missing.length > 0 && <GapSummaryCard missing={missing} />}
@@ -252,6 +313,7 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

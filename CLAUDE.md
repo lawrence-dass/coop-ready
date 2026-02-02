@@ -1,29 +1,14 @@
-# CLAUDE.md - SubmitSmart Development Guide
+# CLAUDE.md - SubmitSmart Quick Reference
 
-## Current Status
-
-**Check what's next:**
-```bash
-/bmad:bmm:workflows:sprint-status    # Interactive sprint status
-git branch --show-current            # Current branch
-```
-
-**Source of truth:** `_bmad-output/implementation-artifacts/sprint-status.yaml`
+> **Full details:** `_bmad-output/project-context.md`
 
 ---
 
 ## Quick Start
 
 ```bash
-# Development & Testing
 npm run dev                          # Start dev server
-npm run build && npm run test:all    # Build + test
-
-# BMAD Workflows
-/bmad:bmm:workflows:sprint-status    # Check current sprint status
-/bmad:bmm:workflows:dev-story        # Implement current story
-/bmad:bmm:workflows:code-review      # Code review (adversarial)
-/bmad:bmm:workflows:epic-integration # Epic integration testing
+npm run build && npm run test:all    # Build + full test suite
 ```
 
 ---
@@ -32,44 +17,53 @@ npm run build && npm run test:all    # Build + test
 
 Next.js 16 + TypeScript + React 19 | Tailwind 4 + shadcn/ui | Supabase + LangChain | Zustand | Vitest + Playwright
 
+**Full stack details:** `_bmad-output/project-context.md`
+
 ---
 
-## Critical Rules (Read These!)
+## Critical Rules (Must Follow)
 
 **1. ActionResponse Pattern (MANDATORY)**
-- Never throw from server actions
-- Always return `{ data: T, error: null }` or `{ data: null, error: ErrorObject }`
-- Full details: [See project-context.md](_bmad-output/project-context.md)
+```typescript
+{ data: T, error: null } | { data: null, error: ErrorObject }
+```
+Never throw from server actions. Details: `project-context.md`
 
-**2. Error Codes (Standardized)**
-Use: `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `PARSE_ERROR`, `LLM_TIMEOUT`, `LLM_ERROR`, `RATE_LIMITED`, `VALIDATION_ERROR`
+**2. Error Codes**
+`INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `PARSE_ERROR`, `LLM_TIMEOUT`, `LLM_ERROR`, `RATE_LIMITED`, `VALIDATION_ERROR`
 
 **3. Directory Structure**
 ```
 /app/api/           → API routes (60s timeout for LLM)
 /lib/ai/            → ALL LLM operations (server-side only)
+/lib/scoring/       → Deterministic ATS scoring engine
 /lib/supabase/      → Database access
-/components/shared/ → Reusable UI components
+/components/shared/ → Reusable UI
 /store/             → Zustand stores
 ```
 
 **4. LLM Security**
-- Wrap user content in XML tags: `<user_content>${resume}</user_content>`
-- Never expose API keys to client
+- Wrap user content: `<user_content>${text}</user_content>`
+- Server-side only, never expose API keys
+
+**5. ATS Scoring**
+- Use deterministic V2.1 algorithm (no LLM for scoring)
+- LLM only for extraction (keywords, qualifications)
+- See: `lib/scoring/` module
 
 ---
 
-## Documentation
+## Documentation Index
 
 | What | Where |
 |------|-------|
-| All critical rules & patterns | [project-context.md](_bmad-output/project-context.md) |
-| Architecture decisions | [architecture.md](_bmad-output/planning-artifacts/architecture.md) |
-| Testing framework & commands | [docs/TESTING.md](docs/TESTING.md) |
-| MCP server setup | [docs/MCP-SETUP.md](docs/MCP-SETUP.md) |
-| Database migrations | [docs/DATABASE.md](docs/DATABASE.md) |
-| Environment variables | [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) |
-| CI/CD workflows | [docs/CI-CD.md](docs/CI-CD.md) |
+| **All rules & patterns** | `_bmad-output/project-context.md` |
+| **Architecture** | `_bmad-output/planning-artifacts/architecture.md` |
+| **Testing** | `docs/TESTING.md` |
+| **Environment** | `docs/ENVIRONMENT.md` |
+| **Database** | `docs/DATABASE.md` |
+| **ATS Scoring Spec** | `docs/reference/ats-scoring-system-specification-v2.1.md` |
+| **LLM Prompts** | `docs/reference/LLM_PROMPTS.md` |
 
 ---
 
@@ -78,17 +72,21 @@ Use: `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `PARSE_ERROR`, `LLM_TIMEOUT`, `LLM_E
 - LLM timeout: 60s max
 - File size: 5MB max
 - Cost: $0.10 per optimization
-- Sessions persist across refresh (Zustand + Supabase)
+- Sessions: Persist across refresh (Zustand + Supabase)
 
 ---
 
-## Features
+## Recent Major Changes
 
-**Score Comparison (Story 11.3)**
-- Displays original ATS score vs. projected score after optimization
-- Shows improvement delta prominently with visual indicators
-- Breakdown by category (Summary, Skills, Experience)
-- Real-time calculation based on suggestion point values
-- Responsive design (mobile, tablet, desktop)
+**Deterministic ATS Scoring (Jan 2026)**
+- Replaced LLM scoring with algorithmic V2/V2.1
+- Eliminates 15-20 point score inflation
+- Module: `/lib/scoring/` (12 files, 2,500 lines)
+- Details: `docs/reference/ats-scoring-system-specification-v2.1.md`
+
+**Education Suggestions Fix (Jan 2026)**
+- Eliminated resume fraud (fake coursework/projects)
+- Honest formatting improvements only
+- Details: `docs/EDUCATION-FABRICATION-FIX.md`
 
 ---

@@ -10,6 +10,8 @@ const MATCHING_TIMEOUT_MS = 20000; // 20 seconds budget for matching
 /**
  * Prompt template for keyword matching
  * Uses XML-wrapped user content for prompt injection defense
+ *
+ * V2.1 Update: Added placement detection for keywords
  */
 const matchingPrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert analyzing keyword matches.
 
@@ -27,6 +29,14 @@ For each keyword:
 - found: true/false
 - context: exact phrase from resume where found (if found, max 100 chars)
 - matchType: "exact" (exact string match), "fuzzy" (abbreviation/variation), or "semantic" (similar meaning)
+- placement: Where the keyword appears in the resume (if found):
+  - "skills_section" = In a dedicated Skills/Technical Skills section
+  - "summary" = In professional summary/profile at the top
+  - "experience_bullet" = In a bullet point under work experience
+  - "experience_paragraph" = In paragraph text under experience (not bullet)
+  - "education" = In education section
+  - "projects" = In projects section
+  - "other" = Elsewhere (header, interests, etc.)
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
@@ -35,8 +45,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       "keyword": "Python",
       "category": "technologies",
       "found": true,
-      "context": "Developed data pipelines using Python and pandas",
-      "matchType": "exact"
+      "context": "Python, JavaScript, TypeScript",
+      "matchType": "exact",
+      "placement": "skills_section"
     }},
     {{
       "keyword": "Docker",
@@ -75,6 +86,52 @@ function createKeywordMatchingChain() {
  * @param extractedKeywords - Keywords from job description
  * @returns ActionResponse with matched/missing keywords or error
  */
+/**
+ * Calculate required keywords breakdown
+ */
+function calculateRequiredCount(
+  matched: MatchedKeyword[],
+  missing: ExtractedKeyword[],
+  extractedKeywords: ExtractedKeyword[]
+): { matched: number; total: number } {
+  const requiredMatched = matched.filter(
+    (m) => {
+      const original = extractedKeywords.find((k) => k.keyword === m.keyword);
+      return original?.requirement === 'required';
+    }
+  ).length;
+
+  const requiredMissing = missing.filter((k) => k.requirement === 'required').length;
+
+  return {
+    matched: requiredMatched,
+    total: requiredMatched + requiredMissing,
+  };
+}
+
+/**
+ * Calculate preferred keywords breakdown
+ */
+function calculatePreferredCount(
+  matched: MatchedKeyword[],
+  missing: ExtractedKeyword[],
+  extractedKeywords: ExtractedKeyword[]
+): { matched: number; total: number } {
+  const preferredMatched = matched.filter(
+    (m) => {
+      const original = extractedKeywords.find((k) => k.keyword === m.keyword);
+      return original?.requirement === 'preferred';
+    }
+  ).length;
+
+  const preferredMissing = missing.filter((k) => k.requirement === 'preferred').length;
+
+  return {
+    matched: preferredMatched,
+    total: preferredMatched + preferredMissing,
+  };
+}
+
 export async function matchKeywords(
   resumeContent: string,
   extractedKeywords: ExtractedKeyword[]
@@ -124,12 +181,13 @@ export async function matchKeywords(
       const missing = response.matches
         .filter(m => !m.found)
         .map(m => {
-          // Find original keyword for importance
+          // Find original keyword for importance and requirement
           const original = extractedKeywords.find(k => k.keyword === m.keyword);
           return {
             keyword: m.keyword,
             category: m.category,
-            importance: original?.importance || 'medium'
+            importance: original?.importance || 'medium',
+            requirement: original?.requirement || 'preferred'
           } as ExtractedKeyword;
         });
 
@@ -140,13 +198,21 @@ export async function matchKeywords(
         ? Math.round((matchedCount / totalKeywords) * 100)
         : 0;
 
+      // Calculate required/preferred breakdowns
+      const requiredCount = calculateRequiredCount(matched, missing, extractedKeywords);
+      const preferredCount = calculatePreferredCount(matched, missing, extractedKeywords);
+
       console.log('[SS:match] Match complete:', matched.length, 'matched,', missing.length, 'missing, rate:', matchRate + '%');
+      console.log('[SS:match] Required:', requiredCount.matched + '/' + requiredCount.total, 'Preferred:', preferredCount.matched + '/' + preferredCount.total);
 
       return {
         matched,
         missing,
         matchRate,
-        analyzedAt: new Date().toISOString()
+        analyzedAt: new Date().toISOString(),
+        // Note: keywordScore will be added by API route after ATS scoring
+        requiredCount,
+        preferredCount,
       };
     },
     { timeoutMs: MATCHING_TIMEOUT_MS }
