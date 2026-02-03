@@ -32,6 +32,7 @@ import { JobDescriptionInput } from '@/components/shared/JobDescriptionInput';
 import { PreferencesPanel } from '@/components/scan/PreferencesPanel';
 import { ErrorDisplay } from '@/components/shared/ErrorDisplay';
 import { PrivacyConsentDialog } from '@/components/shared';
+import { SelectResumeButton } from '@/components/resume/SelectResumeButton';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -383,6 +384,27 @@ export function NewScanClient() {
         {/* Left Column: Resume Upload */}
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">1. Upload Resume</h2>
+
+          {/* Resume Library Selection */}
+          <SelectResumeButton
+            isAuthenticated={isAuthenticated}
+            disabled={isPending || isExtracting}
+            onResumeSelected={(resumeId, resumeName) => {
+              console.log(`[NewScan] Loaded resume: ${resumeName}`);
+            }}
+          />
+
+          {/* OR Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
+
+          {/* Resume Upload */}
           <ResumeUploader
             onFileSelect={handleFileSelect}
             onFileRemove={handleFileRemove}

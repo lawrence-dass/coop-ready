@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { ATSScoreDisplay } from '@/components/shared/ATSScoreDisplay';
 import { KeywordAnalysisDisplay } from '@/components/shared/KeywordAnalysisDisplay';
 import { PrivacyReportBadge } from '@/components/shared/PrivacyReportBadge';
+import { SaveResumeButton } from '@/components/resume/SaveResumeButton';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useOptimizationStore } from '@/store';
 import { ROUTES } from '@/lib/constants/routes';
 import type { ATSScore, KeywordAnalysisResult } from '@/types/analysis';
@@ -24,6 +26,8 @@ export function ScanResultsClient({
   privacyReport: privacyReportProp,
 }: ScanResultsClientProps) {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const resumeContent = useOptimizationStore((state) => state.resumeContent);
   const privacyReportFromStore = useOptimizationStore((state) => state.privacyReport);
 
   // Use prop if available (from database), otherwise fall back to Zustand (from fresh optimization)
@@ -61,16 +65,26 @@ export function ScanResultsClient({
           <KeywordAnalysisDisplay analysis={keywordAnalysis} />
         </section>
 
-        {/* Section 3: CTA Button - View Suggestions */}
+        {/* Section 3: CTA Buttons - View Suggestions & Save Resume */}
         <section className="pt-4">
-          <Button
-            onClick={handleViewSuggestions}
-            size="lg"
-            className="w-full md:w-auto md:min-w-[240px]"
-            data-testid="view-suggestions-button"
-          >
-            View Suggestions
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Primary CTA */}
+            <Button
+              onClick={handleViewSuggestions}
+              size="lg"
+              className="w-full md:w-auto md:min-w-[240px]"
+              data-testid="view-suggestions-button"
+            >
+              View Suggestions
+            </Button>
+
+            {/* Secondary CTA - Save to Library */}
+            <SaveResumeButton
+              resumeContent={resumeContent?.rawText || null}
+              isAuthenticated={isAuthenticated}
+              fileName="Optimized_Resume.pdf"
+            />
+          </div>
         </section>
       </div>
     </div>
