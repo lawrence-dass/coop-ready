@@ -110,7 +110,7 @@ function toOptimizationSession(row: SessionRow): OptimizationSession {
 export async function createSession(
   anonymousId: string
 ): Promise<ActionResponse<OptimizationSession>> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     const { data, error } = await supabase
@@ -161,7 +161,7 @@ export async function createSession(
 export async function getSessionByAnonymousId(
   anonymousId: string
 ): Promise<ActionResponse<OptimizationSession | null>> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     const { data, error } = await supabase
@@ -233,7 +233,7 @@ export async function updateSession(
     educationSuggestion?: EducationSuggestion | null; // Story 17.6: Education suggestions
   }
 ): Promise<ActionResponse<{ success: boolean }>> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     // Transform camelCase TypeScript to snake_case database
@@ -339,7 +339,7 @@ export async function getSessionById(
   sessionId: string,
   userId: string
 ): Promise<ActionResponse<OptimizationSession | null>> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     const { data, error } = await supabase

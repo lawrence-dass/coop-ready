@@ -80,18 +80,39 @@ export function CompareUploadDialog({
    * Story 17.3: Implements actual comparison flow
    */
   const handleFileSelect = async (file: File) => {
+    console.log('[CompareUploadDialog] Starting comparison:', {
+      sessionId,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    });
+
     setUploadedFile(file);
     setUploadError(null);
     setIsComparing(true);
 
     try {
+      console.log('[CompareUploadDialog] Calling compareResume action...');
       const { data, error } = await compareResume(sessionId, file);
 
+      console.log('[CompareUploadDialog] compareResume result:', {
+        hasData: !!data,
+        hasError: !!error,
+        errorCode: error?.code,
+        errorMessage: error?.message
+      });
+
       if (error) {
+        console.error('[CompareUploadDialog] Comparison failed:', error);
         setUploadError(error);
         setIsComparing(false);
         return;
       }
+
+      console.log('[CompareUploadDialog] Comparison succeeded:', {
+        improvementPoints: data.improvementPoints,
+        improvementPercentage: data.improvementPercentage
+      });
 
       // Success - show appropriate message based on improvement direction
       const points = Math.round(data.improvementPoints);

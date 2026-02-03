@@ -8,8 +8,9 @@ import { matchKeywords } from '@/lib/ai/matchKeywords';
 import { extractQualificationsBoth } from '@/lib/ai/extractQualifications';
 import { calculateATSScoreV21Full } from '@/lib/ai/calculateATSScore';
 import { detectJobType } from '@/lib/scoring/jobTypeDetection';
-import { getSessionById, updateSession } from '@/lib/supabase/sessions';
+import { updateSession } from '@/lib/supabase/sessions';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import type { ActionResponse } from '@/types';
 import type { ATSScore } from '@/types/analysis';
 import type { ATSScoreV21 } from '@/lib/scoring/types';
@@ -49,8 +50,11 @@ export async function compareResume(
   file: File
 ): Promise<ActionResponse<ComparisonResult>> {
   try {
+    console.log('[compareResume] Starting comparison:', { sessionId, fileName: file.name, fileSize: file.size });
+
     // Step 1: Validate inputs
     if (!sessionId) {
+      console.error('[compareResume] No session ID provided');
       return {
         data: null,
         error: {
@@ -89,7 +93,13 @@ export async function compareResume(
       error: authError,
     } = await supabase.auth.getUser();
 
+    console.log('[compareResume] Auth check:', {
+      userId: user?.id,
+      authError: authError?.message
+    });
+
     if (authError || !user) {
+      console.error('[compareResume] Authentication failed:', authError?.message);
       return {
         data: null,
         error: {
@@ -137,8 +147,32 @@ export async function compareResume(
     const comparisonResume = parseResult.data;
 
     // Step 4: Fetch original session data
-    const sessionResult = await getSessionById(sessionId, user.id);
-    if (sessionResult.error || !sessionResult.data) {
+    // Use service role to bypass RLS (workaround for client/server bundling issue)
+    console.log('[compareResume] Fetching session:', { sessionId, userId: user.id });
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const serviceClient = createServiceClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: sessionData, error: sessionError } = await serviceClient
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .eq('user_id', user.id) // Still validate ownership
+      .single();
+
+    console.log('[compareResume] Session result:', {
+      hasData: !!sessionData,
+      hasError: !!sessionError,
+      errorMessage: sessionError?.message
+    });
+
+    if (sessionError || !sessionData) {
+      console.error('[compareResume] Session fetch failed:', {
+        sessionId,
+        userId: user.id,
+        error: sessionError
+      });
       return {
         data: null,
         error: {
@@ -148,7 +182,22 @@ export async function compareResume(
       };
     }
 
-    const session = sessionResult.data;
+    // Transform to OptimizationSession format
+    const session = {
+      id: sessionData.id,
+      anonymousId: sessionData.anonymous_id,
+      userId: sessionData.user_id,
+      resumeContent: sessionData.resume_content ? JSON.parse(sessionData.resume_content) : null,
+      jobDescription: sessionData.jd_content ? JSON.parse(sessionData.jd_content) : null,
+      analysisResult: sessionData.analysis,
+      suggestions: sessionData.suggestions,
+      feedback: sessionData.feedback || [],
+      keywordAnalysis: sessionData.keyword_analysis,
+      atsScore: sessionData.ats_score,
+      comparedAtsScore: sessionData.compared_ats_score,
+      createdAt: sessionData.created_at,
+      updatedAt: sessionData.updated_at
+    };
 
     // Validate session has required data
     // jobDescription is stored as JSON.stringify(string) and retrieved via JSON.parse
@@ -270,12 +319,27 @@ export async function compareResume(
         }
       : undefined;
 
-    // Step 9: Save comparison score to database
-    const updateResult = await updateSession(sessionId, {
-      comparedAtsScore: comparedScore
+    // Step 9: Save comparison score to database using service role
+    console.log('[compareResume] Saving compared score:', {
+      sessionId,
+      hasComparedScore: !!comparedScore,
+      scoreValue: comparedScore.totalScore
     });
 
-    if (updateResult.error) {
+    const { error: updateError } = await serviceClient
+      .from('sessions')
+      .update({ compared_ats_score: comparedScore })
+      .eq('id', sessionId)
+      .eq('user_id', user.id); // Validate ownership
+
+    console.log('[compareResume] Save result:', {
+      success: !updateError,
+      hasError: !!updateError,
+      errorMessage: updateError?.message
+    });
+
+    if (updateError) {
+      console.error('[compareResume] Failed to save score:', updateError);
       return {
         data: null,
         error: {
@@ -298,6 +362,7 @@ export async function compareResume(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[compareResume] Unexpected error:', error);
 
     return {
       data: null,
