@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { ActionResponse } from '@/types';
 import type { ATSScore, KeywordAnalysisResult } from '@/types/analysis';
+import type { OptimizationPrivacyReport } from '@/types/privacy';
 
 interface SessionData {
   id: string;
@@ -23,6 +24,8 @@ interface SessionData {
   // Raw columns for direct access
   atsScore: ATSScore | null;
   keywordAnalysis: KeywordAnalysisResult | null;
+  privacyReport: OptimizationPrivacyReport | null;
+  comparedAtsScore?: ATSScore | null;
 }
 
 /**
@@ -89,6 +92,7 @@ export async function getSessionById(
     // Build analysis from separate columns if analysis column is null
     const atsScore = data.ats_score as ATSScore | null;
     const keywordAnalysis = data.keyword_analysis as KeywordAnalysisResult | null;
+    const privacyReport = data.privacy_report as OptimizationPrivacyReport | null;
     const analysis = data.analysis ?? (atsScore && keywordAnalysis ? {
       score: atsScore,
       keywordAnalysis: keywordAnalysis,
@@ -130,6 +134,7 @@ export async function getSessionById(
         userId: data.user_id,
         atsScore,
         keywordAnalysis,
+        privacyReport,
         comparedAtsScore: data.compared_ats_score,
       },
       error: null,

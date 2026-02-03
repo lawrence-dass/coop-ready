@@ -13,9 +13,18 @@
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { SummarySuggestion } from '@/types/suggestions';
 import { detectAITellPhrases } from './detectAITellPhrases';
-import { buildPreferencePrompt, getJobTypeVerbGuidance, getJobTypeFramingGuidance } from './preferences';
+import {
+  buildPreferencePrompt,
+  getJobTypeVerbGuidance,
+  getJobTypeFramingGuidance,
+} from './preferences';
 import { getSonnetModel } from './models';
-import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
+import {
+  ChatPromptTemplate,
+  createJsonParser,
+  invokeWithActionResponse,
+} from './chains';
+import { redactPII, restorePII } from './redactPII';
 
 // ============================================================================
 // CONSTANTS
@@ -170,30 +179,55 @@ export async function generateSummarySuggestion(
     };
   }
 
-  console.log('[SS:genSummary] Generating summary suggestion (' + resumeSummary?.length + ' chars summary, ' + jobDescription?.length + ' chars JD)');
+  console.log(
+    '[SS:genSummary] Generating summary suggestion (' +
+      resumeSummary?.length +
+      ' chars summary, ' +
+      jobDescription?.length +
+      ' chars JD)'
+  );
 
   // Truncate very long inputs to avoid timeout
-  const processedSummary =
+  let processedSummary =
     resumeSummary.length > MAX_SUMMARY_LENGTH
       ? resumeSummary.substring(0, MAX_SUMMARY_LENGTH)
       : resumeSummary;
 
-  const processedJD =
+  let processedJD =
     jobDescription.length > MAX_JD_LENGTH
       ? jobDescription.substring(0, MAX_JD_LENGTH)
       : jobDescription;
+
+  // Redact PII before sending to LLM
+  const summaryRedaction = redactPII(processedSummary);
+  const jdRedaction = redactPII(processedJD);
+  const eduRedaction = resumeEducation
+    ? redactPII(resumeEducation)
+    : { redactedText: '', redactionMap: new Map(), stats: { emails: 0, phones: 0, urls: 0, addresses: 0 } };
+
+  processedSummary = summaryRedaction.redactedText;
+  processedJD = jdRedaction.redactedText;
+  const redactedEducation = eduRedaction.redactedText;
+
+  console.log('[SS:genSummary] PII redacted:', {
+    summary: summaryRedaction.stats,
+    jd: jdRedaction.stats,
+    education: eduRedaction.stats,
+  });
 
   // Detect AI-tell phrases in original summary
   const originalAITellPhrases = detectAITellPhrases(processedSummary);
 
   // Build conditional prompt sections
-  const educationSection = resumeEducation && resumeEducation.trim().length > 0
-    ? `<education_context>\n${resumeEducation}\n</education_context>\n`
-    : '';
+  const educationSection =
+    resumeEducation && resumeEducation.trim().length > 0
+      ? `<education_context>\n${redactedEducation}\n</education_context>\n`
+      : '';
 
-  const keywordsSection = keywords && keywords.length > 0
-    ? `<extracted_keywords>\n${keywords.join(', ')}\n</extracted_keywords>`
-    : '';
+  const keywordsSection =
+    keywords && keywords.length > 0
+      ? `<extracted_keywords>\n${keywords.join(', ')}\n</extracted_keywords>`
+      : '';
 
   // Build job-type-specific guidance (injected before general preferences for prominence)
   const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
@@ -201,21 +235,22 @@ export async function generateSummarySuggestion(
     ? `${getJobTypeVerbGuidance(preferences.jobType)}\n\n${getJobTypeFramingGuidance(preferences.jobType, 'summary', hasEducation)}\n\n`
     : '';
 
-  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
+  const preferenceSection = preferences
+    ? `\n${buildPreferencePrompt(preferences, userContext)}\n`
+    : '';
 
   // Create and invoke LCEL chain
   const chain = createSummarySuggestionChain();
 
-  const result = await invokeWithActionResponse(
-    async () => {
-      const parsed = await chain.invoke({
-        summary: processedSummary,
-        jobDescription: processedJD,
-        educationSection,
-        keywordsSection,
-        jobTypeGuidance,
-        preferenceSection,
-      });
+  const result = await invokeWithActionResponse(async () => {
+    const parsed = await chain.invoke({
+      summary: processedSummary,
+      jobDescription: processedJD,
+      educationSection,
+      keywordsSection,
+      jobTypeGuidance,
+      preferenceSection,
+    });
 
       // Validate structure
       if (!parsed.suggested || typeof parsed.suggested !== 'string') {
@@ -257,14 +292,29 @@ export async function generateSummarySuggestion(
         }
       }
 
-      // Detect AI-tell phrases in suggested summary
-      const suggestedAITellPhrases = detectAITellPhrases(parsed.suggested);
+      // Restore PII in suggested summary and explanation
+      const restoredSuggested = restorePII(parsed.suggested, summaryRedaction.redactionMap);
+      const restoredExplanation = explanation
+        ? restorePII(explanation, jdRedaction.redactionMap)
+        : explanation;
 
-      console.log('[SS:genSummary] Summary generated, keywords added:', parsed.keywords_added, ', impact:', validImpact, ', point_value:', pointValue, ', explanation:', explanation ? 'present' : 'missing');
+      // Detect AI-tell phrases in suggested summary
+      const suggestedAITellPhrases = detectAITellPhrases(restoredSuggested);
+
+      console.log(
+        '[SS:genSummary] Summary generated, keywords added:',
+        parsed.keywords_added,
+        ', impact:',
+        validImpact,
+        ', point_value:',
+        pointValue,
+        ', explanation:',
+        explanation ? 'present' : 'missing'
+      );
 
       return {
         original: resumeSummary, // Return full original, not truncated
-        suggested: parsed.suggested,
+        suggested: restoredSuggested,
         ats_keywords_added: parsed.keywords_added,
         ai_tell_phrases_rewritten: [
           ...originalAITellPhrases,
@@ -272,7 +322,7 @@ export async function generateSummarySuggestion(
         ],
         impact: validImpact,
         point_value: pointValue,
-        explanation: explanation,
+        explanation: restoredExplanation,
       };
     },
     { errorMessage: 'Failed to generate summary suggestion' }

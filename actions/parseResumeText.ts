@@ -3,6 +3,7 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import type { ActionResponse } from '@/types';
 import type { Resume } from '@/types/optimization';
+import { redactPII, restorePII } from '@/lib/ai/redactPII';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -53,6 +54,10 @@ export async function parseResumeText(
       };
     }
 
+    // Redact PII before sending to LLM
+    const { redactedText, redactionMap, stats } = redactPII(rawText);
+    console.log('[SS:parseResume] PII redacted:', stats);
+
     // Call Claude to parse sections with timeout
     const response = await client.messages.create(
       {
@@ -72,7 +77,7 @@ Return ONLY valid JSON in this format:
 }
 
 <user_content>
-${rawText}
+${redactedText}
 </user_content>`,
           },
         ],
@@ -102,15 +107,26 @@ ${rawText}
     jsonStr = jsonStr.trim();
 
     const parsed: ParseResult = JSON.parse(jsonStr);
-    console.log('[SS:parseResume] LLM parsed sections:', { summary: !!parsed.summary, skills: !!parsed.skills, experience: !!parsed.experience, education: !!parsed.education });
+    console.log('[SS:parseResume] LLM parsed sections:', {
+      summary: !!parsed.summary,
+      skills: !!parsed.skills,
+      experience: !!parsed.experience,
+      education: !!parsed.education,
+    });
+
+    // Restore PII in parsed sections
+    const summary = parsed.summary ? restorePII(parsed.summary, redactionMap) : null;
+    const skills = parsed.skills ? restorePII(parsed.skills, redactionMap) : null;
+    const experience = parsed.experience ? restorePII(parsed.experience, redactionMap) : null;
+    const education = parsed.education ? restorePII(parsed.education, redactionMap) : null;
 
     // Build Resume object with metadata
     const resume: Resume = {
       rawText,
-      summary: parsed.summary || undefined,
-      skills: parsed.skills || undefined,
-      experience: parsed.experience || undefined,
-      education: parsed.education || undefined,
+      summary: summary || undefined,
+      skills: skills || undefined,
+      experience: experience || undefined,
+      education: education || undefined,
       filename: options.filename,
       fileSize: options.fileSize,
       uploadedAt: new Date(),

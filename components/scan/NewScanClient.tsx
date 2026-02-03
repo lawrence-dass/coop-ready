@@ -41,6 +41,7 @@ import { generateAllSuggestions } from '@/actions/generateAllSuggestions';
 import { usePrivacyConsent } from '@/hooks/usePrivacyConsent';
 import { acceptPrivacyConsent } from '@/actions/privacy/accept-privacy-consent';
 import type { ActionResponse } from '@/types';
+import type { OptimizationPrivacyReport } from '@/types/privacy';
 import { ROUTES } from '@/lib/constants/routes';
 
 // ============================================================================
@@ -239,6 +240,7 @@ export function NewScanClient() {
           atsScore: unknown;
           sessionId: string;
           analysisTimeMs?: number;
+          privacyReport?: OptimizationPrivacyReport;
         }>;
 
         // Log analysis timing in browser console
@@ -257,6 +259,11 @@ export function NewScanClient() {
           useOptimizationStore.getState().setSessionId(sessionId);
           useOptimizationStore.getState().setKeywordAnalysis(result.data.keywordAnalysis as import('@/types/analysis').KeywordAnalysisResult);
           useOptimizationStore.getState().setATSScore(result.data.atsScore as import('@/types/analysis').ATSScore);
+
+          // Store privacy report if available
+          if (result.data.privacyReport) {
+            useOptimizationStore.getState().setPrivacyReport(result.data.privacyReport);
+          }
         }
 
         // Step 3b: Fire-and-forget suggestion generation

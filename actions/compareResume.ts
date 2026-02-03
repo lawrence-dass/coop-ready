@@ -323,7 +323,7 @@ export async function compareResume(
     console.log('[compareResume] Saving compared score:', {
       sessionId,
       hasComparedScore: !!comparedScore,
-      scoreValue: comparedScore.totalScore
+      scoreValue: comparedScore.overall
     });
 
     const { error: updateError } = await serviceClient

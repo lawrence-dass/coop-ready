@@ -4,21 +4,30 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ATSScoreDisplay } from '@/components/shared/ATSScoreDisplay';
 import { KeywordAnalysisDisplay } from '@/components/shared/KeywordAnalysisDisplay';
+import { PrivacyReportBadge } from '@/components/shared/PrivacyReportBadge';
+import { useOptimizationStore } from '@/store';
 import { ROUTES } from '@/lib/constants/routes';
 import type { ATSScore, KeywordAnalysisResult } from '@/types/analysis';
+import type { OptimizationPrivacyReport } from '@/types/privacy';
 
 interface ScanResultsClientProps {
   sessionId: string;
   score: ATSScore;
   keywordAnalysis: KeywordAnalysisResult;
+  privacyReport?: OptimizationPrivacyReport | null;
 }
 
 export function ScanResultsClient({
   sessionId,
   score,
   keywordAnalysis,
+  privacyReport: privacyReportProp,
 }: ScanResultsClientProps) {
   const router = useRouter();
+  const privacyReportFromStore = useOptimizationStore((state) => state.privacyReport);
+
+  // Use prop if available (from database), otherwise fall back to Zustand (from fresh optimization)
+  const privacyReport = privacyReportProp ?? privacyReportFromStore;
 
   const handleViewSuggestions = () => {
     router.push(`${ROUTES.APP.SCAN.SESSION(sessionId)}/suggestions`);
@@ -34,6 +43,13 @@ export function ScanResultsClient({
             Review your ATS analysis before viewing suggestions
           </p>
         </div>
+
+        {/* Privacy Report Badge - Show PII redaction statistics */}
+        {privacyReport && (
+          <section>
+            <PrivacyReportBadge report={privacyReport} />
+          </section>
+        )}
 
         {/* Section 1: ATS Score Display (includes score breakdown) */}
         <section>

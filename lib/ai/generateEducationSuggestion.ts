@@ -15,9 +15,18 @@
 
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { EducationSuggestion } from '@/types/suggestions';
-import { buildPreferencePrompt, getJobTypeVerbGuidance, getJobTypeFramingGuidance } from './preferences';
+import {
+  buildPreferencePrompt,
+  getJobTypeVerbGuidance,
+  getJobTypeFramingGuidance,
+} from './preferences';
 import { getSonnetModel } from './models';
-import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
+import {
+  ChatPromptTemplate,
+  createJsonParser,
+  invokeWithActionResponse,
+} from './chains';
+import { redactPII, restorePII } from './redactPII';
 
 // ============================================================================
 // CONSTANTS
@@ -370,26 +379,61 @@ export async function generateEducationSuggestion(
   }
 
   console.log('[SS:genEducation] Generating education suggestion');
-  console.log('[SS:genEducation] Input - Education:', resumeEducation?.length, 'chars, JD:', jobDescription?.length, 'chars');
-  console.log('[SS:genEducation] Education preview:', resumeEducation?.substring(0, 200));
-  console.log('[SS:genEducation] Preferences:', preferences ? `jobType=${preferences.jobType}, modLevel=${preferences.modificationLevel}` : 'none');
+  console.log(
+    '[SS:genEducation] Input - Education:',
+    resumeEducation?.length,
+    'chars, JD:',
+    jobDescription?.length,
+    'chars'
+  );
+  console.log(
+    '[SS:genEducation] Education preview:',
+    resumeEducation?.substring(0, 200)
+  );
+  console.log(
+    '[SS:genEducation] Preferences:',
+    preferences
+      ? `jobType=${preferences.jobType}, modLevel=${preferences.modificationLevel}`
+      : 'none'
+  );
 
   // Truncate very long inputs to avoid timeout
-  const processedEducation =
+  let processedEducation =
     resumeEducation.length > MAX_EDUCATION_LENGTH
       ? resumeEducation.substring(0, MAX_EDUCATION_LENGTH)
       : resumeEducation;
 
-  const processedJD =
+  let processedJD =
     jobDescription.length > MAX_JD_LENGTH
       ? jobDescription.substring(0, MAX_JD_LENGTH)
       : jobDescription;
 
-  const processedResume = resumeContent
+  let processedResume = resumeContent
     ? resumeContent.length > MAX_RESUME_LENGTH
       ? resumeContent.substring(0, MAX_RESUME_LENGTH)
       : resumeContent
     : '';
+
+  // Redact PII before sending to LLM
+  const educationRedaction = redactPII(processedEducation);
+  const jdRedaction = redactPII(processedJD);
+  const resumeRedaction = processedResume
+    ? redactPII(processedResume)
+    : {
+        redactedText: '',
+        redactionMap: new Map(),
+        stats: { emails: 0, phones: 0, urls: 0, addresses: 0 },
+      };
+
+  processedEducation = educationRedaction.redactedText;
+  processedJD = jdRedaction.redactedText;
+  processedResume = resumeRedaction.redactedText;
+
+  console.log('[SS:genEducation] PII redacted:', {
+    education: educationRedaction.stats,
+    jd: jdRedaction.stats,
+    resume: resumeRedaction.stats,
+  });
 
   // Build conditional prompt sections
   const resumeSection = processedResume
@@ -401,27 +445,40 @@ export async function generateEducationSuggestion(
     ? `${getJobTypeVerbGuidance(preferences.jobType)}\n\n${getJobTypeFramingGuidance(preferences.jobType, 'education', true)}\n\n`
     : '';
 
-  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
+  const preferenceSection = preferences
+    ? `\n${buildPreferencePrompt(preferences, userContext)}\n`
+    : '';
 
   // Log the prompt sections being used
   console.log('[SS:genEducation] Building prompt with:');
-  console.log('[SS:genEducation] - jobTypeGuidance length:', jobTypeGuidance.length, 'chars');
-  console.log('[SS:genEducation] - preferenceSection length:', preferenceSection.length, 'chars');
-  console.log('[SS:genEducation] - resumeSection length:', resumeSection.length, 'chars');
+  console.log(
+    '[SS:genEducation] - jobTypeGuidance length:',
+    jobTypeGuidance.length,
+    'chars'
+  );
+  console.log(
+    '[SS:genEducation] - preferenceSection length:',
+    preferenceSection.length,
+    'chars'
+  );
+  console.log(
+    '[SS:genEducation] - resumeSection length:',
+    resumeSection.length,
+    'chars'
+  );
 
   // Create and invoke LCEL chain
   const chain = createEducationSuggestionChain();
 
-  const result = await invokeWithActionResponse(
-    async () => {
-      console.log('[SS:genEducation] Invoking LLM chain...');
-      const parsed = await chain.invoke({
-        education: processedEducation,
-        jobDescription: processedJD,
-        resumeSection,
-        jobTypeGuidance,
-        preferenceSection,
-      });
+  const result = await invokeWithActionResponse(async () => {
+    console.log('[SS:genEducation] Invoking LLM chain...');
+    const parsed = await chain.invoke({
+      education: processedEducation,
+      jobDescription: processedJD,
+      resumeSection,
+      jobTypeGuidance,
+      preferenceSection,
+    });
 
       console.log('[SS:genEducation] Raw LLM response:', JSON.stringify(parsed, null, 2).substring(0, 1000));
 
@@ -448,18 +505,30 @@ export async function generateEducationSuggestion(
       // Normalize education entries
       const validImpactTiers = ['critical', 'high', 'moderate'];
       const normalizedEntries = parsed.education_entries.map((entry) => ({
-        institution: String(entry.institution || ''),
-        degree: String(entry.degree || ''),
-        dates: String(entry.dates || ''),
+        // Restore PII in institution/degree/dates
+        institution: restorePII(
+          String(entry.institution || ''),
+          educationRedaction.redactionMap
+        ),
+        degree: restorePII(
+          String(entry.degree || ''),
+          educationRedaction.redactionMap
+        ),
+        dates: restorePII(
+          String(entry.dates || ''),
+          educationRedaction.redactionMap
+        ),
         gpa: entry.gpa ? String(entry.gpa) : undefined,
-        original_bullets: Array.isArray(entry.original_bullets) ? entry.original_bullets : [],
+        original_bullets: Array.isArray(entry.original_bullets)
+          ? entry.original_bullets
+          : [],
         suggested_bullets: (entry.suggested_bullets || [])
           .filter((bullet) => {
             // CRITICAL: Reject fabrications
             if (detectFabrication(bullet.original, bullet.suggested)) {
               console.error('[FABRICATION REJECTED]', {
                 original: bullet.original,
-                suggested: bullet.suggested.substring(0, 100)
+                suggested: bullet.suggested.substring(0, 100),
               });
               return false; // Filter out fabricated suggestions
             }
@@ -468,7 +537,7 @@ export async function generateEducationSuggestion(
             if (hasInvalidOriginalField(bullet.original)) {
               console.error('[INVALID ORIGINAL FIELD REJECTED]', {
                 original: bullet.original,
-                suggested: bullet.suggested.substring(0, 100)
+                suggested: bullet.suggested.substring(0, 100),
               });
               return false; // Filter out suggestions with placeholder original text
             }
@@ -476,38 +545,53 @@ export async function generateEducationSuggestion(
             return true;
           })
           .map((bullet) => {
-          const pointValue = bullet.point_value;
-          // Validate point_value if present
-          const validPointValue =
-            typeof pointValue === 'number' && pointValue >= 0 && pointValue <= 100
-              ? pointValue
-              : undefined;
+            const pointValue = bullet.point_value;
+            // Validate point_value if present
+            const validPointValue =
+              typeof pointValue === 'number' &&
+              pointValue >= 0 &&
+              pointValue <= 100
+                ? pointValue
+                : undefined;
 
-          // Validate impact tier if present
-          const validImpact = bullet.impact && validImpactTiers.includes(bullet.impact)
-            ? bullet.impact as 'critical' | 'high' | 'moderate'
-            : undefined;
+            // Validate impact tier if present
+            const validImpact =
+              bullet.impact && validImpactTiers.includes(bullet.impact)
+                ? (bullet.impact as 'critical' | 'high' | 'moderate')
+                : undefined;
 
-          // Handle explanation field (graceful fallback)
-          let explanation: string | undefined = undefined;
-          if (bullet.explanation !== undefined && bullet.explanation !== null) {
-            if (typeof bullet.explanation === 'string') {
-              // Truncate if too long (max 500 chars)
-              explanation = bullet.explanation.length > 500
-                ? bullet.explanation.substring(0, 497) + '...'
-                : bullet.explanation;
+            // Handle explanation field (graceful fallback)
+            let explanation: string | undefined = undefined;
+            if (bullet.explanation !== undefined && bullet.explanation !== null) {
+              if (typeof bullet.explanation === 'string') {
+                // Truncate if too long (max 500 chars)
+                explanation =
+                  bullet.explanation.length > 500
+                    ? bullet.explanation.substring(0, 497) + '...'
+                    : bullet.explanation;
+
+                // Restore PII in explanation
+                explanation = restorePII(explanation, jdRedaction.redactionMap);
+              }
             }
-          }
 
-          return {
-            original: String(bullet.original || ''),
-            suggested: String(bullet.suggested || ''),
-            keywords_incorporated: Array.isArray(bullet.keywords_incorporated) ? bullet.keywords_incorporated : [],
-            impact: validImpact,
-            point_value: validPointValue,
-            explanation: explanation,
-          };
-        }),
+            return {
+              original: restorePII(
+                String(bullet.original || ''),
+                educationRedaction.redactionMap
+              ),
+              suggested: restorePII(
+                String(bullet.suggested || ''),
+                educationRedaction.redactionMap
+              ),
+              keywords_incorporated: Array.isArray(bullet.keywords_incorporated)
+                ? bullet.keywords_incorporated
+                : [],
+              impact: validImpact,
+              point_value: validPointValue,
+              explanation: explanation,
+            };
+          }),
       }));
 
       // Validate total_point_value if present
@@ -526,30 +610,68 @@ export async function generateEducationSuggestion(
       if (parsed.explanation !== undefined && parsed.explanation !== null) {
         if (typeof parsed.explanation === 'string') {
           // Truncate if too long (max 500 chars)
-          explanation = parsed.explanation.length > 500
-            ? parsed.explanation.substring(0, 497) + '...'
-            : parsed.explanation;
+          explanation =
+            parsed.explanation.length > 500
+              ? parsed.explanation.substring(0, 497) + '...'
+              : parsed.explanation;
 
           // Validate explanation quality (log warning if generic)
-          const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
-          const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
-          if (isGeneric && !explanation.match(/[A-Z][a-z]+ (requirement|coursework|degree|experience)/i)) {
-            console.warn('[SS:genEducation] Generic explanation detected (missing specific JD keywords):', explanation);
+          const genericPhrases = [
+            'improves score',
+            'helps ats',
+            'better ranking',
+            'increases match',
+          ];
+          const isGeneric = genericPhrases.some((phrase) =>
+            explanation!.toLowerCase().includes(phrase)
+          );
+          if (
+            isGeneric &&
+            !explanation.match(
+              /[A-Z][a-z]+ (requirement|coursework|degree|experience)/i
+            )
+          ) {
+            console.warn(
+              '[SS:genEducation] Generic explanation detected (missing specific JD keywords):',
+              explanation
+            );
           }
+
+          // Restore PII in explanation
+          explanation = restorePII(explanation, jdRedaction.redactionMap);
         }
       }
 
-      const bulletCount = normalizedEntries.reduce((count, entry) =>
-        count + entry.suggested_bullets.length, 0);
-      console.log('[SS:genEducation] Education generated:', normalizedEntries.length, 'entries,', bulletCount, 'suggestions, total_point_value:', totalPointValue);
+      // Restore PII in summary
+      const restoredSummary = restorePII(
+        parsed.summary,
+        educationRedaction.redactionMap
+      );
+
+      const bulletCount = normalizedEntries.reduce(
+        (count, entry) => count + entry.suggested_bullets.length,
+        0
+      );
+      console.log(
+        '[SS:genEducation] Education generated:',
+        normalizedEntries.length,
+        'entries,',
+        bulletCount,
+        'suggestions, total_point_value:',
+        totalPointValue
+      );
 
       return {
         original: resumeEducation, // Return full original, not truncated
         education_entries: normalizedEntries,
-        matched_keywords: Array.isArray(parsed.matched_keywords) ? parsed.matched_keywords : [],
-        relevant_coursework: Array.isArray(parsed.relevant_coursework) ? parsed.relevant_coursework : [],
+        matched_keywords: Array.isArray(parsed.matched_keywords)
+          ? parsed.matched_keywords
+          : [],
+        relevant_coursework: Array.isArray(parsed.relevant_coursework)
+          ? parsed.relevant_coursework
+          : [],
         total_point_value: totalPointValue,
-        summary: parsed.summary,
+        summary: restoredSummary,
         explanation: explanation,
       };
     },
