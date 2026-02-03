@@ -262,6 +262,7 @@ export function NewScanClient() {
         const sessionResult = await createScanSession({
           resumeContent: rawResumeText,
           jobDescription: jobDescription || '',
+          filename: resumeContent?.filename || pendingFile?.name,
         });
 
         if (sessionResult.error) {

@@ -194,6 +194,7 @@ export async function createScanSession(
         resume_content: JSON.stringify({ rawText: input.resumeContent }),
         jd_content: JSON.stringify(input.jobDescription),
         title,
+        resume_name: input.filename || null, // Store resume name/filename for history display
       })
       .select('id')
       .single();
