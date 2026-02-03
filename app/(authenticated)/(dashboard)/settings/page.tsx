@@ -20,6 +20,7 @@ import { createClient } from '@/lib/supabase/server';
 import { ROUTES } from '@/lib/constants/routes';
 import { ClientSettingsPage } from './ClientSettingsPage';
 import { getUserPreferences } from '@/lib/dashboard/getUserPreferences';
+import { getUserResumes } from '@/actions/resume/get-user-resumes';
 
 export default async function SettingsPage() {
   // Get authenticated user (already protected by layout)
@@ -67,6 +68,10 @@ export default async function SettingsPage() {
     answers: userData?.onboarding_answers || null,
   };
 
+  // Fetch saved resumes for resume management section
+  const resumesResult = await getUserResumes();
+  const savedResumes = resumesResult.data || [];
+
   // Pass user data to client component
   // Use email from users table as fallback if auth email is empty
   const userEmail = user.email || userData?.email || '';
@@ -81,6 +86,7 @@ export default async function SettingsPage() {
       preferences={userPreferences}
       privacyConsent={privacyConsent}
       onboarding={onboardingData}
+      savedResumes={savedResumes}
     />
   );
 }

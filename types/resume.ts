@@ -44,6 +44,7 @@ export interface UserResumeOption {
   id: string;
   name: string;
   created_at: string;
+  is_default: boolean; // Marks the default/master resume (only one per user)
 }
 
 /**

@@ -28,8 +28,9 @@ import { ERROR_CODES } from '@/types';
  * 1. Validate user authentication
  * 2. Validate inputs (content and name)
  * 3. Check user hasn't exceeded 3-resume limit
- * 4. Insert resume into user_resumes table
- * 5. Return saved resume info
+ * 4. Unset other defaults if isDefault=true
+ * 5. Insert resume into user_resumes table
+ * 6. Return saved resume info
  *
  * **Constraints:**
  * - User must be authenticated (UNAUTHORIZED if not)
@@ -41,13 +42,15 @@ import { ERROR_CODES } from '@/types';
  * @param resumeContent - The extracted text content of the resume
  * @param resumeName - User-chosen name for the resume (max 100 chars)
  * @param fileName - Optional original file name
- * @returns ActionResponse with resume id and name
+ * @param isDefault - Optional flag to set as default resume (unsets other defaults)
+ * @returns ActionResponse with resume id, name, and is_default status
  */
 export async function saveResume(
   resumeContent: string,
   resumeName: string,
-  fileName?: string
-): Promise<ActionResponse<SaveResumeResult>> {
+  fileName?: string,
+  isDefault?: boolean
+): Promise<ActionResponse<SaveResumeResult & { is_default: boolean }>> {
   const supabase = await createClient();
 
   // Check authentication
@@ -128,6 +131,24 @@ export async function saveResume(
       };
     }
 
+    // If setting as default, unset all other defaults first
+    if (isDefault) {
+      const { error: unsetError } = await supabase
+        .from('user_resumes')
+        .update({ is_default: false })
+        .eq('user_id', user.id);
+
+      if (unsetError) {
+        return {
+          data: null,
+          error: {
+            message: `Failed to update default settings: ${unsetError.message}`,
+            code: ERROR_CODES.SAVE_RESUME_ERROR,
+          },
+        };
+      }
+    }
+
     // Insert resume into database
     const { data, error: insertError } = await supabase
       .from('user_resumes')
@@ -136,8 +157,9 @@ export async function saveResume(
         name: trimmedName,
         resume_content: resumeContent.trim(),
         file_name: fileName || null,
+        is_default: isDefault || false,
       })
-      .select('id, name')
+      .select('id, name, is_default')
       .single();
 
     if (insertError) {
@@ -176,6 +198,7 @@ export async function saveResume(
       data: {
         id: data.id,
         name: data.name,
+        is_default: data.is_default,
       },
       error: null,
     };
