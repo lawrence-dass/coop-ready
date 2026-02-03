@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { getSessionById } from '@/lib/supabase/sessions';
+import { getSessionById } from '@/lib/scan/queries'; // Use server-side version
 import { notFound, redirect } from 'next/navigation';
 import { ComparisonResultsClient } from '@/components/scan/ComparisonResultsClient';
 
@@ -9,9 +9,9 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export default async function ComparisonPage({
   params,
 }: {
-  params: { sessionId: string };
+  params: Promise<{ sessionId: string }>;
 }) {
-  const { sessionId } = params;
+  const { sessionId } = await params;
 
   // Validate UUID format
   if (!UUID_REGEX.test(sessionId)) {

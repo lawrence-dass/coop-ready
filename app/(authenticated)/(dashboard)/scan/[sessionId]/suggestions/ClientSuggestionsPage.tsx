@@ -39,6 +39,7 @@ interface SessionData {
   preferences: any;
   anonymousId: string | null;
   userId: string;
+  comparedAtsScore?: ATSScore | null;
 }
 
 interface ClientSuggestionsPageProps {
@@ -51,9 +52,6 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionType>('summary');
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  // Check if user has copied any suggestions (Story 17.2)
-  const hasAnyCopied = useOptimizationStore((state: { hasAnyCopied: () => boolean }) => state.hasAnyCopied());
 
   // Extract suggestions by section
   const summarySuggestions = session.suggestions.summary || [];
@@ -375,17 +373,15 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
             Back to Results
           </Button>
 
-          {/* Story 17.2: Compare button (shown when user has copied suggestions) */}
-          {hasAnyCopied && (
-            <Button
-              onClick={() => setDialogOpen(true)}
-              size="default"
-              data-testid="compare-button"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Compare with Updated Resume
-            </Button>
-          )}
+          {/* Story 17.2: Compare button - always visible for better discoverability */}
+          <Button
+            onClick={() => setDialogOpen(true)}
+            size="default"
+            data-testid="compare-button"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Compare with Updated Resume
+          </Button>
 
           <Button
             variant="ghost"
@@ -397,6 +393,57 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
             Apply All Suggestions (Coming Soon)
           </Button>
         </div>
+
+        {/* Comparison Summary - shown when comparison exists */}
+        {session.comparedAtsScore && (
+          <Card className="mt-6 border-blue-200 bg-blue-50/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <span className="text-blue-600">📊</span>
+                Comparison Results
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className="text-sm text-muted-foreground">Original Score</div>
+                    <div className="text-2xl font-bold">{originalScore}</div>
+                  </div>
+                  <div className="text-2xl text-muted-foreground">→</div>
+                  <div className="text-center">
+                    <div className="text-sm text-muted-foreground">Updated Score</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {session.comparedAtsScore.overall}
+                    </div>
+                  </div>
+                  <div className="text-center ml-4">
+                    {(() => {
+                      const diff = session.comparedAtsScore.overall - originalScore;
+                      const isPositive = diff > 0;
+                      const isNegative = diff < 0;
+                      return (
+                        <Badge
+                          variant={isPositive ? "default" : isNegative ? "destructive" : "secondary"}
+                          className="text-base px-3 py-1"
+                        >
+                          {isPositive ? '+' : ''}{diff} points
+                        </Badge>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/scan/${session.id}/comparison`)}
+                  className="border-blue-300 hover:bg-blue-100"
+                >
+                  View Full Comparison →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Story 17.2: Comparison dialog */}
         <CompareUploadDialog

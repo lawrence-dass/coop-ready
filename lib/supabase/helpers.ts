@@ -28,7 +28,7 @@ import { createClient } from './client';
  * ```
  */
 export async function getAnonymousId(): Promise<string | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();

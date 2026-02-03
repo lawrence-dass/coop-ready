@@ -130,6 +130,7 @@ export async function getSessionById(
         userId: data.user_id,
         atsScore,
         keywordAnalysis,
+        comparedAtsScore: data.compared_ats_score,
       },
       error: null,
     };
