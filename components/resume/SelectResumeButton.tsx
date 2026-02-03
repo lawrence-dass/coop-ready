@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { LibraryBig, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getUserResumes } from '@/actions/resume/get-user-resumes';
@@ -256,7 +257,14 @@ export function SelectResumeButton({
                     htmlFor={resume.id}
                     className="flex-1 cursor-pointer space-y-1"
                   >
-                    <p className="font-medium leading-none">{resume.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium leading-none">{resume.name}</p>
+                      {resume.is_default && (
+                        <Badge variant="secondary" className="text-xs">
+                          Default
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       Created: {formatDate(resume.created_at)}
                     </p>

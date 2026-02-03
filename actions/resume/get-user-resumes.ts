@@ -63,10 +63,12 @@ export async function getUserResumes(): Promise<
 
   try {
     // Query user_resumes table for all resumes by this user
+    // Order by is_default DESC first (default at top), then by created_at DESC
     const { data, error: queryError } = await supabase
       .from('user_resumes')
-      .select('id, name, created_at')
+      .select('id, name, created_at, is_default')
       .eq('user_id', user.id)
+      .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (queryError) {

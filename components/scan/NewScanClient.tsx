@@ -34,11 +34,14 @@ import { ErrorDisplay } from '@/components/shared/ErrorDisplay';
 import { PrivacyConsentDialog } from '@/components/shared';
 import { SelectResumeButton } from '@/components/resume/SelectResumeButton';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, CheckCircle2, X } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, X, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { SaveResumeDialog } from '@/components/resume/SaveResumeDialog';
 import { isJobDescriptionValid } from '@/lib/validations/jobDescription';
 import { createScanSession } from '@/actions/scan/create-session';
 import { generateAllSuggestions } from '@/actions/generateAllSuggestions';
+import { getDefaultResume } from '@/actions/resume/get-default-resume';
+import { parseResumeText } from '@/actions/parseResumeText';
 import { usePrivacyConsent } from '@/hooks/usePrivacyConsent';
 import { acceptPrivacyConsent } from '@/actions/privacy/accept-privacy-consent';
 import type { ActionResponse } from '@/types';
@@ -74,20 +77,8 @@ export function NewScanClient() {
   const [pendingFileForConsent, setPendingFileForConsent] = useState<File | null>(null);
   const [isPendingConsent, startConsentTransition] = useTransition();
   const [tipIndex, setTipIndex] = useState(0);
-
-  // Rotate tips while analyzing
-  useEffect(() => {
-    if (!isPending) {
-      setTipIndex(0);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setTipIndex((prev) => (prev + 1) % ANALYSIS_TIPS.length);
-    }, 5000); // Change tip every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [isPending]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [autoLoadedDefault, setAutoLoadedDefault] = useState(false);
 
   // Privacy consent hook
   const { privacyAccepted, refetch: refetchPrivacyConsent } = usePrivacyConsent();
@@ -112,6 +103,8 @@ export function NewScanClient() {
   const setShowPrivacyDialog = useOptimizationStore((state: ExtendedOptimizationStore) => state.setShowPrivacyDialog);
   const setPrivacyAccepted = useOptimizationStore((state: ExtendedOptimizationStore) => state.setPrivacyAccepted);
   const clearResumeAndResults = useOptimizationStore((state: ExtendedOptimizationStore) => state.clearResumeAndResults);
+  const setResumeContent = useOptimizationStore((state: { setResumeContent: (resume: import('@/types/optimization').Resume | null) => void }) => state.setResumeContent);
+  const setSelectedResumeId = useOptimizationStore((state: { setSelectedResumeId: (id: string | null) => void }) => state.setSelectedResumeId);
 
   // Derived state: can we analyze?
   const hasResume = !!resumeContent;
@@ -120,6 +113,63 @@ export function NewScanClient() {
   const hasPrivacyConsent = !isAuthenticated || privacyAccepted === true;
   // Must have resume, valid JD, privacy consent (if authenticated), and not be in pending state
   const canAnalyze = hasResume && hasValidJD && hasPrivacyConsent && !isPending;
+
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+
+  // Rotate tips while analyzing
+  useEffect(() => {
+    if (!isPending) {
+      setTipIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % ANALYSIS_TIPS.length);
+    }, 5000); // Change tip every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [isPending]);
+
+  // Auto-load default resume on mount (authenticated users only)
+  useEffect(() => {
+    if (!isAuthenticated || autoLoadedDefault || resumeContent) {
+      return; // Skip if: not authenticated, already loaded, or resume exists
+    }
+
+    async function loadDefaultResume() {
+      const { data, error } = await getDefaultResume();
+
+      if (error || !data) {
+        return; // Silently fail - no default or error (user has no resumes)
+      }
+
+      // Parse and load into store (same logic as SelectResumeButton)
+      const parseResult = await parseResumeText(data.content, {
+        filename: data.name,
+      });
+
+      if (parseResult.error || !parseResult.data) {
+        console.warn('[NewScan] Failed to parse default resume');
+        setResumeContent({
+          rawText: data.content,
+          filename: data.name,
+        });
+      } else {
+        setResumeContent(parseResult.data);
+      }
+
+      setSelectedResumeId(data.id);
+      setAutoLoadedDefault(true);
+
+      toast.success(`Default resume "${data.name}" loaded`, {
+        description: 'Ready to analyze. You can change resumes anytime.',
+      });
+    }
+
+    loadDefaultResume();
+  }, [isAuthenticated, autoLoadedDefault, resumeContent, setResumeContent, setSelectedResumeId]);
 
   // ============================================================================
   // FILE HANDLERS
@@ -420,10 +470,25 @@ export function NewScanClient() {
               <p className="flex-1">
                 Resume extracted successfully ({(resumeContent.rawText?.length || 0).toLocaleString()} characters)
               </p>
+
+              {/* Save to Library button (authenticated users only) */}
+              {isAuthenticated && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSaveDialog(true)}
+                  className="text-green-700 hover:text-green-900 hover:bg-green-100"
+                  data-testid="save-from-banner-button"
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  Save to Library
+                </Button>
+              )}
+
               <button
                 type="button"
                 onClick={clearResumeAndResults}
-                className="ml-auto rounded-md p-1 text-green-600 hover:bg-green-100 hover:text-green-800"
+                className="rounded-md p-1 text-green-600 hover:bg-green-100 hover:text-green-800"
                 aria-label="Clear extracted resume"
                 data-testid="clear-resume-btn"
               >
@@ -495,6 +560,15 @@ export function NewScanClient() {
         open={showPrivacyDialog}
         onOpenChange={setShowPrivacyDialog}
         onAccept={handleAcceptConsent}
+      />
+
+      {/* Save Resume Dialog (Epic 9) */}
+      <SaveResumeDialog
+        open={showSaveDialog}
+        onOpenChange={setShowSaveDialog}
+        resumeContent={resumeContent?.rawText || null}
+        fileName={pendingFile?.name}
+        showSetDefaultCheckbox={true}
       />
     </div>
   );

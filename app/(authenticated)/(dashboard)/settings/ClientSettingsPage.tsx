@@ -11,7 +11,9 @@ import { ProfileSection } from './ProfileSection';
 import { OnboardingSelectionsSection } from './OnboardingSelectionsSection';
 import { OptimizationPreferencesSection } from './OptimizationPreferencesSection';
 import { PrivacySection } from './PrivacySection';
+import { ResumeManagementSection } from './ResumeManagementSection';
 import { AccountActionsSection } from './AccountActionsSection';
+import type { UserResumeOption } from '@/types';
 
 interface User {
   email: string;
@@ -44,6 +46,7 @@ interface ClientSettingsPageProps {
   preferences: Preferences;
   privacyConsent: PrivacyConsent;
   onboarding: OnboardingData;
+  savedResumes: UserResumeOption[];
 }
 
 export function ClientSettingsPage({
@@ -51,6 +54,7 @@ export function ClientSettingsPage({
   preferences,
   privacyConsent,
   onboarding,
+  savedResumes,
 }: ClientSettingsPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
@@ -80,6 +84,9 @@ export function ClientSettingsPage({
 
         {/* Privacy Settings */}
         <PrivacySection consent={privacyConsent} />
+
+        {/* Resume Management */}
+        <ResumeManagementSection initialResumes={savedResumes} />
 
         {/* Account Actions */}
         <AccountActionsSection />
