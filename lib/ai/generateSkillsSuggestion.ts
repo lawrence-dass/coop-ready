@@ -13,9 +13,17 @@
 
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { SkillsSuggestion } from '@/types/suggestions';
-import { buildPreferencePrompt, getJobTypeFramingGuidance } from './preferences';
+import {
+  buildPreferencePrompt,
+  getJobTypeFramingGuidance,
+} from './preferences';
 import { getSonnetModel } from './models';
-import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
+import {
+  ChatPromptTemplate,
+  createJsonParser,
+  invokeWithActionResponse,
+} from './chains';
+import { redactPII, restorePII } from './redactPII';
 
 // ============================================================================
 // CONSTANTS
@@ -186,33 +194,68 @@ export async function generateSkillsSuggestion(
     };
   }
 
-  console.log('[SS:genSkills] Generating skills suggestion (' + resumeSkills?.length + ' chars skills, ' + jobDescription?.length + ' chars JD)');
+  console.log(
+    '[SS:genSkills] Generating skills suggestion (' +
+      resumeSkills?.length +
+      ' chars skills, ' +
+      jobDescription?.length +
+      ' chars JD)'
+  );
 
   // Truncate very long inputs to avoid timeout
-  const processedSkills =
+  let processedSkills =
     resumeSkills.length > MAX_SKILLS_LENGTH
       ? resumeSkills.substring(0, MAX_SKILLS_LENGTH)
       : resumeSkills;
 
-  const processedJD =
+  let processedJD =
     jobDescription.length > MAX_JD_LENGTH
       ? jobDescription.substring(0, MAX_JD_LENGTH)
       : jobDescription;
 
-  const processedResume = resumeContent
+  let processedResume = resumeContent
     ? resumeContent.length > MAX_RESUME_LENGTH
       ? resumeContent.substring(0, MAX_RESUME_LENGTH)
       : resumeContent
     : '';
+
+  // Redact PII before sending to LLM
+  const skillsRedaction = redactPII(processedSkills);
+  const jdRedaction = redactPII(processedJD);
+  const resumeRedaction = processedResume ? redactPII(processedResume) : {
+    redactedText: '',
+    redactionMap: new Map(),
+    stats: { emails: 0, phones: 0, urls: 0, addresses: 0 },
+  };
+  const eduRedaction = resumeEducation
+    ? redactPII(resumeEducation)
+    : {
+        redactedText: '',
+        redactionMap: new Map(),
+        stats: { emails: 0, phones: 0, urls: 0, addresses: 0 },
+      };
+
+  processedSkills = skillsRedaction.redactedText;
+  processedJD = jdRedaction.redactedText;
+  processedResume = resumeRedaction.redactedText;
+  const redactedEducation = eduRedaction.redactedText;
+
+  console.log('[SS:genSkills] PII redacted:', {
+    skills: skillsRedaction.stats,
+    jd: jdRedaction.stats,
+    resume: resumeRedaction.stats,
+    education: eduRedaction.stats,
+  });
 
   // Build conditional prompt sections
   const resumeSection = processedResume
     ? `<user_content>\n${processedResume}\n</user_content>`
     : '';
 
-  const educationSection = resumeEducation && resumeEducation.trim().length > 0
-    ? `<education_context>\nConsider coursework and academic projects when suggesting skills:\n${resumeEducation}\n</education_context>\n`
-    : '';
+  const educationSection =
+    resumeEducation && resumeEducation.trim().length > 0
+      ? `<education_context>\nConsider coursework and academic projects when suggesting skills:\n${redactedEducation}\n</education_context>\n`
+      : '';
 
   // Build job-type-specific guidance (injected before general preferences for prominence)
   const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
@@ -220,21 +263,22 @@ export async function generateSkillsSuggestion(
     ? `${getJobTypeFramingGuidance(preferences.jobType, 'skills', hasEducation)}\n\n`
     : '';
 
-  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
+  const preferenceSection = preferences
+    ? `\n${buildPreferencePrompt(preferences, userContext)}\n`
+    : '';
 
   // Create and invoke LCEL chain
   const chain = createSkillsSuggestionChain();
 
-  const result = await invokeWithActionResponse(
-    async () => {
-      const parsed = await chain.invoke({
-        skills: processedSkills,
-        jobDescription: processedJD,
-        resumeSection,
-        educationSection,
-        jobTypeGuidance,
-        preferenceSection,
-      });
+  const result = await invokeWithActionResponse(async () => {
+    const parsed = await chain.invoke({
+      skills: processedSkills,
+      jobDescription: processedJD,
+      resumeSection,
+      educationSection,
+      jobTypeGuidance,
+      preferenceSection,
+    });
 
       // Validate structure
       if (!parsed.existing_skills || !Array.isArray(parsed.existing_skills)) {
@@ -304,20 +348,49 @@ export async function generateSkillsSuggestion(
       if (parsed.explanation !== undefined && parsed.explanation !== null) {
         if (typeof parsed.explanation === 'string') {
           // Truncate if too long (max 500 chars)
-          explanation = parsed.explanation.length > 500
-            ? parsed.explanation.substring(0, 497) + '...'
-            : parsed.explanation;
+          explanation =
+            parsed.explanation.length > 500
+              ? parsed.explanation.substring(0, 497) + '...'
+              : parsed.explanation;
 
           // Validate explanation quality (log warning if generic)
-          const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
-          const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
-          if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill)/i)) {
-            console.warn('[SS:genSkills] Generic explanation detected (missing specific JD keywords):', explanation);
+          const genericPhrases = [
+            'improves score',
+            'helps ats',
+            'better ranking',
+            'increases match',
+          ];
+          const isGeneric = genericPhrases.some((phrase) =>
+            explanation!.toLowerCase().includes(phrase)
+          );
+          if (
+            isGeneric &&
+            !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill)/i)
+          ) {
+            console.warn(
+              '[SS:genSkills] Generic explanation detected (missing specific JD keywords):',
+              explanation
+            );
           }
+
+          // Restore PII in explanation
+          explanation = restorePII(explanation, jdRedaction.redactionMap);
         }
       }
 
-      console.log('[SS:genSkills] Skills generated:', parsed.matched_keywords.length, 'matched,', parsed.skill_additions.length, 'additions, total_point_value:', totalPointValue, ', explanation:', explanation ? 'present' : 'missing');
+      // Restore PII in summary
+      const restoredSummary = restorePII(parsed.summary, skillsRedaction.redactionMap);
+
+      console.log(
+        '[SS:genSkills] Skills generated:',
+        parsed.matched_keywords.length,
+        'matched,',
+        parsed.skill_additions.length,
+        'additions, total_point_value:',
+        totalPointValue,
+        ', explanation:',
+        explanation ? 'present' : 'missing'
+      );
 
       return {
         original: resumeSkills, // Return full original, not truncated
@@ -327,7 +400,7 @@ export async function generateSkillsSuggestion(
         skill_additions: parsed.skill_additions,
         skill_removals: normalizedRemovals,
         total_point_value: totalPointValue,
-        summary: parsed.summary,
+        summary: restoredSummary,
         explanation: explanation,
       };
     },

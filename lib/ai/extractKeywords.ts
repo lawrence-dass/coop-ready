@@ -3,7 +3,12 @@
 import { ActionResponse } from '@/types';
 import { ExtractedKeywords, ExtractedKeyword } from '@/types/analysis';
 import { getHaikuModel } from './models';
-import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
+import {
+  ChatPromptTemplate,
+  createJsonParser,
+  invokeWithActionResponse,
+} from './chains';
+import { redactPII } from './redactPII';
 
 const EXTRACTION_TIMEOUT_MS = 20000; // 20 seconds budget for extraction
 const MAX_JD_LENGTH = 5000;
@@ -88,21 +93,28 @@ export async function extractKeywords(
     };
   }
 
-  console.log('[SS:keywords] Extracting keywords from JD (' + jobDescription.length + ' chars)');
+  console.log(
+    '[SS:keywords] Extracting keywords from JD (' + jobDescription.length + ' chars)'
+  );
 
   // Truncate very long JDs to avoid timeout
-  const processedJD = jobDescription.length > MAX_JD_LENGTH
-    ? jobDescription.substring(0, MAX_JD_LENGTH)
-    : jobDescription;
+  let processedJD =
+    jobDescription.length > MAX_JD_LENGTH
+      ? jobDescription.substring(0, MAX_JD_LENGTH)
+      : jobDescription;
+
+  // Redact PII before sending to LLM
+  const { redactedText, stats } = redactPII(processedJD);
+  processedJD = redactedText;
+  console.log('[SS:keywords] PII redacted:', stats);
 
   // Create and invoke LCEL chain
   const chain = createKeywordExtractionChain();
 
   console.log('[SS:keywords] Invoking LCEL chain (claude-haiku)...');
 
-  const result = await invokeWithActionResponse(
-    async () => {
-      const response = await chain.invoke({ jobDescription: processedJD });
+  const result = await invokeWithActionResponse(async () => {
+    const response = await chain.invoke({ jobDescription: processedJD });
 
       // Validate structure
       if (!response.keywords || !Array.isArray(response.keywords)) {

@@ -22,13 +22,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { ActionResponse } from '@/types';
 import type { KeywordAnalysisResult, ATSScore } from '@/types/analysis';
 import type { Resume } from '@/types/optimization';
+import type { OptimizationPrivacyReport } from '@/types/privacy';
 import { extractKeywords } from '@/lib/ai/extractKeywords';
 import { matchKeywords } from '@/lib/ai/matchKeywords';
-import { calculateATSScore, calculateATSScoreV21Full } from '@/lib/ai/calculateATSScore';
+import {
+  calculateATSScore,
+  calculateATSScoreV21Full,
+} from '@/lib/ai/calculateATSScore';
 import { extractQualificationsBoth } from '@/lib/ai/extractQualifications';
 import { detectJobType } from '@/lib/scoring';
 import { createClient } from '@/lib/supabase/server';
 import { withTimeout } from '@/lib/utils/withTimeout';
+import { redactPII } from '@/lib/ai/redactPII';
+import { aggregatePIIStats } from '@/lib/ai/aggregatePrivacyStats';
 
 // ============================================================================
 // TYPES
@@ -46,6 +52,7 @@ interface OptimizationResult {
   atsScore: ATSScore;
   sessionId: string;
   analysisTimeMs?: number; // Time taken to analyze resume in milliseconds
+  privacyReport: OptimizationPrivacyReport; // PII redaction transparency
 }
 
 // ============================================================================
@@ -151,7 +158,18 @@ async function runOptimizationPipeline(
 ): Promise<ActionResponse<OptimizationResult>> {
   const startTime = performance.now(); // Start timing
   try {
-    console.log('[SS:optimize] Pipeline started for session:', request.session_id.slice(0, 8) + '...');
+    console.log(
+      '[SS:optimize] Pipeline started for session:',
+      request.session_id.slice(0, 8) + '...'
+    );
+
+    // Step 0: Generate privacy report (what PII will be redacted)
+    // This builds user trust by showing transparency
+    const resumePII = redactPII(request.resume_content);
+    const jdPII = redactPII(request.jd_content);
+    const privacyReport = aggregatePIIStats([resumePII.stats, jdPII.stats]);
+
+    console.log('[SS:optimize] Privacy report:', privacyReport);
 
     // Step 1 & 2: Extract keywords and qualifications in parallel
     // Note: prompt injection defense (XML wrapping) is handled by extractKeywords/extractQualifications
@@ -256,7 +274,7 @@ async function runOptimizationPipeline(
       },
     };
 
-    // Step 7: Save results to session using server client (with pipeline metrics)
+    // Step 7: Save results to session using server client (with pipeline metrics and privacy report)
     try {
       const supabase = await createClient();
       const { error: updateError } = await supabase
@@ -264,6 +282,7 @@ async function runOptimizationPipeline(
         .update({
           keyword_analysis: enhancedKeywordAnalysis,
           ats_score: enhancedATSScore, // Now includes pipelineMetrics in metadata
+          privacy_report: privacyReport, // Save privacy report for display
         })
         .eq('id', request.session_id);
 
@@ -281,8 +300,13 @@ async function runOptimizationPipeline(
     const analysisTimeMs = Math.round(endTime - startTime);
 
     // Return results
-    console.log('[SS:optimize] Pipeline complete. ATS score:', enhancedATSScore.overall);
-    console.log(`[SS:optimize] ⏱️  Analysis completed in ${analysisTimeMs}ms (${(analysisTimeMs / 1000).toFixed(2)}s)`);
+    console.log(
+      '[SS:optimize] Pipeline complete. ATS score:',
+      enhancedATSScore.overall
+    );
+    console.log(
+      `[SS:optimize] ⏱️  Analysis completed in ${analysisTimeMs}ms (${(analysisTimeMs / 1000).toFixed(2)}s)`
+    );
 
     return {
       data: {
@@ -290,6 +314,7 @@ async function runOptimizationPipeline(
         atsScore: enhancedATSScore, // Includes pipelineMetrics in metadata
         sessionId: request.session_id,
         analysisTimeMs, // Include timing in response for browser console
+        privacyReport, // Show user what PII was redacted
       },
       error: null,
     };

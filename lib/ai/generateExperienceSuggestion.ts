@@ -13,9 +13,18 @@
 
 import { ActionResponse, OptimizationPreferences, UserContext } from '@/types';
 import { ExperienceSuggestion } from '@/types/suggestions';
-import { buildPreferencePrompt, getJobTypeVerbGuidance, getJobTypeFramingGuidance } from './preferences';
+import {
+  buildPreferencePrompt,
+  getJobTypeVerbGuidance,
+  getJobTypeFramingGuidance,
+} from './preferences';
 import { getSonnetModel } from './models';
-import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
+import {
+  ChatPromptTemplate,
+  createJsonParser,
+  invokeWithActionResponse,
+} from './chains';
+import { redactPII, restorePII } from './redactPII';
 
 // ============================================================================
 // CONSTANTS
@@ -223,28 +232,59 @@ export async function generateExperienceSuggestion(
     };
   }
 
-  console.log('[SS:genExp] Generating experience suggestion (' + resumeExperience?.length + ' chars exp, ' + jobDescription?.length + ' chars JD)');
+  console.log(
+    '[SS:genExp] Generating experience suggestion (' +
+      resumeExperience?.length +
+      ' chars exp, ' +
+      jobDescription?.length +
+      ' chars JD)'
+  );
 
   // Truncate very long inputs to avoid timeout
-  const processedExperience =
+  let processedExperience =
     resumeExperience.length > MAX_EXPERIENCE_LENGTH
       ? resumeExperience.substring(0, MAX_EXPERIENCE_LENGTH)
       : resumeExperience;
 
-  const processedJD =
+  let processedJD =
     jobDescription.length > MAX_JD_LENGTH
       ? jobDescription.substring(0, MAX_JD_LENGTH)
       : jobDescription;
 
-  const processedResume =
+  let processedResume =
     resumeContent.length > MAX_RESUME_LENGTH
       ? resumeContent.substring(0, MAX_RESUME_LENGTH)
       : resumeContent;
 
+  // Redact PII before sending to LLM
+  const experienceRedaction = redactPII(processedExperience);
+  const jdRedaction = redactPII(processedJD);
+  const resumeRedaction = redactPII(processedResume);
+  const eduRedaction = resumeEducation
+    ? redactPII(resumeEducation)
+    : {
+        redactedText: '',
+        redactionMap: new Map(),
+        stats: { emails: 0, phones: 0, urls: 0, addresses: 0 },
+      };
+
+  processedExperience = experienceRedaction.redactedText;
+  processedJD = jdRedaction.redactedText;
+  processedResume = resumeRedaction.redactedText;
+  const redactedEducation = eduRedaction.redactedText;
+
+  console.log('[SS:genExp] PII redacted:', {
+    experience: experienceRedaction.stats,
+    jd: jdRedaction.stats,
+    resume: resumeRedaction.stats,
+    education: eduRedaction.stats,
+  });
+
   // Build conditional prompt sections
-  const educationSection = resumeEducation && resumeEducation.trim().length > 0
-    ? `<education_context>\nUse this to understand academic background and connect experience to coursework:\n${resumeEducation}\n</education_context>\n`
-    : '';
+  const educationSection =
+    resumeEducation && resumeEducation.trim().length > 0
+      ? `<education_context>\nUse this to understand academic background and connect experience to coursework:\n${redactedEducation}\n</education_context>\n`
+      : '';
 
   // Build job-type-specific guidance (injected before general preferences for prominence)
   const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
@@ -252,21 +292,22 @@ export async function generateExperienceSuggestion(
     ? `${getJobTypeVerbGuidance(preferences.jobType)}\n\n${getJobTypeFramingGuidance(preferences.jobType, 'experience', hasEducation)}\n\n`
     : '';
 
-  const preferenceSection = preferences ? `\n${buildPreferencePrompt(preferences, userContext)}\n` : '';
+  const preferenceSection = preferences
+    ? `\n${buildPreferencePrompt(preferences, userContext)}\n`
+    : '';
 
   // Create and invoke LCEL chain
   const chain = createExperienceSuggestionChain();
 
-  const result = await invokeWithActionResponse(
-    async () => {
-      const parsed = await chain.invoke({
-        experience: processedExperience,
-        jobDescription: processedJD,
-        resumeContent: processedResume,
-        educationSection,
-        jobTypeGuidance,
-        preferenceSection,
-      });
+  const result = await invokeWithActionResponse(async () => {
+    const parsed = await chain.invoke({
+      experience: processedExperience,
+      jobDescription: processedJD,
+      resumeContent: processedResume,
+      educationSection,
+      jobTypeGuidance,
+      preferenceSection,
+    });
 
       // Validate structure
       if (!parsed.experience_entries || !Array.isArray(parsed.experience_entries)) {
@@ -292,6 +333,10 @@ export async function generateExperienceSuggestion(
       const validImpactTiers = ['critical', 'high', 'moderate'];
       const normalizedEntries = parsed.experience_entries.map((entry) => ({
         ...entry,
+        // Restore PII in company/role/dates
+        company: restorePII(entry.company, experienceRedaction.redactionMap),
+        role: restorePII(entry.role, experienceRedaction.redactionMap),
+        dates: restorePII(entry.dates, experienceRedaction.redactionMap),
         original_bullets: entry.original_bullets || [],
         suggested_bullets: (entry.suggested_bullets || []).map((bullet) => {
           const pointValue = bullet.point_value;
@@ -302,33 +347,63 @@ export async function generateExperienceSuggestion(
               : undefined;
 
           // Validate impact tier if present
-          const validImpact = bullet.impact && validImpactTiers.includes(bullet.impact)
-            ? bullet.impact as 'critical' | 'high' | 'moderate'
-            : undefined;
+          const validImpact =
+            bullet.impact && validImpactTiers.includes(bullet.impact)
+              ? (bullet.impact as 'critical' | 'high' | 'moderate')
+              : undefined;
 
           // Handle explanation field (graceful fallback)
           let explanation: string | undefined = undefined;
           if (bullet.explanation !== undefined && bullet.explanation !== null) {
             if (typeof bullet.explanation === 'string') {
               // Truncate if too long (max 500 chars)
-              explanation = bullet.explanation.length > 500
-                ? bullet.explanation.substring(0, 497) + '...'
-                : bullet.explanation;
+              explanation =
+                bullet.explanation.length > 500
+                  ? bullet.explanation.substring(0, 497) + '...'
+                  : bullet.explanation;
 
               // Validate explanation quality (log warning if generic)
-              const genericPhrases = ['improves score', 'helps ats', 'better ranking', 'increases match'];
-              const isGeneric = genericPhrases.some(phrase => explanation!.toLowerCase().includes(phrase));
-              if (isGeneric && !explanation.match(/[A-Z][a-z]+ (expert|experience|required|skill|requirement)/i)) {
-                console.warn('[SS:genExp] Generic explanation detected (missing specific JD keywords):', explanation);
+              const genericPhrases = [
+                'improves score',
+                'helps ats',
+                'better ranking',
+                'increases match',
+              ];
+              const isGeneric = genericPhrases.some((phrase) =>
+                explanation!.toLowerCase().includes(phrase)
+              );
+              if (
+                isGeneric &&
+                !explanation.match(
+                  /[A-Z][a-z]+ (expert|experience|required|skill|requirement)/i
+                )
+              ) {
+                console.warn(
+                  '[SS:genExp] Generic explanation detected (missing specific JD keywords):',
+                  explanation
+                );
               }
+
+              // Restore PII in explanation
+              explanation = restorePII(explanation, jdRedaction.redactionMap);
             }
           }
 
           return {
-            original: String(bullet.original || ''),
-            suggested: String(bullet.suggested || ''),
-            metrics_added: Array.isArray(bullet.metrics_added) ? bullet.metrics_added : [],
-            keywords_incorporated: Array.isArray(bullet.keywords_incorporated) ? bullet.keywords_incorporated : [],
+            original: restorePII(
+              String(bullet.original || ''),
+              experienceRedaction.redactionMap
+            ),
+            suggested: restorePII(
+              String(bullet.suggested || ''),
+              experienceRedaction.redactionMap
+            ),
+            metrics_added: Array.isArray(bullet.metrics_added)
+              ? bullet.metrics_added
+              : [],
+            keywords_incorporated: Array.isArray(bullet.keywords_incorporated)
+              ? bullet.keywords_incorporated
+              : [],
             impact: validImpact,
             point_value: validPointValue,
             explanation: explanation,
@@ -347,15 +422,31 @@ export async function generateExperienceSuggestion(
         console.warn('[SS:genExp] Invalid total_point_value from LLM, ignoring:', parsed.total_point_value);
       }
 
-      const bulletWithExplanationCount = normalizedEntries.reduce((count, entry) =>
-        count + entry.suggested_bullets.filter(b => b.explanation).length, 0);
-      console.log('[SS:genExp] Experience generated:', normalizedEntries.length, 'entries, total_point_value:', totalPointValue, ', bullets_with_explanation:', bulletWithExplanationCount);
+      const bulletWithExplanationCount = normalizedEntries.reduce(
+        (count, entry) =>
+          count + entry.suggested_bullets.filter((b) => b.explanation).length,
+        0
+      );
+      console.log(
+        '[SS:genExp] Experience generated:',
+        normalizedEntries.length,
+        'entries, total_point_value:',
+        totalPointValue,
+        ', bullets_with_explanation:',
+        bulletWithExplanationCount
+      );
+
+      // Restore PII in summary
+      const restoredSummary = restorePII(
+        parsed.summary,
+        experienceRedaction.redactionMap
+      );
 
       return {
         original: resumeExperience, // Return full original, not truncated
         experience_entries: normalizedEntries,
         total_point_value: totalPointValue,
-        summary: parsed.summary,
+        summary: restoredSummary,
       };
     },
     { errorMessage: 'Failed to generate experience suggestion' }

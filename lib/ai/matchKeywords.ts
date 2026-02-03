@@ -1,9 +1,18 @@
 // Story 5.1: LLM Keyword Matching in Resume
 // Phase 2: LCEL migration
 import { ActionResponse } from '@/types';
-import { ExtractedKeyword, MatchedKeyword, KeywordAnalysisResult } from '@/types/analysis';
+import {
+  ExtractedKeyword,
+  MatchedKeyword,
+  KeywordAnalysisResult,
+} from '@/types/analysis';
 import { getHaikuModel } from './models';
-import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
+import {
+  ChatPromptTemplate,
+  createJsonParser,
+  invokeWithActionResponse,
+} from './chains';
+import { redactPII } from './redactPII';
 
 const MATCHING_TIMEOUT_MS = 20000; // 20 seconds budget for matching
 
@@ -157,19 +166,26 @@ export async function matchKeywords(
     };
   }
 
-  console.log('[SS:match] Matching', extractedKeywords.length, 'keywords against resume (' + resumeContent.length + ' chars)');
+  console.log(
+    '[SS:match] Matching',
+    extractedKeywords.length,
+    'keywords against resume (' + resumeContent.length + ' chars)'
+  );
+
+  // Redact PII before sending to LLM
+  const { redactedText, stats } = redactPII(resumeContent);
+  console.log('[SS:match] Resume PII redacted:', stats);
 
   // Create and invoke LCEL chain
   const chain = createKeywordMatchingChain();
 
   console.log('[SS:match] Invoking LCEL chain (claude-haiku)...');
 
-  const result = await invokeWithActionResponse(
-    async () => {
-      const response = await chain.invoke({
-        keywords: JSON.stringify(extractedKeywords),
-        resumeContent
-      });
+  const result = await invokeWithActionResponse(async () => {
+    const response = await chain.invoke({
+      keywords: JSON.stringify(extractedKeywords),
+      resumeContent: redactedText,
+    });
 
       // Validate structure
       if (!response.matches || !Array.isArray(response.matches)) {

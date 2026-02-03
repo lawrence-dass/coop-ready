@@ -91,6 +91,7 @@ export default async function ScanResultsPage({ params }: PageProps) {
       sessionId={session.id}
       score={session.analysis.score}
       keywordAnalysis={session.analysis.keywordAnalysis}
+      privacyReport={session.privacyReport}
     />
   );
 }

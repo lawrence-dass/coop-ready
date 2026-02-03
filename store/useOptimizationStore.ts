@@ -75,6 +75,9 @@ export interface ExtendedOptimizationStore extends OptimizationStore {
   /** ATS compatibility score (Story 5.2) */
   atsScore: ATSScore | null;
 
+  /** Privacy report showing PII redaction statistics */
+  privacyReport: import('@/types/privacy').OptimizationPrivacyReport | null;
+
   /** Summary section suggestion (Story 6.2) */
   summarySuggestion: import('@/types/suggestions').SummarySuggestion | null;
 
@@ -202,6 +205,9 @@ export interface ExtendedOptimizationStore extends OptimizationStore {
   /** Set ATS score (Story 5.2) */
   setATSScore: (score: ATSScore | null) => void;
 
+  /** Set privacy report */
+  setPrivacyReport: (report: import('@/types/privacy').OptimizationPrivacyReport | null) => void;
+
   /** Set summary suggestion (Story 6.2) */
   setSummarySuggestion: (suggestion: import('@/types/suggestions').SummarySuggestion | null) => void;
 
@@ -310,6 +316,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     isParsing: false,
     keywordAnalysis: null,
     atsScore: null,
+    privacyReport: null,
     summarySuggestion: null,
     skillsSuggestion: null,
     experienceSuggestion: null,
@@ -425,6 +432,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
 
     setATSScore: (score) =>
       set({ atsScore: score, error: null }),
+
+    setPrivacyReport: (report) =>
+      set({ privacyReport: report }),
 
     setSummarySuggestion: (suggestion) =>
       set({ summarySuggestion: suggestion, error: null }),

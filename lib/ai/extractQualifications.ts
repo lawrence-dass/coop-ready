@@ -10,8 +10,17 @@
 
 import { ActionResponse } from '@/types';
 import { getHaikuModel } from './models';
-import { ChatPromptTemplate, createJsonParser, invokeWithActionResponse } from './chains';
-import type { JDQualifications, ResumeQualifications, DegreeLevel } from '@/lib/scoring/types';
+import {
+  ChatPromptTemplate,
+  createJsonParser,
+  invokeWithActionResponse,
+} from './chains';
+import type {
+  JDQualifications,
+  ResumeQualifications,
+  DegreeLevel,
+} from '@/lib/scoring/types';
+import { redactPII } from './redactPII';
 
 const EXTRACTION_TIMEOUT_MS = 15000;
 
@@ -110,11 +119,14 @@ export async function extractJDQualifications(
 
   console.log('[SS:qual] Extracting JD qualifications...');
 
+  // Redact PII before sending to LLM
+  const { redactedText, stats } = redactPII(jobDescription);
+  console.log('[SS:qual] JD PII redacted:', stats);
+
   const chain = createJDQualificationChain();
 
-  return invokeWithActionResponse(
-    async () => {
-      const response = await chain.invoke({ jobDescription });
+  return invokeWithActionResponse(async () => {
+    const response = await chain.invoke({ jobDescription: redactedText });
 
       // Map string level to DegreeLevel type
       const mapLevel = (level: string): DegreeLevel => {
@@ -238,11 +250,14 @@ export async function extractResumeQualifications(
 
   console.log('[SS:qual] Extracting resume qualifications...');
 
+  // Redact PII before sending to LLM
+  const { redactedText, stats } = redactPII(resumeContent);
+  console.log('[SS:qual] Resume PII redacted:', stats);
+
   const chain = createResumeQualificationChain();
 
-  return invokeWithActionResponse(
-    async () => {
-      const response = await chain.invoke({ resumeContent });
+  return invokeWithActionResponse(async () => {
+    const response = await chain.invoke({ resumeContent: redactedText });
 
       // Map string level to DegreeLevel type
       const mapLevel = (level: string): DegreeLevel => {
