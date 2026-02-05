@@ -57,7 +57,7 @@ export async function getRecentSessions(): Promise<
     // Now using job_title, company_name, and resume_name columns directly
     const { data: sessions, error: dbError } = await supabase
       .from('sessions')
-      .select('id, created_at, title, job_title, company_name, resume_name, jd_content, ats_score, suggestions')
+      .select('id, created_at, title, job_title, company_name, resume_name, jd_content, ats_score, compared_ats_score, suggestions')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -91,6 +91,11 @@ export async function getRecentSessions(): Promise<
         atsScore:
           (session as any).ats_score && typeof (session as any).ats_score === 'object'
             ? (session as any).ats_score.overall ?? null
+            : null,
+        // Compared ATS score (from comparison resume upload)
+        comparedAtsScore:
+          (session as any).compared_ats_score && typeof (session as any).compared_ats_score === 'object'
+            ? (session as any).compared_ats_score.overall ?? null
             : null,
         suggestionCount: countSuggestions(session.suggestions),
       })

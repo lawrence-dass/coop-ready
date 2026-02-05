@@ -56,4 +56,6 @@ export interface ResumeContentResult {
   id: string;
   name: string;
   resumeContent: string;
+  /** Original filename with extension (e.g., "resume.pdf") */
+  fileName: string | null;
 }

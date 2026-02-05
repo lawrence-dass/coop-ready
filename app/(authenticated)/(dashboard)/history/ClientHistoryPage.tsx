@@ -11,7 +11,7 @@
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Calendar, Briefcase, TrendingUp, Trash2 } from 'lucide-react';
+import { FileText, Calendar, Briefcase, TrendingUp, Trash2, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DeleteSessionDialog } from '@/components/shared/DeleteSessionDialog';
 import { ErrorDisplay } from '@/components/shared/ErrorDisplay';
@@ -21,6 +21,23 @@ import { ROUTES } from '@/lib/constants/routes';
 import type { HistorySession } from '@/types/history';
 import type { ApiError } from '@/types';
 import { useState } from 'react';
+
+/**
+ * Returns Tailwind classes for improvement delta badge
+ */
+function getImprovementColorClass(delta: number): string {
+  if (delta > 0) return 'text-green-600 bg-green-50';
+  if (delta < 0) return 'text-amber-600 bg-amber-50';
+  return 'text-gray-500 bg-gray-50';
+}
+
+/**
+ * Formats delta with + prefix for positive values
+ */
+function formatDelta(delta: number): string {
+  if (delta > 0) return `+${delta}`;
+  return `${delta}`;
+}
 
 interface ClientHistoryPageProps {
   sessions: HistorySession[];
@@ -122,6 +139,13 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
     setShowDeleteDialog(true);
   };
 
+  const handleComparisonClick = (e: React.MouseEvent) => {
+    // Prevent card click event from firing
+    e.stopPropagation();
+    toast.info('Opening comparison details...');
+    router.push(ROUTES.APP.SCAN.COMPARISON(session.id));
+  };
+
   // Build display title: "Job Title @ Company" or just "Job Title"
   const displayTitle = session.jobTitle
     ? session.companyName
@@ -176,19 +200,57 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
               {session.atsScore !== null && session.atsScore !== undefined && (
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-accent" />
-                  <Badge
-                    variant="default"
-                    className={cn(
-                      'text-sm font-semibold',
-                      session.atsScore >= 80
-                        ? 'bg-success'
-                        : session.atsScore >= 60
-                          ? 'bg-warning'
-                          : 'bg-destructive'
-                    )}
-                  >
-                    {session.atsScore}
-                  </Badge>
+
+                  {session.comparedAtsScore !== null ? (
+                    // Has comparison: show original → compared + delta (clickable to view comparison)
+                    <button
+                      onClick={handleComparisonClick}
+                      className="flex items-center gap-1.5 px-2 py-1 -mx-2 -my-1 rounded-md hover:bg-accent/10 transition-colors cursor-pointer group"
+                      aria-label="View comparison details"
+                      title="Click to view comparison"
+                    >
+                      <Badge variant="outline" className="text-sm font-medium text-gray-600">
+                        {session.atsScore}
+                      </Badge>
+                      <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
+                      <Badge
+                        variant="default"
+                        className={cn(
+                          'text-sm font-semibold',
+                          session.comparedAtsScore >= 80
+                            ? 'bg-success'
+                            : session.comparedAtsScore >= 60
+                              ? 'bg-warning'
+                              : 'bg-destructive'
+                        )}
+                      >
+                        {session.comparedAtsScore}
+                      </Badge>
+                      <span
+                        className={cn(
+                          'text-xs font-medium px-1.5 py-0.5 rounded-full group-hover:underline',
+                          getImprovementColorClass(session.comparedAtsScore - session.atsScore)
+                        )}
+                      >
+                        {formatDelta(session.comparedAtsScore - session.atsScore)} pts
+                      </span>
+                    </button>
+                  ) : (
+                    // No comparison: show original score only (existing behavior)
+                    <Badge
+                      variant="default"
+                      className={cn(
+                        'text-sm font-semibold',
+                        session.atsScore >= 80
+                          ? 'bg-success'
+                          : session.atsScore >= 60
+                            ? 'bg-warning'
+                            : 'bg-destructive'
+                      )}
+                    >
+                      {session.atsScore}
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>

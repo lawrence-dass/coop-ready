@@ -49,6 +49,7 @@ describe('Story 16.6: History Page Integration', () => {
       companyName: 'TechCorp',
       jdPreview: 'We are seeking a talented developer with...',
       atsScore: 85,
+      comparedAtsScore: null,
       suggestionCount: 5,
     },
     {
@@ -59,6 +60,7 @@ describe('Story 16.6: History Page Integration', () => {
       companyName: null,
       jdPreview: 'Looking for an experienced data scientist...',
       atsScore: 72,
+      comparedAtsScore: null,
       suggestionCount: 3,
     },
   ];

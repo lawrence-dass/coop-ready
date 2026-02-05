@@ -36,6 +36,9 @@ export interface HistorySession {
   /** ATS score from this session (null if not available) */
   atsScore: number | null;
 
+  /** ATS score after applying suggestions (null if no comparison uploaded) */
+  comparedAtsScore: number | null;
+
   /** Number of suggestions generated (0 if none) */
   suggestionCount: number;
 }

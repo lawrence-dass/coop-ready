@@ -81,7 +81,7 @@ export async function getResumeContent(
     // Query specific resume by ID (RLS enforces user ownership)
     const { data, error: queryError } = await supabase
       .from('user_resumes')
-      .select('id, name, resume_content')
+      .select('id, name, resume_content, file_name')
       .eq('id', resumeId)
       .eq('user_id', user.id)
       .single();
@@ -125,6 +125,7 @@ export async function getResumeContent(
         id: data.id,
         name: data.name,
         resumeContent: data.resume_content,
+        fileName: data.file_name,
       },
       error: null,
     };
