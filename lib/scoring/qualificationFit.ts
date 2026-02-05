@@ -188,7 +188,7 @@ export function calculateQualificationFit(
   const certificationsMissing: string[] = [];
 
   if (
-    jdQuals.certificationsRequired &&
+    jdQuals.certificationsRequired?.certifications &&
     jdQuals.certificationsRequired.certifications.length > 0
   ) {
     const required = jdQuals.certificationsRequired.certifications;

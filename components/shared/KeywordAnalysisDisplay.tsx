@@ -125,7 +125,11 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
                     <TooltipContent className="max-w-xs">
                       <p className="text-xs">
                         Your keyword score weighs matches by importance and placement.
-                        All required keywords matched perfectly!
+                        {requiredCount && requiredCount.matched === requiredCount.total
+                          ? ' All required keywords matched!'
+                          : requiredCount && requiredCount.total > 0
+                            ? ` Missing ${requiredCount.total - requiredCount.matched} of ${requiredCount.total} required keywords reduces your score.`
+                            : ''}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -145,6 +149,17 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
                   <span className={`text-sm font-medium ${requiredCount.matched === requiredCount.total ? 'text-green-600' : 'text-amber-600'}`}>
                     {requiredCount.matched}/{requiredCount.total}
                     {requiredCount.matched === requiredCount.total && ' ✓'}
+                  </span>
+                </div>
+              )}
+
+              {/* Penalty warning when required keywords missing */}
+              {requiredCount && requiredCount.matched < requiredCount.total && (
+                <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-2 rounded">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    Missing {requiredCount.total - requiredCount.matched} required → score capped at{' '}
+                    {Math.max(30, 100 - (requiredCount.total - requiredCount.matched) * 12)}%
                   </span>
                 </div>
               )}
@@ -172,10 +187,52 @@ export function KeywordAnalysisDisplay({ analysis }: KeywordAnalysisDisplayProps
             {keywordScore !== undefined && matchRate !== keywordScore && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
                 <p className="text-xs text-blue-900 leading-relaxed">
-                  💡 <strong>Why the difference?</strong> Your keyword score is {keywordScore}/100 because all high-importance required keywords matched perfectly. The {matchRate}% match rate shows you&apos;re missing {missing.length} {missing.length === 1 ? 'keyword' : 'keywords'}, which {missing.length === 1 ? 'is a' : 'are'} low-priority preferred term{missing.length === 1 ? '' : 's'}.
+                  💡 <strong>Why the difference?</strong>{' '}
+                  {requiredCount && requiredCount.matched < requiredCount.total ? (
+                    // Case 1: Missing required keywords - explains LOW score
+                    <>
+                      Your keyword score is {keywordScore}/100 because you&apos;re missing{' '}
+                      <strong>{requiredCount.total - requiredCount.matched} required keyword{requiredCount.total - requiredCount.matched === 1 ? '' : 's'}</strong>.
+                      Each missing required keyword reduces your maximum possible score by 12%.
+                      {preferredCount && preferredCount.matched > 0 && (
+                        <> The {preferredCount.matched}/{preferredCount.total} preferred keywords matched add a small bonus.</>
+                      )}
+                    </>
+                  ) : (
+                    // Case 2: All required matched - explains HIGH score vs lower match rate
+                    <>
+                      Your keyword score is {keywordScore}/100 because all required keywords matched.
+                      The {matchRate}% match rate shows you&apos;re missing {missing.length}{' '}
+                      {missing.length === 1 ? 'keyword' : 'keywords'}, which{' '}
+                      {missing.length === 1 ? 'is a' : 'are'} lower-priority preferred term
+                      {missing.length === 1 ? '' : 's'} that don&apos;t heavily impact your score.
+                    </>
+                  )}
                 </p>
               </div>
             )}
+
+            {/* Actionable guidance for missing required keywords */}
+            {requiredCount && requiredCount.matched < requiredCount.total && (() => {
+              const missingRequired = missing.filter((k) => k.requirement === 'required');
+              return (
+                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                  <p className="text-xs font-medium text-green-900 mb-2 flex items-center gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    Add these {missingRequired.length} required keywords to improve your score:
+                  </p>
+                  <ul className="text-xs text-green-800 space-y-1">
+                    {missingRequired.map((kw, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+                        <span className="font-medium">{kw.keyword}</span>
+                        <span className="text-green-600">(+up to 12 pts)</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 

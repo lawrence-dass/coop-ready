@@ -16,21 +16,16 @@ interface GapSummaryCardProps {
  * Shows:
  * - Total gaps count
  * - Priority breakdown (high/medium/low)
- * - Quick wins (top 3 most impactful keywords)
+ * - Quick wins (all high-priority/required keywords)
  */
 export function GapSummaryCard({ missing }: GapSummaryCardProps) {
   const highPriority = missing.filter((k) => k.importance === 'high').length;
   const mediumPriority = missing.filter((k) => k.importance === 'medium').length;
   const lowPriority = missing.filter((k) => k.importance === 'low').length;
 
-  // Top 3 most impactful keywords (high priority first, then medium)
-  // Copy array before sorting to avoid mutating the prop
-  const topGaps = [...missing]
-    .sort((a, b) => {
-      const importanceOrder = { high: 0, medium: 1, low: 2 };
-      return importanceOrder[a.importance] - importanceOrder[b.importance];
-    })
-    .slice(0, 3);
+  // Quick wins: all high-priority keywords (required keywords after normalization)
+  // These have the biggest impact (+12 pts each for required keywords)
+  const quickWins = missing.filter((k) => k.importance === 'high');
 
   return (
     <Card data-testid="gap-analysis">
@@ -58,15 +53,15 @@ export function GapSummaryCard({ missing }: GapSummaryCardProps) {
           </div>
         </div>
 
-        {/* Quick Wins */}
-        {topGaps.length > 0 && (
+        {/* Quick Wins - Show all high priority (required) keywords */}
+        {quickWins.length > 0 && (
           <div className="rounded-lg bg-info/10 p-4 border border-info/30">
             <h4 className="font-semibold text-info mb-2 flex items-center gap-2">
               <Lightbulb className="h-4 w-4" />
-              Quick Wins - Add These First
+              Quick Wins - Add These {quickWins.length} First
             </h4>
             <div className="flex flex-wrap gap-2">
-              {topGaps.map((kw, idx) => (
+              {quickWins.map((kw, idx) => (
                 <Badge key={idx} variant="outline" className="bg-white">
                   {kw.keyword}
                 </Badge>

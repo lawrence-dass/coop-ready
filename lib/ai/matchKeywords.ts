@@ -199,11 +199,17 @@ export async function matchKeywords(
         .map(m => {
           // Find original keyword for importance and requirement
           const original = extractedKeywords.find(k => k.keyword === m.keyword);
+          const requirement = original?.requirement || 'preferred';
+          // Normalize: required keywords should always be high importance
+          // (missing a required keyword has 12% penalty, so it's objectively high-impact)
+          const importance = requirement === 'required'
+            ? 'high'
+            : (original?.importance || 'medium');
           return {
             keyword: m.keyword,
             category: m.category,
-            importance: original?.importance || 'medium',
-            requirement: original?.requirement || 'preferred'
+            importance,
+            requirement
           } as ExtractedKeyword;
         });
 
