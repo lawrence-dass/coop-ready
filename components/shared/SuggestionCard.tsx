@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -66,6 +67,19 @@ export interface SuggestionCardProps {
 
   /** Additional className */
   className?: string;
+
+  // Dual-length suggestion props (for summary section)
+  /** Compact version - matches original length ±25% */
+  suggestedCompact?: string;
+
+  /** Word count of original text */
+  originalWordCount?: number;
+
+  /** Word count of compact version */
+  compactWordCount?: number;
+
+  /** Word count of full version */
+  fullWordCount?: number;
 }
 
 /**
@@ -89,7 +103,27 @@ export function SuggestionCard({
   sectionType,
   explanation,
   className,
+  suggestedCompact,
+  originalWordCount,
+  compactWordCount,
+  fullWordCount,
 }: SuggestionCardProps) {
+  // Version toggle state - default to Quick Edit when compact is available
+  // Supported for summary and experience sections
+  const hasCompactVersion = (sectionType === 'summary' || sectionType === 'experience') && !!suggestedCompact;
+  const [showFull, setShowFull] = useState(false);
+
+  // Determine which suggestion text to display
+  const displayedSuggestion = hasCompactVersion && !showFull
+    ? suggestedCompact!
+    : suggested;
+
+  // Determine which word count to show
+  const displayedWordCount = hasCompactVersion && !showFull
+    ? compactWordCount
+    : fullWordCount;
+
+
   // Get feedback state and actions from store
   const currentFeedback = useOptimizationStore(
     (state: { getFeedbackForSuggestion: (id: string) => boolean | null }) =>
@@ -169,14 +203,61 @@ export function SuggestionCard({
         {/* Desktop: Two-column layout (hidden on mobile) */}
         <div className="hidden md:grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-gray-700">Original</h4>
+            <h4 className="text-sm font-semibold text-gray-700">
+              Original
+              {originalWordCount !== undefined && (
+                <span className="ml-1 text-xs font-normal text-gray-500">
+                  ({originalWordCount} words)
+                </span>
+              )}
+            </h4>
             <p className="text-sm text-gray-600 leading-relaxed">{original}</p>
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-gray-700">Suggested</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-gray-700">
+                Suggested
+                {displayedWordCount !== undefined && (
+                  <span className="ml-1 text-xs font-normal text-gray-500">
+                    ({displayedWordCount} words)
+                  </span>
+                )}
+              </h4>
+
+              {hasCompactVersion && (
+                <div className="flex items-center text-xs">
+                  <button
+                    onClick={() => setShowFull(false)}
+                    className={cn(
+                      "px-2 py-1 rounded-l-md border transition-colors",
+                      !showFull
+                        ? "bg-gray-200 text-gray-700 border-gray-300"
+                        : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                    )}
+                    aria-pressed={!showFull}
+                    aria-label="Show quick edit version"
+                  >
+                    Quick Edit
+                  </button>
+                  <button
+                    onClick={() => setShowFull(true)}
+                    className={cn(
+                      "px-2 py-1 rounded-r-md border-t border-r border-b transition-colors",
+                      showFull
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
+                    )}
+                    aria-pressed={showFull}
+                    aria-label="Show ATS optimized version for maximum score improvement"
+                  >
+                    ATS Optimized
+                  </button>
+                </div>
+              )}
+            </div>
             <p className="text-sm text-gray-900 leading-relaxed font-medium">
-              {suggested}
+              {displayedSuggestion}
             </p>
           </div>
         </div>
@@ -187,9 +268,15 @@ export function SuggestionCard({
             <TabsList className="w-full">
               <TabsTrigger value="original" className="flex-1">
                 Original
+                {originalWordCount !== undefined && (
+                  <span className="ml-1 text-xs opacity-75">({originalWordCount})</span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="suggested" className="flex-1">
                 Suggested
+                {displayedWordCount !== undefined && (
+                  <span className="ml-1 text-xs opacity-75">({displayedWordCount})</span>
+                )}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="original" className="mt-3">
@@ -198,8 +285,37 @@ export function SuggestionCard({
               </p>
             </TabsContent>
             <TabsContent value="suggested" className="mt-3">
+              {/* Version toggle for mobile */}
+              {hasCompactVersion && (
+                <div className="flex items-center justify-center mb-3 text-xs">
+                  <button
+                    onClick={() => setShowFull(false)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-l-md border transition-colors",
+                      !showFull
+                        ? "bg-gray-200 text-gray-700 border-gray-300"
+                        : "bg-gray-50 text-gray-500 border-gray-200"
+                    )}
+                    aria-pressed={!showFull}
+                  >
+                    Quick Edit
+                  </button>
+                  <button
+                    onClick={() => setShowFull(true)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-r-md border-t border-r border-b transition-colors",
+                      showFull
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : "bg-emerald-100 text-emerald-700 border-emerald-300"
+                    )}
+                    aria-pressed={showFull}
+                  >
+                    ATS Optimized
+                  </button>
+                </div>
+              )}
               <p className="text-sm text-gray-900 leading-relaxed font-medium">
-                {suggested}
+                {displayedSuggestion}
               </p>
             </TabsContent>
           </Tabs>
@@ -271,9 +387,9 @@ export function SuggestionCard({
             onFeedback={handleFeedback}
           />
 
-          {/* Copy Button */}
+          {/* Copy Button - copies the currently displayed version */}
           <CopyButton
-            text={suggested}
+            text={displayedSuggestion}
             label="Copy suggestion"
             variant="outline"
             size="sm"

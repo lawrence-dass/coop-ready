@@ -187,6 +187,10 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                     suggestionId={`sug_summary_${index}`}
                     original={suggestion.original}
                     suggested={suggestion.suggested}
+                    suggestedCompact={suggestion.suggested_compact}
+                    originalWordCount={suggestion.original_word_count}
+                    compactWordCount={suggestion.compact_word_count}
+                    fullWordCount={suggestion.full_word_count}
                     points={suggestion.point_value}
                     impact={suggestion.impact}
                     keywords={suggestion.ats_keywords_added}
@@ -282,6 +286,10 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             suggestionId={`sug_experience_${index}_${entryIndex}_${bulletIndex}`}
                             original={bullet.original}
                             suggested={bullet.suggested}
+                            suggestedCompact={bullet.suggested_compact}
+                            originalWordCount={bullet.original_word_count}
+                            compactWordCount={bullet.compact_word_count}
+                            fullWordCount={bullet.full_word_count}
                             points={bullet.point_value}
                             impact={bullet.impact}
                             keywords={bullet.keywords_incorporated}

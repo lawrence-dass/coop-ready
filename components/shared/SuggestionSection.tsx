@@ -133,6 +133,10 @@ function SummaryBody({ suggestion }: { suggestion: SummarySuggestion }) {
         suggestionId={generateSuggestionId('summary', 0)}
         original={suggestion.original}
         suggested={suggestion.suggested}
+        suggestedCompact={suggestion.suggested_compact}
+        originalWordCount={suggestion.original_word_count}
+        compactWordCount={suggestion.compact_word_count}
+        fullWordCount={suggestion.full_word_count}
         keywords={suggestion.ats_keywords_added}
         points={suggestion.point_value}
         explanation={suggestion.explanation}
@@ -230,6 +234,10 @@ function ExperienceBody({
                   suggestionId={suggestionId}
                   original={bullet.original}
                   suggested={bullet.suggested}
+                  suggestedCompact={bullet.suggested_compact}
+                  originalWordCount={bullet.original_word_count}
+                  compactWordCount={bullet.compact_word_count}
+                  fullWordCount={bullet.full_word_count}
                   keywords={bullet.keywords_incorporated}
                   metrics={bullet.metrics_added}
                   points={bullet.point_value}
