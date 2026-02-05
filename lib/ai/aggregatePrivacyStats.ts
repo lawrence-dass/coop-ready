@@ -35,8 +35,9 @@ export function aggregatePIIStats(
       phones: acc.phones + curr.phones,
       urls: acc.urls + curr.urls,
       addresses: acc.addresses + curr.addresses,
+      names: acc.names + (curr.names || 0),
     }),
-    { emails: 0, phones: 0, urls: 0, addresses: 0 } as PIIRedactionStats
+    { emails: 0, phones: 0, urls: 0, addresses: 0, names: 0 } as PIIRedactionStats
   );
 
   // Calculate total
@@ -44,7 +45,8 @@ export function aggregatePIIStats(
     aggregated.emails +
     aggregated.phones +
     aggregated.urls +
-    aggregated.addresses;
+    aggregated.addresses +
+    aggregated.names;
 
   return {
     totalItemsRedacted,
@@ -64,6 +66,7 @@ export function createEmptyPrivacyReport(): OptimizationPrivacyReport {
       phones: 0,
       urls: 0,
       addresses: 0,
+      names: 0,
     },
     timestamp: new Date().toISOString(),
   };

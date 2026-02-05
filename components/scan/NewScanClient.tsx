@@ -127,7 +127,7 @@ export function NewScanClient() {
 
     const interval = setInterval(() => {
       setTipIndex((prev) => (prev + 1) % ANALYSIS_TIPS.length);
-    }, 5000); // Change tip every 5 seconds
+    }, 7000); // Change tip every 7 seconds
 
     return () => clearInterval(interval);
   }, [isPending]);
@@ -541,7 +541,7 @@ export function NewScanClient() {
 
         {/* Tips shown during analysis */}
         {isPending && (
-          <p className="text-center text-sm text-muted-foreground max-w-lg animate-fade-in">
+          <p className="text-center text-sm text-muted-foreground animate-fade-in">
             💡 {ANALYSIS_TIPS[tipIndex]}
           </p>
         )}

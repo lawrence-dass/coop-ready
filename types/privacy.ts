@@ -13,6 +13,7 @@ export interface PIIRedactionStats {
   phones: number;
   urls: number;
   addresses: number;
+  names: number;
 }
 
 /**

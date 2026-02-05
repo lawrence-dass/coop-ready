@@ -30,6 +30,8 @@ interface SessionRow {
   id: string;
   created_at: string;
   title: string | null;
+  job_title: string | null;
+  company_name: string | null;
   resume_name: string | null;
   resume_content: string | null;
   jd_content: string | null;
@@ -188,15 +190,18 @@ function countSuggestions(row: SessionRow): number {
  * Converts snake_case DB fields to camelCase TypeScript types
  * and extracts display metadata.
  *
- * For new sessions: Uses stored title and resume_name directly
+ * For new sessions: Uses stored job_title, company_name, resume_name directly
  * For legacy sessions: Falls back to extraction from content
  *
  * @param row - Database row from sessions query
  * @returns HistorySession object
  */
 function transformToHistorySession(row: SessionRow): HistorySession {
-  // Use stored title if available, otherwise fall back to extraction for legacy sessions
-  const jobTitle = row.title || extractJobTitle(row.jd_content);
+  // Use stored job_title if available, fallback to title, then extraction for legacy sessions
+  const jobTitle = row.job_title || row.title || extractJobTitle(row.jd_content);
+
+  // Use stored company_name if available, otherwise fall back to extraction for legacy sessions
+  const companyName = row.company_name || extractCompanyName(row.jd_content);
 
   // Use stored resume_name if available, otherwise fall back to extraction for legacy sessions
   const resumeName = row.resume_name || extractResumeName(row.resume_content);
@@ -206,7 +211,7 @@ function transformToHistorySession(row: SessionRow): HistorySession {
     createdAt: new Date(row.created_at),
     resumeName,
     jobTitle,
-    companyName: extractCompanyName(row.jd_content),
+    companyName,
     jdPreview: row.jd_content?.substring(0, 100) || null,
     atsScore: row.ats_score?.overall ?? null,
     suggestionCount: countSuggestions(row),
@@ -256,11 +261,11 @@ export async function getOptimizationHistory(): Promise<
 
   try {
     // Query sessions table for last 10 sessions by this user
-    // Only select fields needed for history display (minimize bandwidth)
+    // Now using job_title, company_name columns directly (minimize bandwidth)
     const { data, error: queryError } = await supabase
       .from('sessions')
       .select(
-        'id, created_at, title, resume_name, resume_content, jd_content, ats_score, summary_suggestion, skills_suggestion, experience_suggestion'
+        'id, created_at, title, job_title, company_name, resume_name, resume_content, jd_content, ats_score, summary_suggestion, skills_suggestion, experience_suggestion'
       )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })

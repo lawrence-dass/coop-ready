@@ -69,7 +69,7 @@ export function JobDescriptionInput({
         placeholder="Paste the job description here..."
         data-testid="job-description-input"
         className={cn(
-          'w-full h-[210px] p-3 border rounded-md resize-none',
+          'w-full h-[295px] p-3 border rounded-md resize-none',
           'focus:outline-none focus:ring-2 focus:ring-primary',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           isValid && 'ring-1 ring-success border-success'

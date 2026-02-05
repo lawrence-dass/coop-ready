@@ -122,6 +122,13 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
     setShowDeleteDialog(true);
   };
 
+  // Build display title: "Job Title @ Company" or just "Job Title"
+  const displayTitle = session.jobTitle
+    ? session.companyName
+      ? `${session.jobTitle} @ ${session.companyName}`
+      : session.jobTitle
+    : 'Untitled Position';
+
   return (
     <>
       <Card
@@ -131,23 +138,24 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
         onClick={onClick}
       >
         <CardContent className="p-6">
-          {/* Header: Resume Name + Delete Button + ATS Score */}
-          <div className="flex items-start justify-between mb-4">
+          {/* Header: Job Title @ Company + Delete Button + ATS Score */}
+          <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                {session.resumeName || 'Untitled Resume'}
-              </h3>
-              {session.jobTitle && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Briefcase className="h-4 w-4" />
-                  <span>{session.jobTitle}</span>
-                </div>
-              )}
-              {session.companyName && (
-                <div className="text-sm text-gray-500 mt-1">
-                  at {session.companyName}
-                </div>
-              )}
+              {/* Job title @ company */}
+              <div className="flex items-center gap-2 mb-1.5">
+                <Briefcase className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <h3 className="text-lg font-semibold text-gray-900 truncate">
+                  {displayTitle}
+                </h3>
+              </div>
+
+              {/* Resume name */}
+              <div className="flex items-center gap-2 ml-6">
+                <FileText className="h-3.5 w-3.5 text-gray-400" />
+                <span className="text-sm text-gray-500 truncate">
+                  {session.resumeName || 'Uploaded Resume'}
+                </span>
+              </div>
             </div>
 
             {/* Delete Button + ATS Score Badge */}
@@ -185,13 +193,6 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
               )}
             </div>
           </div>
-
-          {/* Preview Text */}
-          {session.jdPreview && (
-            <p className="text-sm text-gray-500 line-clamp-2 mb-3">
-              {session.jdPreview}...
-            </p>
-          )}
 
           {/* Footer: Date + Suggestion Count */}
           <div className="flex items-center justify-between pt-3 border-t border-gray-100">
