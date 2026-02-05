@@ -38,6 +38,9 @@ interface SessionRow {
   ats_score: {
     overall?: number;
   } | null;
+  compared_ats_score: {
+    overall?: number;
+  } | null;
   summary_suggestion: unknown | null;
   skills_suggestion: unknown | null;
   experience_suggestion: unknown | null;
@@ -214,6 +217,7 @@ function transformToHistorySession(row: SessionRow): HistorySession {
     companyName,
     jdPreview: row.jd_content?.substring(0, 100) || null,
     atsScore: row.ats_score?.overall ?? null,
+    comparedAtsScore: row.compared_ats_score?.overall ?? null,
     suggestionCount: countSuggestions(row),
   };
 }
@@ -265,7 +269,7 @@ export async function getOptimizationHistory(): Promise<
     const { data, error: queryError } = await supabase
       .from('sessions')
       .select(
-        'id, created_at, title, job_title, company_name, resume_name, resume_content, jd_content, ats_score, summary_suggestion, skills_suggestion, experience_suggestion'
+        'id, created_at, title, job_title, company_name, resume_name, resume_content, jd_content, ats_score, compared_ats_score, summary_suggestion, skills_suggestion, experience_suggestion'
       )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })

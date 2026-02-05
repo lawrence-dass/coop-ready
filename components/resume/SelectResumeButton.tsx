@@ -100,9 +100,11 @@ export function SelectResumeButton({
 
       // Load content into Zustand store as Resume object
       if (data.resumeContent) {
+        // Use fileName (with extension) if available, fallback to name
+        const resumeFilename = data.fileName || data.name;
         // Parse raw text into structured sections (summary, skills, experience, education)
         const parseResult = await parseResumeText(data.resumeContent, {
-          filename: data.name,
+          filename: resumeFilename,
         });
 
         if (parseResult.error || !parseResult.data) {
@@ -110,7 +112,7 @@ export function SelectResumeButton({
           console.warn('[SS:select] Failed to parse resume sections, storing raw text only:', parseResult.error?.message);
           setResumeContent({
             rawText: data.resumeContent,
-            filename: data.name,
+            filename: resumeFilename,
           });
         } else {
           setResumeContent(parseResult.data);

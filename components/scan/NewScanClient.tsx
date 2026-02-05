@@ -146,15 +146,17 @@ export function NewScanClient() {
       }
 
       // Parse and load into store (same logic as SelectResumeButton)
+      // Use fileName (with extension) if available, fallback to name
+      const resumeFilename = data.fileName || data.name;
       const parseResult = await parseResumeText(data.content, {
-        filename: data.name,
+        filename: resumeFilename,
       });
 
       if (parseResult.error || !parseResult.data) {
         console.warn('[NewScan] Failed to parse default resume');
         setResumeContent({
           rawText: data.content,
-          filename: data.name,
+          filename: resumeFilename,
         });
       } else {
         setResumeContent(parseResult.data);
@@ -568,7 +570,7 @@ export function NewScanClient() {
         open={showSaveDialog}
         onOpenChange={setShowSaveDialog}
         resumeContent={resumeContent?.rawText || null}
-        fileName={pendingFile?.name}
+        fileName={resumeContent?.filename || pendingFile?.name}
         showSetDefaultCheckbox={true}
       />
     </div>

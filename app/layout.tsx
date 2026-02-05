@@ -34,7 +34,7 @@ export default function RootLayout({
             {children}
           </SessionProvider>
         </AuthProvider>
-        <Toaster />
+        <Toaster position="top-right" />
       </body>
     </html>
   );

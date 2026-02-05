@@ -22,6 +22,7 @@ describe('History Deletion in Store', () => {
     companyName: 'TechCorp',
     jdPreview: 'Looking for a software engineer...',
     atsScore: 85,
+    comparedAtsScore: null,
     suggestionCount: 3,
   };
 
@@ -33,6 +34,7 @@ describe('History Deletion in Store', () => {
     companyName: 'StartupInc',
     jdPreview: 'Seeking product manager...',
     atsScore: 75,
+    comparedAtsScore: null,
     suggestionCount: 2,
   };
 
@@ -44,6 +46,7 @@ describe('History Deletion in Store', () => {
     companyName: 'DesignCo',
     jdPreview: 'Need UX designer...',
     atsScore: 90,
+    comparedAtsScore: null,
     suggestionCount: 4,
   };
 

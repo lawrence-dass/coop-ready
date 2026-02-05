@@ -35,6 +35,7 @@ export async function getDefaultResume(): Promise<
     id: string;
     name: string;
     content: string;
+    fileName: string | null;
   } | null>
 > {
   const supabase = await createClient();
@@ -58,7 +59,7 @@ export async function getDefaultResume(): Promise<
   // Query for the default resume
   const { data, error } = await supabase
     .from('user_resumes')
-    .select('id, name, resume_content')
+    .select('id, name, resume_content, file_name')
     .eq('user_id', user.id)
     .eq('is_default', true)
     .maybeSingle(); // Use maybeSingle() instead of single() to return null if not found
@@ -86,6 +87,7 @@ export async function getDefaultResume(): Promise<
       id: data.id,
       name: data.name,
       content: data.resume_content,
+      fileName: data.file_name,
     },
     error: null,
   };
