@@ -66,7 +66,7 @@ export interface AITellRewrite {
  */
 export interface SummarySuggestion {
   original: string; // User's original summary
-  suggested: string; // Optimized version with keywords
+  suggested: string; // Optimized version with keywords (alias to suggested_full for backward compat)
   ats_keywords_added: string[]; // Keywords from JD that were incorporated
   ai_tell_phrases_rewritten: AITellRewrite[]; // AI language that was fixed
   point_value?: number; // Estimated ATS score improvement (0-100) - used for section totals
@@ -74,6 +74,18 @@ export interface SummarySuggestion {
 
   /** Story 14.1: 1-2 sentence explanation of why this change helps */
   explanation?: string;
+
+  // Dual-length suggestions (Phase 1: Summary only)
+  /** Quick edit version - matches original length ±25%, highest-impact keywords only */
+  suggested_compact?: string;
+  /** Full rewrite version - comprehensive optimization (50-150 words) */
+  suggested_full?: string;
+  /** Word count of original summary */
+  original_word_count?: number;
+  /** Word count of compact version */
+  compact_word_count?: number;
+  /** Word count of full version */
+  full_word_count?: number;
 
   // Story 12.1: Judge fields (optional for backward compatibility)
   judge_score?: number; // Quality score from LLM judge (0-100)
@@ -146,7 +158,7 @@ export interface BulletSuggestion {
   /** Original bullet text */
   original: string;
 
-  /** Optimized bullet with keywords and metrics */
+  /** Optimized bullet with keywords and metrics (alias to suggested_full for backward compat) */
   suggested: string;
 
   /** Metrics or quantification added (e.g., ["30%", "5 engineers"]) */
@@ -163,6 +175,18 @@ export interface BulletSuggestion {
 
   /** Story 14.1: 1-2 sentence explanation of why this change helps */
   explanation?: string;
+
+  // Dual-length suggestions (Phase 2: Experience bullets)
+  /** Quick edit version - matches original length ±25%, highest-impact changes only */
+  suggested_compact?: string;
+  /** Full rewrite version - comprehensive optimization */
+  suggested_full?: string;
+  /** Word count of original bullet */
+  original_word_count?: number;
+  /** Word count of compact version */
+  compact_word_count?: number;
+  /** Word count of full version */
+  full_word_count?: number;
 
   // Story 12.1: Judge fields (optional for backward compatibility)
   judge_score?: number; // Quality score from LLM judge (0-100)

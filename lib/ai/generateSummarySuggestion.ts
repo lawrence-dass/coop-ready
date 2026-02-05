@@ -41,6 +41,7 @@ const MAX_JD_LENGTH = 3000;
 /**
  * Prompt template for summary suggestion
  * Uses XML-wrapped user content for prompt injection defense
+ * Generates both compact (same-length) and full (comprehensive) versions
  */
 const summaryPrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert specializing in professional summaries.
 
@@ -61,13 +62,21 @@ Your task is to optimize a professional summary by incorporating relevant keywor
 {preferenceSection}
 **Instructions:**
 1. Analyze the job description and identify 2-3 most relevant keywords that align with the summary
-2. Reframe the summary to naturally incorporate these keywords
+2. Create TWO versions of the optimized summary (see below)
 3. ONLY reframe existing experience - NEVER fabricate skills, experiences, or qualifications
 4. Make the language sound natural and professional (avoid AI-tell phrases)
-5. Keep the summary concise (2-4 sentences, 50-150 words)
-6. Maintain the user's voice and authenticity
-7. Estimate the point value this summary optimization would add to the ATS score
-8. Include a 1-2 sentence explanation of why this summary change improves ATS alignment (reference specific JD keywords or requirements)
+5. Maintain the user's voice and authenticity
+6. Estimate the point value this summary optimization would add to the ATS score
+7. Include a 1-2 sentence explanation of why this summary change improves ATS alignment (reference specific JD keywords or requirements)
+
+**Two-Version Output:**
+Generate BOTH versions in your response:
+
+1. **suggested_compact**: A quick-edit version that stays within {minCompactWords}-{maxCompactWords} words (matching the original length of {originalWordCount} words). Focus on the 2-3 highest-impact keyword substitutions only. This is for users who need a drop-in replacement without reformatting their resume.
+
+2. **suggested_full**: A comprehensive rewrite (50-150 words) maximizing ATS optimization with all relevant keywords.
+
+Both versions should incorporate keywords from the job description while maintaining authenticity.
 
 **Impact Tier Assignment:**
 Assign an impact tier based on magnitude of change:
@@ -87,6 +96,7 @@ Also assign a point_value for section-level calculations:
 - Point values must be realistic for actual ATS systems
 - Explanation must reference specific JD keywords (not generic phrases like "improves score")
 - Keep explanation concise (1-2 sentences, max 300 chars)
+- The compact version MUST stay within the specified word count range
 
 **⚠️ MANDATORY - ATS Context Priority (If Provided):**
 - You MUST incorporate ALL 🔴 REQUIRED keywords from the ATS context into your suggested summary
@@ -97,7 +107,8 @@ Also assign a point_value for section-level calculations:
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
-  "suggested": "Your optimized summary text here",
+  "suggested_compact": "Your quick-edit version here (same length as original)",
+  "suggested_full": "Your comprehensive optimized summary here (50-150 words)",
   "keywords_added": ["keyword1", "keyword2", "keyword3"],
   "impact": "high",
   "point_value": 8,
@@ -109,7 +120,11 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 // ============================================================================
 
 interface SummaryLLMResponse {
-  suggested: string;
+  // New dual-version fields
+  suggested_compact?: string;
+  suggested_full?: string;
+  // Legacy field (for backward compat with old prompts)
+  suggested?: string;
   keywords_added: string[];
   impact?: string;
   point_value?: number;
@@ -191,12 +206,23 @@ export async function generateSummarySuggestion(
     };
   }
 
+  // Calculate word counts for dual-length suggestions
+  const originalWordCount = resumeSummary.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const minCompactWords = Math.max(10, Math.floor(originalWordCount * 0.75));
+  const maxCompactWords = Math.ceil(originalWordCount * 1.25);
+
   console.log(
     '[SS:genSummary] Generating summary suggestion (' +
       resumeSummary?.length +
       ' chars summary, ' +
       jobDescription?.length +
-      ' chars JD)'
+      ' chars JD, ' +
+      originalWordCount +
+      ' words, compact target: ' +
+      minCompactWords +
+      '-' +
+      maxCompactWords +
+      ')'
   );
 
   // Truncate very long inputs to avoid timeout
@@ -276,15 +302,39 @@ export async function generateSummarySuggestion(
       atsContextSection,
       jobTypeGuidance,
       preferenceSection,
+      originalWordCount: originalWordCount.toString(),
+      minCompactWords: minCompactWords.toString(),
+      maxCompactWords: maxCompactWords.toString(),
     });
 
-      // Validate structure
-      if (!parsed.suggested || typeof parsed.suggested !== 'string') {
+      // Helper to count words
+      const countWords = (text: string): number =>
+        text.trim().split(/\s+/).filter(w => w.length > 0).length;
+
+      // Handle dual-version or legacy single-version response
+      const suggestedCompact = parsed.suggested_compact;
+      const suggestedFull = parsed.suggested_full || parsed.suggested;
+
+      // Validate structure - require at least full version
+      if (!suggestedFull || typeof suggestedFull !== 'string') {
         throw new Error('Invalid suggestion structure from LLM');
       }
 
       if (!parsed.keywords_added || !Array.isArray(parsed.keywords_added)) {
         throw new Error('Invalid keywords structure from LLM');
+      }
+
+      // Validate compact version if present
+      let validCompact = suggestedCompact;
+      if (suggestedCompact && typeof suggestedCompact === 'string') {
+        const compactWordCount = countWords(suggestedCompact);
+        if (compactWordCount < minCompactWords || compactWordCount > maxCompactWords) {
+          console.warn(
+            `[SS:genSummary] Compact length ${compactWordCount} outside target ${minCompactWords}-${maxCompactWords}, but keeping it`
+          );
+        }
+      } else {
+        validCompact = undefined;
       }
 
       // Validate point_value if present
@@ -318,14 +368,21 @@ export async function generateSummarySuggestion(
         }
       }
 
-      // Restore PII in suggested summary and explanation
-      const restoredSuggested = restorePII(parsed.suggested, summaryRedaction.redactionMap);
+      // Restore PII in suggested summaries and explanation
+      const restoredFull = restorePII(suggestedFull, summaryRedaction.redactionMap);
+      const restoredCompact = validCompact
+        ? restorePII(validCompact, summaryRedaction.redactionMap)
+        : undefined;
       const restoredExplanation = explanation
         ? restorePII(explanation, jdRedaction.redactionMap)
         : explanation;
 
-      // Detect AI-tell phrases in suggested summary
-      const suggestedAITellPhrases = detectAITellPhrases(restoredSuggested);
+      // Detect AI-tell phrases in suggested summary (use full version)
+      const suggestedAITellPhrases = detectAITellPhrases(restoredFull);
+
+      // Calculate final word counts
+      const compactWordCount = restoredCompact ? countWords(restoredCompact) : undefined;
+      const fullWordCount = countWords(restoredFull);
 
       console.log(
         '[SS:genSummary] Summary generated, keywords added:',
@@ -335,12 +392,23 @@ export async function generateSummarySuggestion(
         ', point_value:',
         pointValue,
         ', explanation:',
-        explanation ? 'present' : 'missing'
+        explanation ? 'present' : 'missing',
+        ', original words:',
+        originalWordCount,
+        ', compact words:',
+        compactWordCount ?? 'N/A',
+        ', full words:',
+        fullWordCount
       );
 
       return {
         original: resumeSummary, // Return full original, not truncated
-        suggested: restoredSuggested,
+        suggested: restoredFull, // Backward compat - alias to full
+        suggested_compact: restoredCompact,
+        suggested_full: restoredFull,
+        original_word_count: originalWordCount,
+        compact_word_count: compactWordCount,
+        full_word_count: fullWordCount,
         ats_keywords_added: parsed.keywords_added,
         ai_tell_phrases_rewritten: [
           ...originalAITellPhrases,

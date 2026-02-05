@@ -42,6 +42,7 @@ const MAX_RESUME_LENGTH = 4000;
 /**
  * Prompt template for experience suggestion
  * Uses XML-wrapped user content for prompt injection defense
+ * Generates both compact (same-length) and full (comprehensive) versions for each bullet
  */
 const experiencePrompt = ChatPromptTemplate.fromTemplate(`You are a resume optimization expert specializing in experience section enhancement.
 
@@ -64,7 +65,7 @@ Your task is to optimize professional experience bullets by incorporating releva
 {preferenceSection}
 **Instructions:**
 1. Extract each work experience entry with company, role, dates, and bullets
-2. For each bullet, reframe to incorporate relevant keywords from the JD naturally
+2. For each bullet, create TWO versions (see Two-Version Output below)
 3. Identify where metrics or quantification can be added (inferred from context, not fabricated)
 4. Maintain authenticity - ONLY enhance existing achievements, NEVER fabricate
 5. Prioritize impact, results, and quantifiable outcomes
@@ -72,6 +73,19 @@ Your task is to optimize professional experience bullets by incorporating releva
 7. Focus on achievements, not just tasks
 8. Assign an impact tier to each bullet optimization (critical/high/moderate)
 9. For each bullet, include 1-2 sentence explanation of how it aligns with JD requirements (reference specific keywords)
+
+**Two-Version Output:**
+For EACH bullet, generate BOTH versions:
+
+1. **suggested_compact**: A quick-edit version that stays within ±25% of the original bullet's word count.
+   - **CRITICAL: PRESERVE ALL EXISTING METRICS** - If the original has "20%", "2,000+ users", "3 projects", "team of 4", etc., these MUST appear in the compact version
+   - Focus on 1-2 highest-impact keyword substitutions while keeping the metrics intact
+   - This is for users who need a drop-in replacement without losing their quantified achievements
+
+2. **suggested_full**: A comprehensive rewrite maximizing ATS optimization with keywords and enhanced metrics.
+
+Both versions should incorporate keywords from the job description while maintaining authenticity.
+**The compact version must NEVER remove metrics that exist in the original bullet.**
 
 **Impact Tier Assignment:**
 For each bullet optimization, assign an impact tier:
@@ -95,6 +109,8 @@ Total point value = sum of all bullet optimizations. Realistic range: 20-40 poin
 - Point values must be realistic and reflect actual ATS impact
 - Each bullet explanation must reference specific JD keywords (not generic)
 - Keep explanations concise (1-2 sentences, max 200 chars each)
+- The compact version MUST stay close to the original word count
+- **NEVER remove existing metrics from compact version** - if original says "20%", "2,000+ users", "team of 4", etc., the compact MUST include them
 
 **⚠️ MANDATORY - ATS Context Priority (If Provided):**
 - You MUST incorporate ALL 🔴 REQUIRED keywords from the ATS context into your bullet improvements
@@ -115,22 +131,23 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
       "company": "Company Name",
       "role": "Job Title",
       "dates": "2020 - 2023",
-      "original_bullets": ["Original bullet 1", "Original bullet 2"],
+      "original_bullets": ["Wrote SQL queries for reports, reducing manual data entry by 20%"],
       "suggested_bullets": [
         {{
-          "original": "Managed project",
-          "suggested": "Led cross-functional team to deliver 3-month project, incorporating [keyword], reducing deployment time by 30%",
-          "metrics_added": ["3-month", "30%"],
-          "keywords_incorporated": ["keyword", "cross-functional"],
-          "impact": "critical",
-          "point_value": 8,
-          "explanation": "Adding 'cross-functional team leadership' directly addresses JD's requirement for collaboration skills."
+          "original": "Wrote SQL queries for reports, reducing manual data entry by 20%",
+          "suggested_compact": "Developed SQL queries for reporting, reducing manual entry by 20%",
+          "suggested_full": "Engineered optimized SQL queries for automated reporting systems, reducing manual data entry by 20% and improving data accuracy",
+          "metrics_added": ["20%"],
+          "keywords_incorporated": ["SQL", "automated", "data accuracy"],
+          "impact": "high",
+          "point_value": 6,
+          "explanation": "Preserves the 20% metric while adding SQL optimization keywords from JD."
         }}
       ]
     }}
   ],
   "total_point_value": 35,
-  "summary": "Reframed 8 bullets across 3 roles, added metrics to 5, incorporated 6 keywords."
+  "summary": "Reframed 8 bullets across 3 roles, preserved all existing metrics, incorporated 6 keywords."
 }}`);
 
 // ============================================================================
@@ -145,7 +162,11 @@ interface ExperienceLLMResponse {
     original_bullets: string[];
     suggested_bullets: Array<{
       original: string;
-      suggested: string;
+      // New dual-version fields
+      suggested_compact?: string;
+      suggested_full?: string;
+      // Legacy field (for backward compat)
+      suggested?: string;
       metrics_added: string[];
       keywords_incorporated: string[];
       impact?: string;
@@ -356,6 +377,10 @@ export async function generateExperienceSuggestion(
         }
       }
 
+      // Helper to count words
+      const countWords = (text: string): number =>
+        text.trim().split(/\s+/).filter(w => w.length > 0).length;
+
       // Normalize suggested_bullets to ensure all fields exist
       const validImpactTiers = ['critical', 'high', 'moderate'];
       const normalizedEntries = parsed.experience_entries.map((entry) => ({
@@ -416,15 +441,48 @@ export async function generateExperienceSuggestion(
             }
           }
 
+          // Handle dual-version or legacy single-version response
+          const suggestedCompact = bullet.suggested_compact;
+          const suggestedFull = bullet.suggested_full || bullet.suggested;
+
+          // Restore PII in original
+          const restoredOriginal = restorePII(
+            String(bullet.original || ''),
+            experienceRedaction.redactionMap
+          );
+
+          // Restore PII in suggested versions
+          const restoredFull = suggestedFull
+            ? restorePII(String(suggestedFull), experienceRedaction.redactionMap)
+            : '';
+          const restoredCompact = suggestedCompact && typeof suggestedCompact === 'string'
+            ? restorePII(suggestedCompact, experienceRedaction.redactionMap)
+            : undefined;
+
+          // Calculate word counts
+          const originalWordCount = countWords(restoredOriginal);
+          const fullWordCount = restoredFull ? countWords(restoredFull) : undefined;
+          const compactWordCount = restoredCompact ? countWords(restoredCompact) : undefined;
+
+          // Validate compact is within target range (soft warning)
+          if (restoredCompact && compactWordCount) {
+            const minCompactWords = Math.max(3, Math.floor(originalWordCount * 0.75));
+            const maxCompactWords = Math.ceil(originalWordCount * 1.25);
+            if (compactWordCount < minCompactWords || compactWordCount > maxCompactWords) {
+              console.warn(
+                `[SS:genExp] Compact bullet length ${compactWordCount} outside target ${minCompactWords}-${maxCompactWords}, but keeping it`
+              );
+            }
+          }
+
           return {
-            original: restorePII(
-              String(bullet.original || ''),
-              experienceRedaction.redactionMap
-            ),
-            suggested: restorePII(
-              String(bullet.suggested || ''),
-              experienceRedaction.redactionMap
-            ),
+            original: restoredOriginal,
+            suggested: restoredFull, // Backward compat - alias to full
+            suggested_compact: restoredCompact,
+            suggested_full: restoredFull,
+            original_word_count: originalWordCount,
+            compact_word_count: compactWordCount,
+            full_word_count: fullWordCount,
             metrics_added: Array.isArray(bullet.metrics_added)
               ? bullet.metrics_added
               : [],
