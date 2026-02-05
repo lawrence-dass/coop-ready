@@ -7,10 +7,12 @@
  * Context includes:
  * - careerGoal: User's primary career goal from onboarding
  * - targetIndustries: Industries the user is targeting
+ * - firstName/lastName: For PII redaction
  */
 
 import { createClient } from './server';
 import type { ActionResponse, UserContext, CareerGoal } from '@/types';
+import type { UserName } from '@/lib/ai/redactPII';
 
 /**
  * Valid career goal values from onboarding
@@ -112,5 +114,52 @@ export async function getUserContext(): Promise<ActionResponse<UserContext>> {
       data: {},
       error: null,
     };
+  }
+}
+
+/**
+ * Get user's name for PII redaction
+ *
+ * Returns null values if:
+ * - User is not authenticated
+ * - User is anonymous
+ * - User hasn't completed onboarding (no name stored)
+ *
+ * @returns UserName with firstName and lastName (null if not available)
+ */
+export async function getUserName(): Promise<UserName> {
+  const supabase = await createClient();
+
+  try {
+    // Get current user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    // Return null for anonymous users or auth errors
+    if (authError || !user || user.is_anonymous) {
+      return { firstName: null, lastName: null };
+    }
+
+    // Query users table for name
+    const { data, error } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single();
+
+    if (error) {
+      console.error('[SS:getUserName] Error fetching user name:', error.message);
+      return { firstName: null, lastName: null };
+    }
+
+    return {
+      firstName: data?.first_name || null,
+      lastName: data?.last_name || null,
+    };
+  } catch (err) {
+    console.error('[SS:getUserName] Unexpected error:', err);
+    return { firstName: null, lastName: null };
   }
 }

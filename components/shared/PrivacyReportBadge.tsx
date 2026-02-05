@@ -27,6 +27,9 @@ export function PrivacyReportBadge({
 
   // Build readable breakdown text
   const parts: string[] = [];
+  if (breakdown.names && breakdown.names > 0) {
+    parts.push('name');
+  }
   if (breakdown.emails > 0) {
     parts.push(
       `${breakdown.emails} email${breakdown.emails > 1 ? 's' : ''}`

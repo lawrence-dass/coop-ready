@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Clock, Briefcase } from 'lucide-react';
+import { Clock, Briefcase, FileText } from 'lucide-react';
 import type { HistorySession } from '@/types/history';
 import { ROUTES } from '@/lib/constants/routes';
 
@@ -62,6 +62,16 @@ export function RecentScansCard({ sessions }: RecentScansCardProps) {
                   <p className="text-sm text-muted-foreground ml-6">
                     {session.companyName}
                   </p>
+                )}
+
+                {/* Resume name */}
+                {session.resumeName && (
+                  <div className="flex items-center gap-2 mt-1.5 ml-6">
+                    <FileText className="h-3 w-3 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground truncate">
+                      {session.resumeName}
+                    </p>
+                  </div>
                 )}
 
                 {/* Date */}

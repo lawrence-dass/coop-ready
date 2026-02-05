@@ -27,9 +27,15 @@
 # misc
 .DS_Store
 *.pem
+# Personal Claude Code preferences (local)
+CLAUDE.local.md
 
 # IDE / Editor configs
-.claude/
+.claude/*
+!.claude/rules          # Version-controlled Claude Code rules (shared with team)
+!.claude/rules/
+!.claude/rules/*
+!.claude/rules/**/*
 .codex/
 .cursor/
 .gemini/

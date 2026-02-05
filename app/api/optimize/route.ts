@@ -32,8 +32,10 @@ import {
 import { extractQualificationsBoth } from '@/lib/ai/extractQualifications';
 import { detectJobType } from '@/lib/scoring';
 import { createClient } from '@/lib/supabase/server';
+import { getUserName } from '@/lib/supabase/user-context';
 import { withTimeout } from '@/lib/utils/withTimeout';
 import { redactPII } from '@/lib/ai/redactPII';
+import type { UserName } from '@/lib/ai/redactPII';
 import { aggregatePIIStats } from '@/lib/ai/aggregatePrivacyStats';
 
 // ============================================================================
@@ -163,10 +165,18 @@ async function runOptimizationPipeline(
       request.session_id.slice(0, 8) + '...'
     );
 
-    // Step 0: Generate privacy report (what PII will be redacted)
+    // Step 0a: Fetch user name for PII redaction (authenticated users only)
+    // This allows us to redact the user's name from resume content
+    const userName: UserName = await getUserName();
+    if (userName.firstName || userName.lastName) {
+      console.log('[SS:optimize] User name available for redaction');
+    }
+
+    // Step 0b: Generate privacy report (what PII will be redacted)
     // This builds user trust by showing transparency
-    const resumePII = redactPII(request.resume_content);
-    const jdPII = redactPII(request.jd_content);
+    // Pass userName to redact names in header section
+    const resumePII = redactPII(request.resume_content, userName);
+    const jdPII = redactPII(request.jd_content); // JD doesn't have user's name
     const privacyReport = aggregatePIIStats([resumePII.stats, jdPII.stats]);
 
     console.log('[SS:optimize] Privacy report:', privacyReport);

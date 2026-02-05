@@ -54,9 +54,10 @@ export async function getRecentSessions(): Promise<
     }
 
     // Fetch recent sessions for this user
+    // Now using job_title, company_name, and resume_name columns directly
     const { data: sessions, error: dbError } = await supabase
       .from('sessions')
-      .select('id, created_at, title, resume_content, jd_content, ats_score, analysis, suggestions')
+      .select('id, created_at, title, job_title, company_name, resume_name, jd_content, ats_score, suggestions')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -72,14 +73,17 @@ export async function getRecentSessions(): Promise<
     }
 
     // Transform to HistorySession format
+    // Now using stored job_title, company_name, resume_name columns directly
     const historySessions: HistorySession[] = (sessions || []).map(
       (session) => ({
         id: session.id,
         createdAt: new Date(session.created_at),
-        resumeName: extractResumeName(session.resume_content),
-        // Use stored title if available, otherwise fall back to extraction for legacy sessions
-        jobTitle: (session as any).title || extractJobTitle(session.jd_content),
-        companyName: extractCompanyName(session.jd_content),
+        // Use stored resume_name, fallback to "Uploaded Resume" for display
+        resumeName: (session as any).resume_name || null,
+        // Use stored job_title, fallback to title for legacy sessions, then extraction
+        jobTitle: (session as any).job_title || (session as any).title || extractJobTitle(session.jd_content),
+        // Use stored company_name, fallback to extraction for legacy sessions
+        companyName: (session as any).company_name || extractCompanyName(session.jd_content),
         jdPreview: session.jd_content
           ? session.jd_content.slice(0, 100)
           : null,
@@ -107,15 +111,6 @@ export async function getRecentSessions(): Promise<
   }
 }
 
-/**
- * Extract resume name from resume content (placeholder)
- * For now returns null - can be enhanced later
- */
-function extractResumeName(resumeContent: string | null): string | null {
-  if (!resumeContent) return null;
-  // Simple extraction: return first 50 chars as name placeholder
-  return 'Resume';
-}
 
 /**
  * Extract job title from job description content

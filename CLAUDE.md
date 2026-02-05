@@ -1,8 +1,4 @@
-# CLAUDE.md - SubmitSmart Quick Reference
-
-> **Full details:** `_bmad-output/project-context.md`
-
----
+# CLAUDE.md - SubmitSmart
 
 ## Quick Start
 
@@ -11,82 +7,63 @@ npm run dev                          # Start dev server
 npm run build && npm run test:all    # Build + full test suite
 ```
 
----
-
 ## Tech Stack
 
 Next.js 16 + TypeScript + React 19 | Tailwind 4 + shadcn/ui | Supabase + LangChain | Zustand | Vitest + Playwright
 
-**Full stack details:** `_bmad-output/project-context.md`
+## Critical Rules
 
----
+> Detailed rules auto-loaded from `.claude/rules/`
 
-## Critical Rules (Must Follow)
+1. **ActionResponse Pattern** - Never throw from server actions (see `.claude/rules/action-response.md`)
+2. **Naming** - snake_case DB, camelCase TS (see `.claude/rules/naming-conventions.md`)
+3. **Anti-patterns** - Common mistakes to avoid (see `.claude/rules/anti-patterns.md`)
 
-**1. ActionResponse Pattern (MANDATORY)**
-```typescript
-{ data: T, error: null } | { data: null, error: ErrorObject }
-```
-Never throw from server actions. Details: `project-context.md`
+## Directory Map
 
-**2. Error Codes**
-`INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `PARSE_ERROR`, `LLM_TIMEOUT`, `LLM_ERROR`, `RATE_LIMITED`, `VALIDATION_ERROR`
+| Directory | Purpose | Create New Files Here When... |
+|-----------|---------|-------------------------------|
+| `/app/api/` | API routes | Need 60s timeout or streaming |
+| `/actions/` | Server Actions | Quick operations (< 10s) |
+| `/lib/ai/` | LLM operations | ANY Claude/LangChain code |
+| `/lib/scoring/` | ATS scoring | Deterministic score logic |
+| `/lib/supabase/` | Database access | New queries/mutations |
+| `/lib/parsers/` | File parsing | PDF/DOCX extraction |
+| `/components/shared/` | Reusable UI | Business components |
+| `/components/ui/` | shadcn (READ-ONLY) | **NEVER** - extend via wrappers |
+| `/store/` | Zustand stores | New global state |
 
-**3. Directory Structure**
-```
-/app/api/           → API routes (60s timeout for LLM)
-/lib/ai/            → ALL LLM operations (server-side only)
-/lib/scoring/       → Deterministic ATS scoring engine
-/lib/supabase/      → Database access
-/components/shared/ → Reusable UI
-/store/             → Zustand stores
-```
+## Key Constraints
 
-**4. LLM Security**
-- Wrap user content: `<user_content>${text}</user_content>`
-- Server-side only, never expose API keys
+| Constraint | Value |
+|------------|-------|
+| LLM timeout | 60 seconds |
+| File size | 5MB max |
+| Cost ceiling | $0.10/optimization |
 
-**5. ATS Scoring**
-- Use deterministic V2.1 algorithm (no LLM for scoring)
-- LLM only for extraction (keywords, qualifications)
-- See: `lib/scoring/` module
+## Decision Guide
 
----
+| If you need to... | Do this |
+|-------------------|---------|
+| Add LLM logic | Create in `/lib/ai/`, call from API route |
+| Add database query | Create in `/lib/supabase/`, call from action |
+| Add UI component | Create in `/components/shared/` |
+| Modify shadcn component | Create wrapper, don't edit `/components/ui/` |
+| Add global state | Create store in `/store/` |
 
 ## Documentation Index
 
 | What | Where |
 |------|-------|
-| **All rules & patterns** | `_bmad-output/project-context.md` |
-| **Architecture** | `_bmad-output/planning-artifacts/architecture.md` |
-| **Testing** | `docs/TESTING.md` |
-| **Environment** | `docs/ENVIRONMENT.md` |
-| **Database** | `docs/DATABASE.md` |
-| **ATS Scoring Spec** | `docs/reference/ats-scoring-system-specification-v2.1.md` |
-| **LLM Prompts** | `docs/reference/LLM_PROMPTS.md` |
+| Full context | `_bmad-output/project-context.md` |
+| Architecture | `_bmad-output/planning-artifacts/architecture.md` |
+| Testing | `docs/TESTING.md` |
+| ATS Scoring | `docs/reference/ats-scoring-system-specification-v2.1.md` |
+| Database | `docs/DATABASE.md` |
+| Environment | `docs/ENVIRONMENT.md` |
 
----
+## Recent Changes (Feb 2026)
 
-## Key Constraints
-
-- LLM timeout: 60s max
-- File size: 5MB max
-- Cost: $0.10 per optimization
-- Sessions: Persist across refresh (Zustand + Supabase)
-
----
-
-## Recent Major Changes
-
-**Deterministic ATS Scoring (Jan 2026)**
-- Replaced LLM scoring with algorithmic V2/V2.1
-- Eliminates 15-20 point score inflation
-- Module: `/lib/scoring/` (12 files, 2,500 lines)
-- Details: `docs/reference/ats-scoring-system-specification-v2.1.md`
-
-**Education Suggestions Fix (Jan 2026)**
-- Eliminated resume fraud (fake coursework/projects)
-- Honest formatting improvements only
-- Details: `docs/EDUCATION-FABRICATION-FIX.md`
-
----
+- **Anonymous User Removal** - All users must sign in; simplified RLS (user_id only)
+- **Deterministic ATS Scoring** - V2.1 algorithm in `/lib/scoring/` (no LLM for scoring)
+- **Modular Rules** - Rules now in `.claude/rules/` with path-scoped loading

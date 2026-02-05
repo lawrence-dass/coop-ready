@@ -516,4 +516,165 @@ SOFTWARE ENGINEER | Google LLC | 2020 to 2023
       expect(redactedText).toBe(experience);
     });
   });
+
+  // ============================================================================
+  // NAME REDACTION TESTS
+  // ============================================================================
+
+  describe('Name Redaction (header-only)', () => {
+    it('redacts full name in header', () => {
+      const resume = `John Smith
+john.smith@email.com
+San Francisco, CA
+
+SUMMARY
+Experienced software engineer...`;
+
+      const { redactedText, stats } = redactPII(resume, {
+        firstName: 'John',
+        lastName: 'Smith',
+      });
+
+      expect(redactedText).toContain('[CANDIDATE_NAME]');
+      expect(redactedText).not.toContain('John Smith');
+      expect(stats.names).toBeGreaterThan(0);
+    });
+
+    it('redacts name in "LastName, FirstName" format', () => {
+      const resume = `Smith, John
+Professional Resume
+
+EXPERIENCE`;
+
+      const { redactedText, stats } = redactPII(resume, {
+        firstName: 'John',
+        lastName: 'Smith',
+      });
+
+      expect(redactedText).toContain('[CANDIDATE_NAME]');
+      expect(stats.names).toBeGreaterThan(0);
+    });
+
+    it('is case-insensitive when redacting names', () => {
+      const resume = `JOHN SMITH
+john@example.com
+
+Work Experience`;
+
+      const { redactedText, stats } = redactPII(resume, {
+        firstName: 'John',
+        lastName: 'Smith',
+      });
+
+      expect(redactedText).toContain('[CANDIDATE_NAME]');
+      expect(stats.names).toBeGreaterThan(0);
+    });
+
+    it('only redacts names in header (first 500 chars)', () => {
+      // Create a resume where name appears both in header and later
+      const header = 'John Smith\njohn@email.com\n';
+      const body = 'A'.repeat(600) + '\nWorked with John Smith on projects';
+      const resume = header + body;
+
+      const { redactedText, stats } = redactPII(resume, {
+        firstName: 'John',
+        lastName: 'Smith',
+      });
+
+      // Header name should be redacted
+      expect(redactedText.slice(0, 100)).toContain('[CANDIDATE_NAME]');
+      // Body name should NOT be redacted (outside header region)
+      expect(redactedText).toContain('Worked with John Smith');
+      expect(stats.names).toBeGreaterThan(0);
+    });
+
+    it('does not redact names when userName is not provided', () => {
+      const resume = `John Smith
+john@email.com`;
+
+      const { redactedText, stats } = redactPII(resume);
+
+      expect(redactedText).toContain('John Smith');
+      expect(stats.names).toBe(0);
+    });
+
+    it('does not redact names when userName has null values', () => {
+      const resume = `John Smith
+john@email.com`;
+
+      const { redactedText, stats } = redactPII(resume, {
+        firstName: null,
+        lastName: null,
+      });
+
+      expect(redactedText).toContain('John Smith');
+      expect(stats.names).toBe(0);
+    });
+
+    it('skips short names (< 3 chars) for individual matching', () => {
+      const resume = `Li Wang
+li@email.com
+
+I will be working...`;
+
+      const { redactedText, stats } = redactPII(resume, {
+        firstName: 'Li',
+        lastName: 'Wang',
+      });
+
+      // Full name "Li Wang" should be redacted (2+ char each)
+      // But "Li" alone won't match (too short for individual)
+      // This prevents false positives like matching "Li" in "LinkedIn"
+      expect(redactedText).toContain('[CANDIDATE_NAME]');
+      // "will" should not be affected
+      expect(redactedText).toContain('will');
+    });
+
+    it('handles special characters in names', () => {
+      const resume = `Mary O'Brien
+mary@email.com`;
+
+      const { redactedText, stats } = redactPII(resume, {
+        firstName: 'Mary',
+        lastName: "O'Brien",
+      });
+
+      // Should handle the apostrophe correctly
+      expect(stats.names).toBeGreaterThan(0);
+    });
+
+    it('restores name correctly after LLM processing', () => {
+      const resume = `John Smith
+john@email.com`;
+
+      const { redactionMap } = redactPII(resume, {
+        firstName: 'John',
+        lastName: 'Smith',
+      });
+
+      // Simulate LLM returning the redacted placeholder
+      const llmResponse = 'Update [CANDIDATE_NAME]\'s summary section';
+
+      const restored = restorePII(llmResponse, redactionMap);
+
+      // Name should be restored
+      expect(restored).toContain('John Smith');
+      expect(restored).not.toContain('[CANDIDATE_NAME]');
+    });
+
+    it('includes names in stats count', () => {
+      const resume = `John Smith
+john.smith@email.com
+(555) 123-4567`;
+
+      const { stats } = redactPII(resume, {
+        firstName: 'John',
+        lastName: 'Smith',
+      });
+
+      expect(stats.names).toBeGreaterThan(0);
+      expect(stats.emails).toBe(1);
+      expect(stats.phones).toBe(1);
+    });
+  });
 });

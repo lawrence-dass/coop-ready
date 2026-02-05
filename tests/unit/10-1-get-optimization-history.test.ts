@@ -29,9 +29,13 @@ describe('Story 10.1: getOptimizationHistory Server Action', () => {
       {
         id: 'session-1',
         created_at: '2026-01-27T10:00:00Z',
+        title: 'Senior Developer - TechCorp',
+        job_title: 'Senior Developer',
+        company_name: 'TechCorp',
+        resume_name: 'john_smith_resume.pdf',
         resume_content: 'John Smith\nSoftware Engineer\nExperience...',
         jd_content: 'Senior Developer\nat TechCorp\nWe are seeking...',
-        analysis: { atsScore: { overall: 85 } },
+        ats_score: { overall: 85 },
         summary_suggestion: { suggestedText: 'Improved summary' },
         skills_suggestion: { suggestedText: 'Add React, TypeScript' },
         experience_suggestion: null,
@@ -39,9 +43,13 @@ describe('Story 10.1: getOptimizationHistory Server Action', () => {
       {
         id: 'session-2',
         created_at: '2026-01-26T15:30:00Z',
+        title: 'Data Analyst',
+        job_title: 'Data Analyst',
+        company_name: null,
+        resume_name: 'jane_doe_cv.pdf',
         resume_content: 'Jane Doe\nData Scientist\nSkills...',
         jd_content: 'Data Analyst\nRequired skills: Python, SQL',
-        analysis: { atsScore: { overall: 72 } },
+        ats_score: { overall: 72 },
         summary_suggestion: null,
         skills_suggestion: { suggestedText: 'Add Python' },
         experience_suggestion: { suggestedText: 'Highlight ML projects' },
@@ -189,15 +197,19 @@ describe('Story 10.1: getOptimizationHistory Server Action', () => {
   });
 
   test('[P1] 10.1-UNIT-005: should extract resume name, job title, and company from content', async () => {
-    // GIVEN: Authenticated user with session containing extractable metadata
+    // GIVEN: Authenticated user with session - tests fallback extraction from content for legacy sessions
     const mockUser = { id: 'user-123' };
     const mockSessions = [
       {
         id: 'session-1',
         created_at: '2026-01-27T10:00:00Z',
+        title: null, // Legacy session without title
+        job_title: null, // No stored job_title - should fallback to extraction
+        company_name: null, // No stored company_name - should fallback to extraction
+        resume_name: null, // No stored resume_name - should fallback to extraction
         resume_content: 'John Smith\nSoftware Engineer\n\nExperience:\nDeveloped...',
         jd_content: 'Senior Full Stack Developer\nat TechCorp Inc.\n\nRequirements:\nWe are seeking...',
-        analysis: { atsScore: { overall: 88 } },
+        ats_score: { overall: 88 },
         summary_suggestion: { suggestedText: 'Improved summary' },
         skills_suggestion: null,
         experience_suggestion: null,
