@@ -27,6 +27,7 @@ import {
   invokeWithActionResponse,
 } from './chains';
 import { redactPII, restorePII } from './redactPII';
+import type { SectionATSContext } from './buildSectionATSContext';
 
 // ============================================================================
 // CONSTANTS
@@ -79,6 +80,7 @@ Recommendations for FUTURE actions (certifications, courses) must be clearly mar
 </job_description>
 
 {resumeSection}
+{atsContextSection}
 {jobTypeGuidance}
 {preferenceSection}
 **Instructions:**
@@ -131,6 +133,12 @@ Note: These are SUGGESTIONS for future action, not claims about current credenti
 - Do NOT fabricate GPAs, honors, or awards - only suggest format improvements if they exist
 - Only suggest 1-3 bullets for sparse sections (formatting + recommendations only)
 - For co-op/internship: If education is sparse, focus on formatting quality and future certification recommendations
+
+**⚠️ MANDATORY - ATS Context Priority (If Provided):**
+- If ATS context lists 🔴 REQUIRED qualifications/certifications, prioritize relevant certification RECOMMENDATIONS
+- REQUIRED certifications have 3-6x more point impact than PREFERRED
+- Focus on formatting fixes that improve ATS parseability for education entries
+- Note: Education section cannot add degrees/qualifications the user doesn't have - only recommend future actions
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
@@ -355,7 +363,8 @@ export async function generateEducationSuggestion(
   jobDescription: string,
   resumeContent?: string,
   preferences?: OptimizationPreferences | null,
-  userContext?: UserContext
+  userContext?: UserContext,
+  atsContext?: SectionATSContext
 ): Promise<ActionResponse<EducationSuggestion>> {
   // Validation
   if (!resumeEducation || resumeEducation.trim().length === 0) {
@@ -449,6 +458,19 @@ export async function generateEducationSuggestion(
     ? `\n${buildPreferencePrompt(preferences, userContext)}\n`
     : '';
 
+  // Build ATS context section if provided
+  const atsContextSection = atsContext
+    ? `<ats_analysis_context>\n${atsContext.promptContext}\n</ats_analysis_context>\n\n`
+    : '';
+
+  if (atsContext) {
+    console.log('[SS:genEducation] ATS context provided:', {
+      terminologyFixes: atsContext.terminologyFixes.length,
+      potentialAdditions: atsContext.potentialAdditions.length,
+      opportunities: atsContext.opportunities.length,
+    });
+  }
+
   // Log the prompt sections being used
   console.log('[SS:genEducation] Building prompt with:');
   console.log(
@@ -476,6 +498,7 @@ export async function generateEducationSuggestion(
       education: processedEducation,
       jobDescription: processedJD,
       resumeSection,
+      atsContextSection,
       jobTypeGuidance,
       preferenceSection,
     });

@@ -24,6 +24,7 @@ import {
   invokeWithActionResponse,
 } from './chains';
 import { redactPII, restorePII } from './redactPII';
+import type { SectionATSContext } from './buildSectionATSContext';
 
 // ============================================================================
 // CONSTANTS
@@ -55,6 +56,7 @@ Your task is to analyze a skills section and optimize it for a specific job desc
 
 {resumeSection}
 {educationSection}
+{atsContextSection}
 {jobTypeGuidance}
 {preferenceSection}
 **Instructions:**
@@ -90,12 +92,19 @@ Total point value = sum of all skill additions. Realistic range: 10-25 points fo
 - Explanation must connect suggestion to specific JD keywords (not generic phrases)
 - Keep explanation concise (1-2 sentences, max 300 chars)
 
+**⚠️ MANDATORY - ATS Context Priority (If Provided):**
+- You MUST suggest ALL 🔴 REQUIRED keywords from the ATS context BEFORE any 🟡 PREFERRED keywords
+- REQUIRED keywords have 3-6x more point impact than PREFERRED keywords
+- Missing REQUIRED keywords CAP the user's score - they cannot achieve a high score without them
+- Your skill_additions array MUST include REQUIRED keywords first
+- VERIFICATION: Before returning, confirm every 🔴 REQUIRED keyword from ATS context appears in skill_additions
+
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
   "existing_skills": ["skill1", "skill2"],
   "matched_keywords": ["matched_skill1", "matched_skill2"],
   "missing_but_relevant": [
-    {{ "skill": "Docker", "reason": "Job requires containerization; you have DevOps experience", "impact": "critical", "point_value": 6 }}
+    {{ "skill": "Docker", "reason": "Job requires containerization; you have DevOps experience", "impact": "critical", "point_value": 6, "ats_gap_addressed": "Docker (+12 pts)" }}
   ],
   "skill_additions": ["Docker", "Kubernetes"],
   "skill_removals": [
@@ -149,6 +158,7 @@ function createSkillsSuggestionChain() {
  * - Suggests additions based on user's experience
  * - Recommends removals for less relevant skills
  * - Applies user optimization preferences
+ * - Uses ATS context for consistency with analysis (if provided)
  * - Returns structured ActionResponse
  *
  * Uses LCEL chain composition for better observability and composability.
@@ -163,6 +173,7 @@ function createSkillsSuggestionChain() {
  * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
  * @param userContext - User context from onboarding (optional, for LLM personalization)
  * @param resumeEducation - User's education section (optional, for co-op/internship context)
+ * @param atsContext - ATS analysis context for consistency (optional, for gap-aware suggestions)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSkillsSuggestion(
@@ -171,7 +182,8 @@ export async function generateSkillsSuggestion(
   resumeContent?: string,
   preferences?: OptimizationPreferences | null,
   userContext?: UserContext,
-  resumeEducation?: string
+  resumeEducation?: string,
+  atsContext?: SectionATSContext
 ): Promise<ActionResponse<SkillsSuggestion>> {
   // Validation
   if (!resumeSkills || resumeSkills.trim().length === 0) {
@@ -267,6 +279,19 @@ export async function generateSkillsSuggestion(
     ? `\n${buildPreferencePrompt(preferences, userContext)}\n`
     : '';
 
+  // Build ATS context section if provided
+  const atsContextSection = atsContext
+    ? `<ats_analysis_context>\n${atsContext.promptContext}\n</ats_analysis_context>\n\n`
+    : '';
+
+  if (atsContext) {
+    console.log('[SS:genSkills] ATS context provided:', {
+      terminologyFixes: atsContext.terminologyFixes.length,
+      potentialAdditions: atsContext.potentialAdditions.length,
+      opportunities: atsContext.opportunities.length,
+    });
+  }
+
   // Create and invoke LCEL chain
   const chain = createSkillsSuggestionChain();
 
@@ -276,6 +301,7 @@ export async function generateSkillsSuggestion(
       jobDescription: processedJD,
       resumeSection,
       educationSection,
+      atsContextSection,
       jobTypeGuidance,
       preferenceSection,
     });

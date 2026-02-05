@@ -22,11 +22,30 @@ export async function extractDocxText(
       };
     }
 
-    // Convert to ArrayBuffer
+    // Convert File to Buffer for Node.js mammoth API
+    // Server actions run in Node.js context where Buffer is more reliable than ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
 
-    // Extract text using mammoth
-    const result = await mammoth.extractRawText({ arrayBuffer });
+    // Validate arrayBuffer before conversion
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      console.error('[SS:docx] Invalid arrayBuffer:', {
+        hasArrayBuffer: !!arrayBuffer,
+        byteLength: arrayBuffer?.byteLength
+      });
+      return {
+        data: null,
+        error: {
+          code: 'PARSE_ERROR',
+          message: 'Failed to read file content. Please try again.'
+        }
+      };
+    }
+
+    const buffer = Buffer.from(arrayBuffer);
+    console.log('[SS:docx] Converted to Buffer:', buffer.length, 'bytes');
+
+    // Extract text using mammoth with Buffer (Node.js API)
+    const result = await mammoth.extractRawText({ buffer });
 
     // Check if extraction returned any text
     if (!result.value || result.value.trim().length === 0) {
@@ -55,6 +74,8 @@ export async function extractDocxText(
   } catch (error) {
     // Handle specific error cases
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[SS:docx] ACTUAL ERROR:', error);
+    console.error('[SS:docx] Error message:', message);
 
     let errorMessage = 'Failed to extract text from DOCX. Please try a different file.';
 

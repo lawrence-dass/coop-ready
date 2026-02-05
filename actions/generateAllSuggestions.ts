@@ -20,6 +20,8 @@ import type {
   EducationSuggestion,
 } from '@/types/suggestions';
 import type { SuggestionContext, JudgeResult, JudgeCriteriaScores } from '@/types/judge';
+import type { KeywordAnalysisResult } from '@/types/analysis';
+import type { ATSScoreV21 } from '@/lib/scoring/types';
 import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
@@ -31,6 +33,10 @@ import { collectQualityMetrics } from '@/lib/metrics/qualityMetrics';
 import { logQualityMetrics } from '@/lib/metrics/metricsLogger';
 import { createClient } from '@/lib/supabase/server';
 import { getUserContext } from '@/lib/supabase/user-context';
+import {
+  buildSectionATSContext,
+  type SectionATSContext,
+} from '@/lib/ai/buildSectionATSContext';
 
 // ============================================================================
 // TYPES
@@ -146,6 +152,91 @@ async function judgeSectionSuggestion(
 }
 
 // ============================================================================
+// ATS CONTEXT HELPER
+// ============================================================================
+
+/**
+ * Check if ATS score is V21 format
+ */
+function isATSScoreV21(score: unknown): score is ATSScoreV21 {
+  return (
+    score !== null &&
+    typeof score === 'object' &&
+    'metadata' in score &&
+    (score as { metadata?: { version?: string } }).metadata?.version === 'v2.1'
+  );
+}
+
+/**
+ * Fetch ATS context from session and build section-specific contexts
+ * Returns null if ATS data is not available (graceful degradation)
+ */
+async function fetchATSContextsForSession(
+  sessionId: string,
+  resumeText: string
+): Promise<{
+  summary: SectionATSContext | undefined;
+  skills: SectionATSContext | undefined;
+  experience: SectionATSContext | undefined;
+  education: SectionATSContext | undefined;
+}> {
+  const emptyResult = {
+    summary: undefined,
+    skills: undefined,
+    experience: undefined,
+    education: undefined,
+  };
+
+  try {
+    const supabase = await createClient();
+
+    // Fetch session with ATS data
+    const { data: session, error } = await supabase
+      .from('sessions')
+      .select('ats_score, keyword_analysis')
+      .eq('id', sessionId)
+      .maybeSingle();
+
+    if (error || !session) {
+      console.log('[SS:generateAll] Could not fetch session for ATS context:', error?.message || 'not found');
+      return emptyResult;
+    }
+
+    const atsScore = session.ats_score;
+    const keywordAnalysis = session.keyword_analysis as KeywordAnalysisResult | null;
+
+    if (!atsScore || !keywordAnalysis) {
+      console.log('[SS:generateAll] No ATS score or keyword analysis in session');
+      return emptyResult;
+    }
+
+    if (!isATSScoreV21(atsScore)) {
+      console.log('[SS:generateAll] ATS score is not V21 format, skipping context');
+      return emptyResult;
+    }
+
+    console.log('[SS:generateAll] Building ATS context for all sections');
+
+    // Build context for each section
+    const contextInput = {
+      atsScore,
+      keywordAnalysis,
+      resumeText,
+    };
+
+    return {
+      summary: buildSectionATSContext('summary', contextInput),
+      skills: buildSectionATSContext('skills', contextInput),
+      experience: buildSectionATSContext('experience', contextInput),
+      education: buildSectionATSContext('education', contextInput),
+    };
+  } catch (error) {
+    console.error('[SS:generateAll] Error fetching ATS context:', error);
+    return emptyResult;
+  }
+}
+
+// ============================================================================
 // MAIN ACTION
 // ============================================================================
 
@@ -208,6 +299,11 @@ export async function generateAllSuggestions(
     const userContextResult = await getUserContext();
     const userContext = userContextResult.data ?? {};
 
+    // Fetch ATS context from session for gap-aware suggestions
+    // This ensures suggestions address REQUIRED keywords before PREFERRED
+    const atsContexts = await fetchATSContextsForSession(sessionId, resumeContent);
+    const hasATSContext = !!(atsContexts.summary || atsContexts.skills || atsContexts.experience || atsContexts.education);
+
     console.log(
       '[SS:generateAll] Starting suggestion generation for session:',
       sessionId.slice(0, 8) + '...',
@@ -215,20 +311,30 @@ export async function generateAllSuggestions(
       preferences ? `with preferences (tone: ${preferences.tone})` : 'with default preferences',
       userContext.careerGoal ? `goal=${userContext.careerGoal}` : 'no goal',
       userContext.targetIndustries?.length ? `industries=${userContext.targetIndustries.join(',')}` : 'no industries',
-      usedFallback ? '(using full resume as fallback for missing sections)' : ''
+      usedFallback ? '(using full resume as fallback for missing sections)' : '',
+      hasATSContext ? '[ATS context: LOADED]' : '[ATS context: not available]'
     );
+
+    if (hasATSContext && atsContexts.skills) {
+      console.log('[SS:generateAll] ATS context for skills:', {
+        terminologyFixes: atsContexts.skills.terminologyFixes.length,
+        potentialAdditions: atsContexts.skills.potentialAdditions.length,
+        opportunities: atsContexts.skills.opportunities.length,
+      });
+    }
 
     // Fire all 4 generation calls in parallel (Story 11.2: pass preferences, userContext)
     // Pass resumeEducation for co-op/internship context awareness
+    // Pass atsContext for gap-aware suggestions (REQUIRED keywords prioritized over PREFERRED)
     // Education is only generated if education section exists in resume
     const [summaryResult, skillsResult, experienceResult, educationResult] =
       await Promise.allSettled([
-        generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences, userContext, resumeEducation),
-        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences, userContext, resumeEducation),
-        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences, userContext, resumeEducation),
+        generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences, userContext, resumeEducation, atsContexts.summary),
+        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.skills),
+        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.experience),
         // Only generate education suggestions if education section exists
         effectiveEducation
-          ? generateEducationSuggestion(effectiveEducation, jobDescription, resumeContent, preferences, userContext)
+          ? generateEducationSuggestion(effectiveEducation, jobDescription, resumeContent, preferences, userContext, atsContexts.education)
           : Promise.resolve({ data: null, error: null }),
       ]);
 

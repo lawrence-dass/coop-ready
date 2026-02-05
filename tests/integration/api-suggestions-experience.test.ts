@@ -181,7 +181,10 @@ describe('/api/suggestions/experience', () => {
         'Experience section',
         'Job description',
         'Full resume',
-        undefined // preferences parameter (Story 11.2, optional)
+        undefined, // preferences parameter (Story 11.2, optional)
+        undefined, // userContext
+        undefined, // resumeEducation
+        undefined  // atsContext
       );
       expect(updateSession).toHaveBeenCalledWith('sess-123', {
         experienceSuggestion: mockSuggestion,

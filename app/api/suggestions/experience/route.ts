@@ -17,13 +17,15 @@ import type { ExperienceSuggestion } from '@/types/suggestions';
 import type { SuggestionContext } from '@/types/judge';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
 import { judgeSuggestion } from '@/lib/ai/judgeSuggestion';
-import { updateSession } from '@/lib/supabase/sessions';
+import { updateSession, getSessionForAPI } from '@/lib/supabase/sessions';
 import { withTimeout } from '@/lib/utils/withTimeout';
 import { collectQualityMetrics } from '@/lib/metrics/qualityMetrics';
 import { logQualityMetrics } from '@/lib/metrics/metricsLogger';
 import { truncateAtSentence } from '@/lib/utils/truncateAtSentence';
 import { logJudgeBatchTrace } from '@/lib/metrics/judgeTrace';
 import type { JudgeResult } from '@/types/judge';
+import { buildSectionATSContext, type SectionATSContext } from '@/lib/ai/buildSectionATSContext';
+import type { ATSScoreV21 } from '@/lib/scoring/types';
 
 // ============================================================================
 // TYPES
@@ -47,6 +49,59 @@ const TIMEOUT_MS = 60000; // 60 seconds
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Check if ATS score is V21 format
+ */
+function isATSScoreV21(score: unknown): score is ATSScoreV21 {
+  return (
+    score !== null &&
+    typeof score === 'object' &&
+    'metadata' in score &&
+    (score as { metadata?: { version?: string } }).metadata?.version === 'v2.1'
+  );
+}
+
+/**
+ * Build ATS context for experience section if available
+ */
+async function buildATSContextForSection(
+  sessionId: string,
+  anonymousId: string,
+  resumeText: string
+): Promise<SectionATSContext | undefined> {
+  try {
+    const sessionResult = await getSessionForAPI(sessionId, anonymousId);
+    if (!sessionResult || sessionResult.error || !sessionResult.data) {
+      console.log('[SS:exp] Could not fetch session for ATS context');
+      return undefined;
+    }
+
+    const session = sessionResult.data;
+    const atsScore = session.atsScore;
+    const keywordAnalysis = session.keywordAnalysis;
+
+    if (!atsScore || !keywordAnalysis) {
+      console.log('[SS:exp] No ATS score or keyword analysis in session');
+      return undefined;
+    }
+
+    if (!isATSScoreV21(atsScore)) {
+      console.log('[SS:exp] ATS score is not V21 format, skipping context');
+      return undefined;
+    }
+
+    console.log('[SS:exp] Building ATS context for experience section');
+    return buildSectionATSContext('experience', {
+      atsScore,
+      keywordAnalysis,
+      resumeText,
+    });
+  } catch (error) {
+    console.error('[SS:exp] Error building ATS context:', error);
+    return undefined;
+  }
+}
 
 /**
  * Validate request body
@@ -126,13 +181,24 @@ async function runSuggestionGeneration(
   request: ExperienceSuggestionRequest
 ): Promise<ActionResponse<ExperienceSuggestion>> {
   try {
+  // Build ATS context for consistency with analysis (graceful degradation if unavailable)
+  const atsContext = await buildATSContextForSection(
+    request.session_id,
+    request.anonymous_id,
+    request.resume_content
+  );
+
   // Generate suggestion using LLM (Story 11.2: pass preferences)
   // Note: generateExperienceSuggestion never throws - it returns ActionResponse
+  // Pass ATS context for gap-aware suggestions
   const suggestionResult = await generateExperienceSuggestion(
     request.current_experience,
     request.jd_content,
     request.resume_content,
-    request.preferences
+    request.preferences,
+    undefined, // userContext
+    undefined, // resumeEducation
+    atsContext
   );
 
   if (suggestionResult.error) {
