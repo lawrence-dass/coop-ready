@@ -25,6 +25,7 @@ import {
   invokeWithActionResponse,
 } from './chains';
 import { redactPII, restorePII } from './redactPII';
+import type { SectionATSContext } from './buildSectionATSContext';
 
 // ============================================================================
 // CONSTANTS
@@ -55,6 +56,7 @@ Your task is to optimize a professional summary by incorporating relevant keywor
 
 {educationSection}
 {keywordsSection}
+{atsContextSection}
 {jobTypeGuidance}
 {preferenceSection}
 **Instructions:**
@@ -85,6 +87,13 @@ Also assign a point_value for section-level calculations:
 - Point values must be realistic for actual ATS systems
 - Explanation must reference specific JD keywords (not generic phrases like "improves score")
 - Keep explanation concise (1-2 sentences, max 300 chars)
+
+**⚠️ MANDATORY - ATS Context Priority (If Provided):**
+- You MUST incorporate ALL 🔴 REQUIRED keywords from the ATS context into your suggested summary
+- REQUIRED keywords have 3-6x more point impact than PREFERRED keywords
+- Missing REQUIRED keywords CAP the user's score - they cannot achieve a high score without them
+- Your keywords_added array MUST include REQUIRED keywords first
+- VERIFICATION: Before returning, confirm every 🔴 REQUIRED keyword from ATS context is addressed in the suggestion
 
 Return ONLY valid JSON in this exact format (no markdown, no explanations):
 {{
@@ -134,6 +143,7 @@ function createSummarySuggestionChain() {
  * - Reframes existing experience (no fabrication)
  * - Detects AI-tell phrases in original and suggested
  * - Applies user optimization preferences
+ * - Uses ATS context for consistency with analysis (if provided)
  * - Returns structured ActionResponse
  *
  * Uses LCEL chain composition for better observability and composability.
@@ -148,6 +158,7 @@ function createSummarySuggestionChain() {
  * @param preferences - User's optimization preferences (optional, uses defaults if not provided)
  * @param userContext - User context from onboarding (optional, for LLM personalization)
  * @param resumeEducation - User's education section (optional, for co-op/internship context)
+ * @param atsContext - ATS analysis context for consistency (optional, for gap-aware suggestions)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSummarySuggestion(
@@ -156,7 +167,8 @@ export async function generateSummarySuggestion(
   keywords?: string[],
   preferences?: OptimizationPreferences | null,
   userContext?: UserContext,
-  resumeEducation?: string
+  resumeEducation?: string,
+  atsContext?: SectionATSContext
 ): Promise<ActionResponse<SummarySuggestion>> {
   // Validation
   if (!resumeSummary || resumeSummary.trim().length === 0) {
@@ -239,6 +251,19 @@ export async function generateSummarySuggestion(
     ? `\n${buildPreferencePrompt(preferences, userContext)}\n`
     : '';
 
+  // Build ATS context section if provided
+  const atsContextSection = atsContext
+    ? `<ats_analysis_context>\n${atsContext.promptContext}\n</ats_analysis_context>\n\n`
+    : '';
+
+  if (atsContext) {
+    console.log('[SS:genSummary] ATS context provided:', {
+      terminologyFixes: atsContext.terminologyFixes.length,
+      potentialAdditions: atsContext.potentialAdditions.length,
+      opportunities: atsContext.opportunities.length,
+    });
+  }
+
   // Create and invoke LCEL chain
   const chain = createSummarySuggestionChain();
 
@@ -248,6 +273,7 @@ export async function generateSummarySuggestion(
       jobDescription: processedJD,
       educationSection,
       keywordsSection,
+      atsContextSection,
       jobTypeGuidance,
       preferenceSection,
     });

@@ -145,31 +145,37 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
     expect(result.error).toBeNull();
     expect(result.data).not.toBeNull();
 
-    // Verify preferences reached generateSummarySuggestion (now with 5th arg: userContext)
+    // Verify preferences reached generateSummarySuggestion (now with 7th arg: atsContext)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       baseRequest.resumeSummary,
       baseRequest.jobDescription,
       undefined, // keywords
       techSeniorPrefs,
-      {} // userContext (empty from mock)
+      {}, // userContext (empty from mock)
+      undefined, // resumeEducation
+      undefined // atsContext (from mock DB)
     );
 
-    // Verify preferences reached generateSkillsSuggestion (now with 5th arg: userContext)
+    // Verify preferences reached generateSkillsSuggestion (now with 7th arg: atsContext)
     expect(mocks.generateSkillsSuggestion).toHaveBeenCalledWith(
       baseRequest.resumeSkills,
       baseRequest.jobDescription,
       baseRequest.resumeContent,
       techSeniorPrefs,
-      {} // userContext (empty from mock)
+      {}, // userContext (empty from mock)
+      undefined, // resumeEducation
+      undefined // atsContext (from mock DB)
     );
 
-    // Verify preferences reached generateExperienceSuggestion (now with 5th arg: userContext)
+    // Verify preferences reached generateExperienceSuggestion (now with 7th arg: atsContext)
     expect(mocks.generateExperienceSuggestion).toHaveBeenCalledWith(
       baseRequest.resumeExperience,
       baseRequest.jobDescription,
       baseRequest.resumeContent,
       techSeniorPrefs,
-      {} // userContext (empty from mock)
+      {}, // userContext (empty from mock)
+      undefined, // resumeEducation
+      undefined // atsContext (from mock DB)
     );
   });
 
@@ -185,13 +191,15 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       preferences: casualEntryPrefs,
     });
 
-    // Verify the different preferences were passed through (with userContext)
+    // Verify the different preferences were passed through (with userContext, resumeEducation, and atsContext)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
       undefined,
       casualEntryPrefs,
-      {} // userContext (empty from mock)
+      {}, // userContext (empty from mock)
+      undefined, // resumeEducation
+      undefined // atsContext (from mock DB)
     );
 
     expect(mocks.generateSkillsSuggestion).toHaveBeenCalledWith(
@@ -199,7 +207,9 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       expect.any(String),
       expect.any(String),
       casualEntryPrefs,
-      {} // userContext (empty from mock)
+      {}, // userContext (empty from mock)
+      undefined, // resumeEducation
+      undefined // atsContext (from mock DB)
     );
 
     expect(mocks.generateExperienceSuggestion).toHaveBeenCalledWith(
@@ -207,7 +217,9 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       expect.any(String),
       expect.any(String),
       casualEntryPrefs,
-      {} // userContext (empty from mock)
+      {}, // userContext (empty from mock)
+      undefined, // resumeEducation
+      undefined // atsContext (from mock DB)
     );
   });
 
@@ -223,13 +235,15 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       // No preferences field
     });
 
-    // Verify undefined/null is passed when no preferences (with userContext)
+    // Verify undefined/null is passed when no preferences (with userContext, resumeEducation, and atsContext)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
       undefined,
       undefined,
-      {} // userContext (empty from mock)
+      {}, // userContext (empty from mock)
+      undefined, // resumeEducation
+      undefined // atsContext (from mock DB)
     );
   });
 
@@ -250,7 +264,9 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       expect.any(String),
       undefined,
       null,
-      {} // userContext (empty from mock)
+      {}, // userContext (empty from mock)
+      undefined, // resumeEducation
+      undefined // atsContext (from mock DB)
     );
   });
 });

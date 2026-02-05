@@ -325,6 +325,64 @@ export async function updateSession(
 }
 
 /**
+ * Retrieves a session by ID and anonymous_id for internal operations
+ *
+ * **When to use:** When API routes need session data (e.g., ATS context for suggestions).
+ *
+ * **Security:** Verifies ownership via anonymous_id (for server-side routes).
+ *
+ * @param sessionId - The session's UUID
+ * @param anonymousId - The anonymous user's ID (for authorization)
+ * @returns ActionResponse with the session or null if not found/unauthorized
+ */
+export async function getSessionForAPI(
+  sessionId: string,
+  anonymousId: string
+): Promise<ActionResponse<OptimizationSession | null>> {
+  const supabase = await createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .eq('anonymous_id', anonymousId)
+      .maybeSingle();
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: `Failed to get session: ${error.message}`,
+          code: 'GET_SESSION_ERROR',
+        },
+      };
+    }
+
+    if (!data) {
+      return {
+        data: null,
+        error: null,
+      };
+    }
+
+    return {
+      data: toOptimizationSession(data as SessionRow),
+      error: null,
+    };
+  } catch (err) {
+    return {
+      data: null,
+      error: {
+        message:
+          err instanceof Error ? err.message : 'Unknown error getting session',
+        code: 'GET_SESSION_ERROR',
+      },
+    };
+  }
+}
+
+/**
  * Retrieves a single session by ID with user authorization check
  *
  * **When to use:** When loading session details for a specific session (Story 10-2).

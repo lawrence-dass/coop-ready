@@ -179,7 +179,10 @@ describe('POST /api/suggestions/skills', () => {
         validRequestBody.current_skills,
         validRequestBody.jd_content,
         validRequestBody.resume_content,
-        undefined // preferences parameter (optional)
+        undefined, // preferences parameter (optional)
+        undefined, // userContext
+        undefined, // resumeEducation
+        undefined  // atsContext
       );
 
       // Verify session was updated
