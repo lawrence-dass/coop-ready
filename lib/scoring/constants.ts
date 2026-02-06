@@ -64,6 +64,13 @@ export const ROLE_WEIGHT_ADJUSTMENTS = {
     sections: 0.10,
     format: 0.10,
   },
+  career_changer: {
+    keywords: 0.40,
+    qualificationFit: 0.14,
+    contentQuality: 0.18,
+    sections: 0.18,
+    format: 0.10,
+  },
 } as const;
 
 // ============================================================================
@@ -517,11 +524,11 @@ export const DEGREE_FIELD_MATCHES: Record<string, string[]> = {
 // ============================================================================
 
 /**
- * Section configuration for co-op vs fulltime (V2.1)
+ * Section configuration for co-op vs fulltime vs career_changer (V2.1)
  */
 export const SECTION_CONFIG_V21 = {
   coop: {
-    summary: { required: true, minLength: 50, maxPoints: 15 },
+    summary: { required: false, minLength: 50, maxPoints: 15 },
     skills: { required: true, minItems: 8, maxPoints: 25 },
     experience: { required: false, minBullets: 3, maxPoints: 20 },
     education: { required: true, minLength: 30, maxPoints: 25 },
@@ -534,6 +541,14 @@ export const SECTION_CONFIG_V21 = {
     experience: { required: true, minBullets: 6, maxPoints: 30 },
     education: { required: true, minLength: 30, maxPoints: 15 },
     projects: { required: false, minBullets: 2, maxPoints: 10 },
+    certifications: { required: false, minItems: 1, maxPoints: 10 },
+  },
+  career_changer: {
+    summary: { required: true, minLength: 80, maxPoints: 20 },
+    skills: { required: true, minItems: 8, maxPoints: 25 },
+    experience: { required: true, minBullets: 4, maxPoints: 20 },
+    education: { required: true, minLength: 30, maxPoints: 20 },
+    projects: { required: true, minBullets: 2, maxPoints: 15 },
     certifications: { required: false, minItems: 1, maxPoints: 10 },
   },
 } as const;

@@ -189,7 +189,7 @@ development_status:
   18-1-candidate-type-detection-and-classification: done
   18-2-expand-resume-parsing-to-six-sections: done
   18-3-section-ordering-engine-and-structural-suggestions: done
-  18-4-scoring-weight-alignment-and-career-changer-profile: backlog
+  18-4-scoring-weight-alignment-and-career-changer-profile: review
   18-5-projects-suggestion-generator: backlog
   18-6-conditional-summary-and-candidate-type-suggestion-framing: backlog
   18-7-store-session-and-database-updates: backlog
