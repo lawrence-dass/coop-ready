@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import type { ActionResponse } from '@/types';
 import type { ATSScore, KeywordAnalysisResult } from '@/types/analysis';
 import type { OptimizationPrivacyReport } from '@/types/privacy';
+import type { ProjectsSuggestion, StructuralSuggestion } from '@/types/suggestions';
+import type { CandidateType } from '@/lib/scoring/types';
 
 interface SessionData {
   id: string;
@@ -17,6 +19,7 @@ interface SessionData {
     skills?: any[];
     experience?: any[];
     education?: any[];
+    projects?: any[];
   } | null;
   preferences: any;
   anonymousId: string | null;
@@ -26,6 +29,9 @@ interface SessionData {
   keywordAnalysis: KeywordAnalysisResult | null;
   privacyReport: OptimizationPrivacyReport | null;
   comparedAtsScore?: ATSScore | null;
+  projectsSuggestion: ProjectsSuggestion | null;
+  candidateType: CandidateType | null;
+  structuralSuggestions: StructuralSuggestion[];
 }
 
 /**
@@ -103,21 +109,34 @@ export async function getSessionById(
     const skillsSuggestion = data.skills_suggestion;
     const experienceSuggestion = data.experience_suggestion;
     const educationSuggestion = data.education_suggestion;
+    const projectsSuggestion = data.projects_suggestion;
+
+    // Extract new fields for Story 18.7
+    const candidateType = data.candidate_type as CandidateType | null;
+    const structuralSuggestions = (data.structural_suggestions as StructuralSuggestion[]) ?? [];
 
     // Try to use the suggestions column first, otherwise build from individual columns
     let suggestions = data.suggestions;
-    if (!suggestions && (summarySuggestion || skillsSuggestion || experienceSuggestion || educationSuggestion)) {
+    if (!suggestions && (summarySuggestion || skillsSuggestion || experienceSuggestion || educationSuggestion || projectsSuggestion)) {
       suggestions = {
         summary: summarySuggestion ? [summarySuggestion] : [],
         skills: skillsSuggestion ? [skillsSuggestion] : [],
         experience: experienceSuggestion ? [experienceSuggestion] : [],
         education: educationSuggestion ? [educationSuggestion] : [],
+        projects: projectsSuggestion ? [projectsSuggestion] : [],
       };
-    } else if (suggestions && educationSuggestion && !suggestions.education) {
-      // Ensure education is added even if suggestions exists from other columns
+    }
+    // Merge individual columns into existing suggestions if missing
+    if (suggestions && educationSuggestion && !suggestions.education) {
       suggestions = {
         ...suggestions,
         education: [educationSuggestion],
+      };
+    }
+    if (suggestions && projectsSuggestion && !suggestions.projects) {
+      suggestions = {
+        ...suggestions,
+        projects: [projectsSuggestion],
       };
     }
 
@@ -136,6 +155,9 @@ export async function getSessionById(
         keywordAnalysis,
         privacyReport,
         comparedAtsScore: data.compared_ats_score,
+        projectsSuggestion,
+        candidateType,
+        structuralSuggestions,
       },
       error: null,
     };

@@ -274,16 +274,13 @@ async function runSuggestionGeneration(
       }
     }
 
-    // Story 18.5: Save to session (graceful fail if projects_suggestion column doesn't exist yet)
-    // The column is added in Story 18.7 migration
-    // TODO Story 18.7: Uncomment when projectsSuggestion is added to updateSession types
-    // const sessionUpdateResult = await updateSession(request.session_id, {
-    //   projectsSuggestion: suggestion,
-    // });
-    // if (sessionUpdateResult.error) {
-    //   console.error('[projects-suggestion] Session update failed:', sessionUpdateResult.error);
-    // }
-    console.log('[SS:projects] Session update skipped - column added in Story 18.7');
+    // Story 18.7: Save to session
+    const sessionUpdateResult = await updateSession(request.session_id, {
+      projectsSuggestion: suggestion,
+    });
+    if (sessionUpdateResult.error) {
+      console.error('[projects-suggestion] Session update failed:', sessionUpdateResult.error);
+    }
 
     return {
       data: suggestion,

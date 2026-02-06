@@ -36,7 +36,10 @@ import type {
   SkillsSuggestion,
   ExperienceSuggestion,
   EducationSuggestion,
+  ProjectsSuggestion,
+  StructuralSuggestion,
 } from '@/types/suggestions';
+import type { CandidateType } from '@/lib/scoring/types';
 
 // ============================================================================
 // DATABASE ROW TYPE (snake_case)
@@ -62,6 +65,9 @@ interface SessionRow {
   skills_suggestion: SkillsSuggestion | null; // Story 6.3
   experience_suggestion: ExperienceSuggestion | null; // Story 6.4
   education_suggestion: EducationSuggestion | null; // Story 17.6: Education suggestions
+  projects_suggestion: ProjectsSuggestion | null; // Story 18.7: Projects suggestions
+  candidate_type: string | null; // Story 18.7: Candidate type classification
+  structural_suggestions: StructuralSuggestion[] | null; // Story 18.7: Structural suggestions
   created_at: string;
   updated_at: string;
 }
@@ -90,6 +96,9 @@ function toOptimizationSession(row: SessionRow): OptimizationSession {
     skillsSuggestion: row.skills_suggestion,
     experienceSuggestion: row.experience_suggestion,
     educationSuggestion: row.education_suggestion, // Story 17.6: Education suggestions
+    projectsSuggestion: row.projects_suggestion, // Story 18.7: Projects suggestions
+    candidateType: (row.candidate_type as CandidateType) ?? null, // Story 18.7: Candidate type
+    structuralSuggestions: row.structural_suggestions ?? [], // Story 18.7: Structural suggestions
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -231,6 +240,9 @@ export async function updateSession(
     skillsSuggestion?: SkillsSuggestion | null; // Story 6.3
     experienceSuggestion?: ExperienceSuggestion | null; // Story 6.4
     educationSuggestion?: EducationSuggestion | null; // Story 17.6: Education suggestions
+    projectsSuggestion?: ProjectsSuggestion | null; // Story 18.7: Projects suggestions
+    candidateType?: CandidateType | null; // Story 18.7: Candidate type classification
+    structuralSuggestions?: StructuralSuggestion[] | null; // Story 18.7: Structural suggestions
   }
 ): Promise<ActionResponse<{ success: boolean }>> {
   const supabase = await createClient();
@@ -289,6 +301,18 @@ export async function updateSession(
 
     if ('educationSuggestion' in updates) {
       dbUpdates.education_suggestion = updates.educationSuggestion;
+    }
+
+    if ('projectsSuggestion' in updates) {
+      dbUpdates.projects_suggestion = updates.projectsSuggestion;
+    }
+
+    if ('candidateType' in updates) {
+      dbUpdates.candidate_type = updates.candidateType;
+    }
+
+    if ('structuralSuggestions' in updates) {
+      dbUpdates.structural_suggestions = updates.structuralSuggestions;
     }
 
     const { error } = await supabase

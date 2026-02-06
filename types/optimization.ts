@@ -180,7 +180,7 @@ export interface SuggestionFeedback {
   suggestionId: string;
 
   /** Which resume section this suggestion belongs to */
-  sectionType: 'summary' | 'skills' | 'experience' | 'education';
+  sectionType: 'summary' | 'skills' | 'experience' | 'education' | 'projects';
 
   /** true = helpful (thumbs up), false = not helpful (thumbs down) */
   helpful: boolean;
@@ -246,6 +246,15 @@ export interface OptimizationSession {
 
   /** Education section optimization suggestion */
   educationSuggestion?: import('./suggestions').EducationSuggestion | null;
+
+  /** Projects section optimization suggestion (Story 18.7) */
+  projectsSuggestion?: import('./suggestions').ProjectsSuggestion | null;
+
+  /** Candidate type classification: coop | fulltime | career_changer (Story 18.7) */
+  candidateType?: import('@/lib/scoring/types').CandidateType | null;
+
+  /** Structural resume suggestions (section ordering, format) (Story 18.7) */
+  structuralSuggestions?: import('./suggestions').StructuralSuggestion[];
 
   /** Generated optimization suggestions */
   suggestions?: SuggestionSet | null;
