@@ -90,12 +90,22 @@ export interface ExtendedOptimizationStore extends OptimizationStore {
   /** Education section suggestion */
   educationSuggestion: import('@/types/suggestions').EducationSuggestion | null;
 
+  /** Projects section suggestion (Story 18.7) */
+  projectsSuggestion: import('@/types/suggestions').ProjectsSuggestion | null;
+
+  /** Candidate type classification: coop | fulltime | career_changer (Story 18.7) */
+  candidateType: import('@/lib/scoring/types').CandidateType | null;
+
+  /** Structural resume suggestions (section ordering, format) (Story 18.7) */
+  structuralSuggestions: import('@/types/suggestions').StructuralSuggestion[];
+
   /** Per-section regenerating state (Story 6.7) */
   isRegeneratingSection: {
     summary?: boolean;
     skills?: boolean;
     experience?: boolean;
     education?: boolean;
+    projects?: boolean;
   };
 
   /** General application error (Story 7.1) - for non-file-specific errors */
@@ -220,13 +230,22 @@ export interface ExtendedOptimizationStore extends OptimizationStore {
   /** Set education suggestion */
   setEducationSuggestion: (suggestion: import('@/types/suggestions').EducationSuggestion | null) => void;
 
+  /** Set projects suggestion (Story 18.7) */
+  setProjectsSuggestion: (suggestion: import('@/types/suggestions').ProjectsSuggestion | null) => void;
+
+  /** Set candidate type classification (Story 18.7) */
+  setCandidateType: (type: import('@/lib/scoring/types').CandidateType | null) => void;
+
+  /** Set structural suggestions (Story 18.7) */
+  setStructuralSuggestions: (suggestions: import('@/types/suggestions').StructuralSuggestion[]) => void;
+
   /** Set regenerating state for a specific section (Story 6.7) */
-  setRegeneratingSection: (section: 'summary' | 'skills' | 'experience' | 'education', isLoading: boolean) => void;
+  setRegeneratingSection: (section: 'summary' | 'skills' | 'experience' | 'education' | 'projects', isLoading: boolean) => void;
 
   /** Update suggestion for a specific section (Story 6.7) */
   updateSectionSuggestion: (
-    section: 'summary' | 'skills' | 'experience' | 'education',
-    suggestion: import('@/types/suggestions').SummarySuggestion | import('@/types/suggestions').SkillsSuggestion | import('@/types/suggestions').ExperienceSuggestion | import('@/types/suggestions').EducationSuggestion
+    section: 'summary' | 'skills' | 'experience' | 'education' | 'projects',
+    suggestion: import('@/types/suggestions').SummarySuggestion | import('@/types/suggestions').SkillsSuggestion | import('@/types/suggestions').ExperienceSuggestion | import('@/types/suggestions').EducationSuggestion | import('@/types/suggestions').ProjectsSuggestion
   ) => void;
 
   /** Set general error (Story 7.1) - for non-file-specific errors */
@@ -251,7 +270,7 @@ export interface ExtendedOptimizationStore extends OptimizationStore {
   retryOptimization: () => Promise<void>;
 
   /** Record suggestion feedback (Story 7.4) */
-  recordSuggestionFeedback: (suggestionId: string, sectionType: 'summary' | 'skills' | 'experience' | 'education', helpful: boolean | null) => Promise<void>;
+  recordSuggestionFeedback: (suggestionId: string, sectionType: 'summary' | 'skills' | 'experience' | 'education' | 'projects', helpful: boolean | null) => Promise<void>;
 
   /** Get feedback for a specific suggestion (Story 7.4) */
   getFeedbackForSuggestion: (suggestionId: string) => boolean | null;
@@ -321,6 +340,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     skillsSuggestion: null,
     experienceSuggestion: null,
     educationSuggestion: null,
+    projectsSuggestion: null,
+    candidateType: null,
+    structuralSuggestions: [],
     isRegeneratingSection: {},
     generalError: null,
     retryCount: 0,
@@ -448,6 +470,15 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
     setEducationSuggestion: (suggestion) =>
       set({ educationSuggestion: suggestion, error: null }),
 
+    setProjectsSuggestion: (suggestion) =>
+      set({ projectsSuggestion: suggestion, error: null }),
+
+    setCandidateType: (type) =>
+      set({ candidateType: type }),
+
+    setStructuralSuggestions: (suggestions) =>
+      set({ structuralSuggestions: suggestions }),
+
     setRegeneratingSection: (section, isLoading) =>
       set((state) => ({
         isRegeneratingSection: {
@@ -465,6 +496,8 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         set({ experienceSuggestion: suggestion as import('@/types/suggestions').ExperienceSuggestion, error: null, generalError: null });
       } else if (section === 'education') {
         set({ educationSuggestion: suggestion as import('@/types/suggestions').EducationSuggestion, error: null, generalError: null });
+      } else if (section === 'projects') {
+        set({ projectsSuggestion: suggestion as import('@/types/suggestions').ProjectsSuggestion, error: null, generalError: null });
       }
     },
 
@@ -594,7 +627,7 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         updatedFeedback.forEach((isHelpful: boolean, id: string) => {
           // Extract section type from suggestion ID (format: "sug_{section}_{index}")
           const sectionMatch = id.match(/^sug_(\w+)_\d+$/);
-          const section = sectionMatch ? (sectionMatch[1] as 'summary' | 'skills' | 'experience' | 'education') : sectionType;
+          const section = sectionMatch ? (sectionMatch[1] as 'summary' | 'skills' | 'experience' | 'education' | 'projects') : sectionType;
 
           feedbackArray.push({
             suggestionId: id,
@@ -700,6 +733,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         skillsSuggestion: null,
         experienceSuggestion: null,
         educationSuggestion: null,
+        projectsSuggestion: null,
+        candidateType: null,
+        structuralSuggestions: [],
         generalError: null,
         selectedResumeId: null,
         suggestionFeedback: new Map(),
@@ -733,6 +769,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         skillsSuggestion: session.skillsSuggestion ?? null,
         experienceSuggestion: session.experienceSuggestion ?? null,
         educationSuggestion: session.educationSuggestion ?? null,
+        projectsSuggestion: session.projectsSuggestion ?? null,
+        candidateType: session.candidateType ?? null,
+        structuralSuggestions: session.structuralSuggestions ?? [],
         suggestionFeedback: feedbackMap,
         error: null,
       });
@@ -770,6 +809,9 @@ export const useOptimizationStore = create<ExtendedOptimizationStore>(
         skillsSuggestion: null,
         experienceSuggestion: null,
         educationSuggestion: null,
+        projectsSuggestion: null,
+        candidateType: null,
+        structuralSuggestions: [],
         isRegeneratingSection: {},
         generalError: null,
         retryCount: 0,
