@@ -18,6 +18,7 @@ import type {
   SkillsSuggestion,
   ExperienceSuggestion,
   EducationSuggestion,
+  ProjectsSuggestion,
 } from '@/types/suggestions';
 import type { SuggestionContext, JudgeResult, JudgeCriteriaScores } from '@/types/judge';
 import type { KeywordAnalysisResult } from '@/types/analysis';
@@ -26,6 +27,7 @@ import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
 import { generateEducationSuggestion } from '@/lib/ai/generateEducationSuggestion';
+import { generateProjectsSuggestion } from '@/lib/ai/generateProjectsSuggestion';
 import { judgeSuggestion } from '@/lib/ai/judgeSuggestion';
 import { getLLMTier } from '@/lib/ai/models';
 import { truncateAtSentence } from '@/lib/utils/truncateAtSentence';
@@ -53,6 +55,8 @@ interface GenerateAllRequest {
   resumeExperience: string;
   /** Resume education section content (for co-op/internship context) */
   resumeEducation?: string;
+  /** Resume projects section content (Story 18.5) */
+  resumeProjects?: string;
   /** Full resume raw text for context */
   resumeContent: string;
   /** Job description text */
@@ -68,12 +72,14 @@ export interface GenerateAllResult {
   skills: SkillsSuggestion | null;
   experience: ExperienceSuggestion | null;
   education: EducationSuggestion | null;
+  projects: ProjectsSuggestion | null;
   /** Errors for individual sections that failed */
   sectionErrors: {
     summary?: string;
     skills?: string;
     experience?: string;
     education?: string;
+    projects?: string;
   };
 }
 
@@ -120,7 +126,7 @@ function validateRequest(
  * Gracefully handles failures (returns null instead of throwing)
  */
 async function judgeSectionSuggestion(
-  sectionType: 'summary' | 'skills' | 'experience' | 'education',
+  sectionType: 'summary' | 'skills' | 'experience' | 'education' | 'projects', // Story 18.5: Added projects
   suggestedText: string,
   originalText: string,
   jdContent: string,
@@ -179,12 +185,14 @@ async function fetchATSContextsForSession(
   skills: SectionATSContext | undefined;
   experience: SectionATSContext | undefined;
   education: SectionATSContext | undefined;
+  projects: SectionATSContext | undefined; // Story 18.5: Added, but undefined until 18.9 wires gapAddressability
 }> {
   const emptyResult = {
     summary: undefined,
     skills: undefined,
     experience: undefined,
     education: undefined,
+    projects: undefined, // Story 18.5: Not yet wired to gapAddressability
   };
 
   try {
@@ -229,6 +237,7 @@ async function fetchATSContextsForSession(
       skills: buildSectionATSContext('skills', contextInput),
       experience: buildSectionATSContext('experience', contextInput),
       education: buildSectionATSContext('education', contextInput),
+      projects: undefined, // Story 18.5: gapAddressability.SectionType doesn't include 'projects' yet (Story 18.9)
     };
   } catch (error) {
     console.error('[SS:generateAll] Error fetching ATS context:', error);
@@ -264,6 +273,7 @@ export async function generateAllSuggestions(
       resumeSkills,
       resumeExperience,
       resumeEducation,
+      resumeProjects, // Story 18.5
       resumeContent,
       jobDescription,
       keywords,
@@ -290,6 +300,23 @@ export async function generateAllSuggestions(
         console.log('[SS:generateAll] Education extracted from resume:', effectiveEducation.length, 'chars, preview:', effectiveEducation.substring(0, 100));
       } else {
         console.log('[SS:generateAll] No education section found in resume. resumeEducation was:', resumeEducation ? `"${resumeEducation.substring(0, 50)}..."` : 'null/undefined');
+      }
+    }
+
+    // Projects: Try to extract from resumeContent if not explicitly provided (Story 18.5)
+    // Critical for co-op candidates where projects are primary experience
+    let effectiveProjects: string | null = null;
+    if (resumeProjects && resumeProjects.trim().length > 0) {
+      effectiveProjects = resumeProjects;
+      console.log('[SS:generateAll] Projects section provided:', resumeProjects.length, 'chars, preview:', resumeProjects.substring(0, 100));
+    } else {
+      // Try to extract projects from full resume content
+      const projectsMatch = resumeContent.match(/(?:PROJECTS|PROJECT EXPERIENCE|Project Experience)[\s\S]*?(?=(?:EXPERIENCE|EDUCATION|SKILLS|CERTIFICATIONS|REFERENCES|ACTIVITIES|VOLUNTEER|AWARDS|PUBLICATIONS|INTERESTS|$))/i);
+      if (projectsMatch) {
+        effectiveProjects = projectsMatch[0].trim();
+        console.log('[SS:generateAll] Projects extracted from resume:', effectiveProjects.length, 'chars, preview:', effectiveProjects.substring(0, 100));
+      } else {
+        console.log('[SS:generateAll] No projects section found in resume. resumeProjects was:', resumeProjects ? `"${resumeProjects.substring(0, 50)}..."` : 'null/undefined');
       }
     }
 
@@ -323,11 +350,11 @@ export async function generateAllSuggestions(
       });
     }
 
-    // Fire all 4 generation calls in parallel (Story 11.2: pass preferences, userContext)
+    // Fire all 5 generation calls in parallel (Story 11.2: pass preferences, userContext; Story 18.5: added projects)
     // Pass resumeEducation for co-op/internship context awareness
     // Pass atsContext for gap-aware suggestions (REQUIRED keywords prioritized over PREFERRED)
-    // Education is only generated if education section exists in resume
-    const [summaryResult, skillsResult, experienceResult, educationResult] =
+    // Education and projects are only generated if their sections exist in resume
+    const [summaryResult, skillsResult, experienceResult, educationResult, projectsResult] =
       await Promise.allSettled([
         generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences, userContext, resumeEducation, atsContexts.summary),
         generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.skills),
@@ -335,6 +362,10 @@ export async function generateAllSuggestions(
         // Only generate education suggestions if education section exists
         effectiveEducation
           ? generateEducationSuggestion(effectiveEducation, jobDescription, resumeContent, preferences, userContext, atsContexts.education)
+          : Promise.resolve({ data: null, error: null }),
+        // Story 18.5: Only generate projects suggestions if projects section exists
+        effectiveProjects
+          ? generateProjectsSuggestion(effectiveProjects, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.projects)
           : Promise.resolve({ data: null, error: null }),
       ]);
 
@@ -344,6 +375,7 @@ export async function generateAllSuggestions(
       skills: null,
       experience: null,
       education: null,
+      projects: null,
       sectionErrors: {},
     };
 
@@ -391,6 +423,17 @@ export async function generateAllSuggestions(
       result.sectionErrors.education = educationResult.reason?.message || 'Education generation failed';
     }
 
+    // Process projects (Story 18.5: only if projects section was present)
+    if (effectiveProjects && projectsResult.status === 'fulfilled') {
+      if (projectsResult.value.data) {
+        result.projects = projectsResult.value.data;
+      } else if (projectsResult.value.error) {
+        result.sectionErrors.projects = projectsResult.value.error.message;
+      }
+    } else if (effectiveProjects && projectsResult.status === 'rejected') {
+      result.sectionErrors.projects = projectsResult.reason?.message || 'Projects generation failed';
+    }
+
     // =========================================================================
     // JUDGE PHASE
     // Judge all individual suggestions in parallel
@@ -402,7 +445,7 @@ export async function generateAllSuggestions(
     const modificationLevel = preferences?.modificationLevel;
 
     interface JudgeTask {
-      section: 'summary' | 'skills' | 'experience' | 'education';
+      section: 'summary' | 'skills' | 'experience' | 'education' | 'projects'; // Story 18.5: Added projects
       target: unknown; // The object to augment with judge data
       suggestedText: string;
       originalText: string;
@@ -455,6 +498,20 @@ export async function generateAllSuggestions(
             target: bullet,
             suggestedText: bullet.suggested,
             originalText: bullet.original || '',
+          });
+        }
+      }
+    }
+
+    // Projects (Story 18.5: each suggested bullet)
+    if (result.projects?.project_entries) {
+      for (const entry of result.projects.project_entries) {
+        for (const bullet of entry.suggested_bullets) {
+          judgeTasks.push({
+            section: 'projects',
+            target: bullet,
+            suggestedText: bullet.suggested,
+            originalText: bullet.original,
           });
         }
       }
@@ -522,7 +579,7 @@ export async function generateAllSuggestions(
       avg_score: number;
     }
 
-    function computeSectionStats(section: 'summary' | 'skills' | 'experience' | 'education'): SectionStats {
+    function computeSectionStats(section: 'summary' | 'skills' | 'experience' | 'education' | 'projects'): SectionStats {
       const sectionResults = judgeResults
         .filter((r, i) => r.status === 'fulfilled' && r.value?.judgeResult && judgeTasks[i].section === section)
         .map(r => (r as PromiseFulfilledResult<{ index: number; judgeResult: JudgeResult | null }>).value.judgeResult!)
@@ -560,6 +617,7 @@ export async function generateAllSuggestions(
         skills: computeSectionStats('skills'),
         experience: computeSectionStats('experience'),
         education: computeSectionStats('education'),
+        projects: computeSectionStats('projects'), // Story 18.5
       },
     } : null;
 
@@ -569,6 +627,8 @@ export async function generateAllSuggestions(
     if (result.skills) dbUpdate.skills_suggestion = result.skills;
     if (result.experience) dbUpdate.experience_suggestion = result.experience;
     if (result.education) dbUpdate.education_suggestion = result.education;
+    // Story 18.5: projects_suggestion column added in Story 18.7 migration - graceful fail until then
+    if (result.projects) dbUpdate.projects_suggestion = result.projects;
     if (judgeStats) dbUpdate.judge_stats = judgeStats;
 
     if (Object.keys(dbUpdate).length > 0) {
@@ -603,8 +663,8 @@ export async function generateAllSuggestions(
       }
     }
 
-    // Check if ALL sections failed (education is optional, so not required for success)
-    const hasAnyResult = result.summary || result.skills || result.experience || result.education;
+    // Check if ALL sections failed (education and projects are optional, so not required for success)
+    const hasAnyResult = result.summary || result.skills || result.experience || result.education || result.projects;
     if (!hasAnyResult) {
       console.error('[SS:generateAll] All sections failed:', result.sectionErrors);
       return {
@@ -621,7 +681,8 @@ export async function generateAllSuggestions(
       'Summary:', result.summary ? 'OK' : 'FAILED',
       'Skills:', result.skills ? 'OK' : 'FAILED',
       'Experience:', result.experience ? 'OK' : 'FAILED',
-      'Education:', effectiveEducation ? (result.education ? 'OK' : 'FAILED') : 'SKIPPED'
+      'Education:', effectiveEducation ? (result.education ? 'OK' : 'FAILED') : 'SKIPPED',
+      'Projects:', effectiveProjects ? (result.projects ? 'OK' : 'FAILED') : 'SKIPPED'
     );
 
     return { data: result, error: null };

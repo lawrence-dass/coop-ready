@@ -71,8 +71,8 @@ export interface SuggestionContext {
   /** Relevant excerpt from job description */
   jd_excerpt: string;
 
-  /** Type of section (summary, skills, experience, education) */
-  section_type: 'summary' | 'skills' | 'experience' | 'education';
+  /** Type of section (summary, skills, experience, education, projects) - Story 18.5: Added projects */
+  section_type: 'summary' | 'skills' | 'experience' | 'education' | 'projects';
 
   /** Job type for context-aware judging (co-op vs full-time expectations) */
   job_type?: 'coop' | 'fulltime';
