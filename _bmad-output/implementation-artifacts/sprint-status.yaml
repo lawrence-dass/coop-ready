@@ -187,7 +187,7 @@ development_status:
   # Knowledge Base: docs/ats-resume-structure-knowledge-base.md
   epic-18: in-progress
   18-1-candidate-type-detection-and-classification: done
-  18-2-expand-resume-parsing-to-six-sections: backlog
+  18-2-expand-resume-parsing-to-six-sections: done
   18-3-section-ordering-engine-and-structural-suggestions: backlog
   18-4-scoring-weight-alignment-and-career-changer-profile: backlog
   18-5-projects-suggestion-generator: backlog

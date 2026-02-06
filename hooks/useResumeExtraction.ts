@@ -24,12 +24,14 @@ interface UseResumeExtractionOptions {
 /**
  * Build a human-readable list of parsed resume sections
  */
-function formatParsedSections(resume: Resume): string {
+export function formatParsedSections(resume: Resume): string {
   const sections = [
     resume.summary ? 'Summary' : null,
     resume.skills ? 'Skills' : null,
     resume.experience ? 'Experience' : null,
     resume.education ? 'Education' : null,
+    resume.projects ? 'Projects' : null,
+    resume.certifications ? 'Certifications' : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -79,7 +81,7 @@ export function useResumeExtraction(options: UseResumeExtractionOptions = {}) {
 
     // Store parsed Resume object with metadata
     const parsedResume = parseResult.data!;
-    console.log('[SS:parse] Resume parsed:', { summary: !!parsedResume.summary, skills: !!parsedResume.skills, experience: !!parsedResume.experience, education: !!parsedResume.education });
+    console.log('[SS:parse] Resume parsed:', { summary: !!parsedResume.summary, skills: !!parsedResume.skills, experience: !!parsedResume.experience, education: !!parsedResume.education, projects: !!parsedResume.projects, certifications: !!parsedResume.certifications });
     store.setResumeContent(parsedResume);
     store.setPendingFile(null);
 

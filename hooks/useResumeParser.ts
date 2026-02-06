@@ -1,6 +1,7 @@
 import { useCallback, useTransition, useRef, useEffect } from 'react';
 import { useOptimizationStore } from '@/store';
 import { parseResumeText } from '@/actions/parseResumeText';
+import { formatParsedSections } from '@/hooks/useResumeExtraction';
 import { toast } from 'sonner';
 import type { Resume } from '@/types/optimization';
 
@@ -67,16 +68,7 @@ export function useResumeParser(options: UseResumeParserOptions = {}) {
         store.setResumeContent(parsedResume);
 
         // Build success message showing which sections were found
-        const sections = [
-          parsedResume.summary ? 'Summary' : null,
-          parsedResume.skills ? 'Skills' : null,
-          parsedResume.experience ? 'Experience' : null,
-          parsedResume.education ? 'Education' : null,
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        toast.success(`Parsed resume sections: ${sections}`);
+        toast.success(`Parsed resume sections: ${formatParsedSections(parsedResume)}`);
         onSuccessRef.current?.(parsedResume);
       });
     },
