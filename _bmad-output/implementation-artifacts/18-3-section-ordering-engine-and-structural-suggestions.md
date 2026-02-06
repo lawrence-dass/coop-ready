@@ -3,7 +3,8 @@
 Status: done
 
 ## Change Log
-- **2026-02-06**: Code review complete - Fixed 1 HIGH and 3 MEDIUM issues. H1: validateSectionOrder false violations with unknown sections (absolute vs relative position bug). M1: Rule 8 false positives from substring matching (switched to line-boundary regex). M2: SectionOrderViolation missing from barrel exports. M3: Vacuous test assertion for unknown sections. Added false-positive regression test for Rule 8. 39 tests passing.
+- **2026-02-06**: Code review #2 (Opus 4.6) - Fixed 1 HIGH and 3 MEDIUM issues. H1: Rule 4 false positive when heading already "Project Experience" (now checks rawResumeText). M1: Rule 2 misleading when sectionOrder incomplete (added sectionOrder.includes guard). M2: Rule 8 missed headers with trailing punctuation (regex updated to allow `:/-` suffixes). M3: Misleading test name for co-op "empty array" that expected 1 suggestion. Added 3 new tests: Rule 4 suppression, Rule 8 punctuation, Rule 2 incomplete sectionOrder. 42 tests passing.
+- **2026-02-06**: Code review #1 - Fixed 1 HIGH and 3 MEDIUM issues. H1: validateSectionOrder false violations with unknown sections (absolute vs relative position bug). M1: Rule 8 false positives from substring matching (switched to line-boundary regex). M2: SectionOrderViolation missing from barrel exports. M3: Vacuous test assertion for unknown sections. Added false-positive regression test for Rule 8. 39 tests passing.
 - **2026-02-06**: Story implementation complete - Created section ordering validation engine with RECOMMENDED_ORDER constant for all 3 candidate types. Implemented structural suggestions engine with all 8 deterministic rules (no LLM). Added comprehensive test coverage (38 tests passing). All acceptance criteria satisfied. TypeScript build successful with no errors.
 
 ## Story
@@ -354,18 +355,33 @@ const UNSAFE_HEADERS: Record<string, string> = {
 - `lib/scoring/structuralSuggestions.ts` (new) - Structural suggestions engine with 8 deterministic rules
 - `lib/scoring/index.ts` (modified) - Added barrel exports for new functions and types
 - `tests/unit/lib/scoring/sectionOrdering.test.ts` (new) - 17 tests for section ordering validation
-- `tests/unit/lib/scoring/structuralSuggestions.test.ts` (new) - 22 tests for structural suggestion rules (39 tests total, all passing)
+- `tests/unit/lib/scoring/structuralSuggestions.test.ts` (new) - 25 tests for structural suggestion rules (42 tests total, all passing)
 
 ### Code Review Record
-- **Reviewer**: Adversarial Senior Dev Review (Claude Opus 4.6)
-- **Date**: 2026-02-06
-- **Issues Found**: 1 HIGH, 3 MEDIUM, 1 LOW (5 total)
-- **Issues Fixed**: 1 HIGH, 3 MEDIUM, 0 LOW (4 fixed)
-- **Fixes Applied**:
-  - H1: Fixed `validateSectionOrder` false violations with unknown sections - changed to filter presentSections to known sections only before comparing positions (relative ordering instead of absolute)
-  - M1: Fixed Rule 8 false positives - changed `lowerText.includes()` to line-boundary regex (`^\s*header\s*$` with 'm' flag) to only match actual section headings, not body text
-  - M2: Added `SectionOrderViolation` type export to barrel `lib/scoring/index.ts`
-  - M3: Fixed vacuous test assertion (`>= 0` always true) to properly verify `isCorrectOrder: true` and no violations for unknown sections
-  - Added new regression test: Rule 8 should NOT false-positive on inline header words in body text
-- **Not Fixed (LOW)**:
-  - L1: Redundant function calls in edge case tests - minor code smell, tests still function correctly
+- **Review #2**:
+  - **Reviewer**: Adversarial Senior Dev Review (Claude Opus 4.6)
+  - **Date**: 2026-02-06
+  - **Issues Found**: 1 HIGH, 3 MEDIUM, 2 LOW (6 total)
+  - **Issues Fixed**: 1 HIGH, 3 MEDIUM (4 fixed)
+  - **Fixes Applied**:
+    - H1: Fixed Rule 4 false positive when heading already "Project Experience" - now checks rawResumeText for existing correct heading before suggesting rename
+    - M1: Fixed Rule 2 misleading when sectionOrder incomplete - added `sectionOrder.includes('skills')` guard to prevent false "not positioned first" messages
+    - M2: Fixed Rule 8 missing headers with trailing punctuation - updated regex to `[:\s-]*$` to match "My Journey:", "What I Know -" etc.
+    - M3: Fixed misleading test name ("should return empty array" but expected length 1)
+    - Added 3 new tests: Rule 4 suppression with correct heading, Rule 8 punctuation detection, Rule 2 incomplete sectionOrder
+  - **Not Fixed (LOW)**:
+    - L1: Redundant function calls in edge case tests (carryover from review #1)
+    - L2: No test for validateSectionOrder with ALL sections in wrong order (only specific pairs tested)
+- **Review #1**:
+  - **Reviewer**: Adversarial Senior Dev Review (Claude Opus 4.6)
+  - **Date**: 2026-02-06
+  - **Issues Found**: 1 HIGH, 3 MEDIUM, 1 LOW (5 total)
+  - **Issues Fixed**: 1 HIGH, 3 MEDIUM, 0 LOW (4 fixed)
+  - **Fixes Applied**:
+    - H1: Fixed `validateSectionOrder` false violations with unknown sections - changed to filter presentSections to known sections only before comparing positions (relative ordering instead of absolute)
+    - M1: Fixed Rule 8 false positives - changed `lowerText.includes()` to line-boundary regex to only match actual section headings, not body text
+    - M2: Added `SectionOrderViolation` type export to barrel `lib/scoring/index.ts`
+    - M3: Fixed vacuous test assertion to properly verify `isCorrectOrder: true` and no violations for unknown sections
+    - Added new regression test: Rule 8 should NOT false-positive on inline header words in body text
+  - **Not Fixed (LOW)**:
+    - L1: Redundant function calls in edge case tests - minor code smell, tests still function correctly
