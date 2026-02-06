@@ -321,6 +321,99 @@ export interface EducationSuggestion {
 }
 
 // ============================================================================
+// PROJECTS SUGGESTION TYPES (Story 18.5)
+// ============================================================================
+
+/**
+ * Individual project bullet suggestion
+ * For project descriptions, achievements, and technical details
+ */
+export interface ProjectBulletSuggestion {
+  /** Original bullet text (or empty if new suggestion) */
+  original: string;
+
+  /** Optimized bullet with keywords and metrics (alias to suggested_full for backward compat) */
+  suggested: string;
+
+  /** Metrics or quantification added (e.g., ["1000 users", "3 month project"]) */
+  metrics_added: string[];
+
+  /** Keywords from JD incorporated into this bullet */
+  keywords_incorporated: string[];
+
+  /** Estimated ATS score improvement for this bullet (0-100) - used for section totals */
+  point_value?: number;
+
+  /** Impact tier for display (replaces point_value for individual display) */
+  impact?: ImpactTier;
+
+  /** 1-2 sentence explanation of why this change helps */
+  explanation?: string;
+
+  // Dual-length suggestions (matching experience pattern)
+  /** Quick edit version - matches original length ±25%, highest-impact changes only */
+  suggested_compact?: string;
+  /** Full rewrite version - comprehensive optimization */
+  suggested_full?: string;
+  /** Word count of original bullet */
+  original_word_count?: number;
+  /** Word count of compact version */
+  compact_word_count?: number;
+  /** Word count of full version */
+  full_word_count?: number;
+
+  // Judge fields (optional for backward compatibility)
+  judge_score?: number; // Quality score from LLM judge (0-100)
+  judge_passed?: boolean; // Whether suggestion passed validation
+  judge_reasoning?: string; // Brief explanation of the score
+  judge_criteria?: JudgeCriteriaScores; // Breakdown by criteria
+}
+
+/**
+ * Individual project entry
+ */
+export interface ProjectEntry {
+  /** Project name/title */
+  title: string;
+
+  /** Technologies used in the project */
+  technologies: string[];
+
+  /** Date range or duration (e.g., "Spring 2024" or "3 months") */
+  dates?: string;
+
+  /** Original bullet points describing the project */
+  original_bullets: string[];
+
+  /** Suggested optimized bullets */
+  suggested_bullets: ProjectBulletSuggestion[];
+}
+
+/**
+ * Projects optimization suggestion
+ * Critical for co-op/internship and career changers where projects demonstrate skills
+ */
+export interface ProjectsSuggestion {
+  /** User's original projects section text */
+  original: string;
+
+  /** Array of project entries with suggestions */
+  project_entries: ProjectEntry[];
+
+  /** Total estimated point value improvement */
+  total_point_value?: number;
+
+  /** Explanation of why these project changes help */
+  explanation?: string;
+
+  /** Optional heading suggestion (e.g., "Project Experience" for co-op candidates) */
+  heading_suggestion?: string;
+
+  /** Summary of the optimization */
+  summary: string;
+}
+
+// ============================================================================
 // STRUCTURAL SUGGESTION TYPES (Story 18.3)
 // ============================================================================
 
