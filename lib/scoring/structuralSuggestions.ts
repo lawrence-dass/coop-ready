@@ -97,9 +97,10 @@ function checkRule2CoopNoSkillsAtTop(
 
   const { parsedResume, sectionOrder } = input;
 
-  // Check if skills is missing OR not first in the order
+  // Check if skills is missing
   const skillsMissing = !parsedResume.skills;
-  const skillsNotFirst = sectionOrder.length > 0 && sectionOrder[0] !== 'skills';
+  // Only check positioning if sectionOrder is available
+  const skillsNotFirst = sectionOrder.length > 0 && sectionOrder[0] !== 'skills' && sectionOrder.includes('skills');
 
   if (skillsMissing || skillsNotFirst) {
     return {
@@ -152,22 +153,26 @@ function checkRule4ProjectsHeading(
 ): StructuralSuggestion | null {
   if (input.candidateType !== 'coop') return null;
 
-  const { parsedResume } = input;
+  const { parsedResume, rawResumeText } = input;
 
-  // Trigger if projects section exists (assumes heading is "Projects")
-  if (parsedResume.projects) {
-    return {
-      id: 'rule-coop-projects-heading',
-      priority: 'moderate',
-      category: 'section_heading',
-      message: 'Use "Project Experience" heading instead of "Projects"',
-      currentState: 'Section is likely titled "Projects"',
-      recommendedAction:
-        'Rename the section heading to "Project Experience" for better ATS recognition and professional presentation.',
-    };
+  // Only trigger if projects section exists
+  if (!parsedResume.projects) return null;
+
+  // If raw text available, check whether heading is already "Project Experience"
+  if (rawResumeText) {
+    const hasProjectExperience = /^\s*project\s+experience\s*$/im.test(rawResumeText);
+    if (hasProjectExperience) return null; // Already using correct heading
   }
 
-  return null;
+  return {
+    id: 'rule-coop-projects-heading',
+    priority: 'moderate',
+    category: 'section_heading',
+    message: 'Consider using "Project Experience" heading instead of "Projects"',
+    currentState: 'Projects section detected without "Project Experience" heading',
+    recommendedAction:
+      'Rename the section heading to "Project Experience" for better ATS recognition and professional presentation.',
+  };
 }
 
 /**
@@ -270,7 +275,7 @@ function checkRule8NonStandardHeaders(
   // (e.g., "learning" in "Machine Learning" or "my work" in "In my work at...")
   for (const [unsafeHeader, standardHeader] of Object.entries(UNSAFE_HEADERS)) {
     const escapedHeader = unsafeHeader.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const lineStartPattern = new RegExp(`^\\s*${escapedHeader}\\s*$`, 'm');
+    const lineStartPattern = new RegExp(`^\\s*${escapedHeader}[:\\s-]*$`, 'm');
     if (lineStartPattern.test(lowerText)) {
       detectedUnsafeHeaders.push(`"${unsafeHeader}" → "${standardHeader}"`);
     }

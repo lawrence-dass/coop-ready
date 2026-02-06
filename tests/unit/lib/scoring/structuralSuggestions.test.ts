@@ -107,6 +107,24 @@ describe('generateStructuralSuggestions', () => {
       expect(rule4?.category).toBe('section_heading');
       expect(rule4?.message).toContain('Project Experience');
     });
+
+    it('[P1] should NOT generate Rule 4 when heading is already "Project Experience"', () => {
+      const input: StructuralSuggestionInput = {
+        candidateType: 'coop',
+        parsedResume: {
+          skills: 'JavaScript, Python',
+          education: 'BS CS',
+          projects: 'E-commerce site built with React',
+        },
+        sectionOrder: ['skills', 'education', 'projects'],
+        rawResumeText: 'John Doe\n\nSkills\nJavaScript, Python\n\nEducation\nBS CS\n\nProject Experience\nE-commerce site built with React\n',
+      };
+
+      const suggestions = generateStructuralSuggestions(input);
+      const rule4 = suggestions.find((s) => s.id === 'rule-coop-projects-heading');
+
+      expect(rule4).toBeUndefined();
+    });
   });
 
   describe('Full-time candidate rules', () => {
@@ -271,6 +289,23 @@ describe('generateStructuralSuggestions', () => {
       expect(rule8).toBeUndefined();
     });
 
+    it('[P1] should detect headers with trailing punctuation', () => {
+      const input: StructuralSuggestionInput = {
+        candidateType: 'fulltime',
+        parsedResume: {
+          experience: 'Senior Developer',
+        },
+        sectionOrder: ['experience'],
+        rawResumeText: 'John Doe\n\nMy Journey:\nSenior Developer at Company X\n',
+      };
+
+      const suggestions = generateStructuralSuggestions(input);
+      const rule8 = suggestions.find((s) => s.id === 'rule-non-standard-headers');
+
+      expect(rule8).toBeDefined();
+      expect(rule8?.currentState).toContain('my journey');
+    });
+
     it('[P1] should NOT generate Rule 8 if no raw text provided', () => {
       const input: StructuralSuggestionInput = {
         candidateType: 'fulltime',
@@ -289,7 +324,7 @@ describe('generateStructuralSuggestions', () => {
   });
 
   describe('No suggestions for correct resume', () => {
-    it('[P1] should return empty array for correctly structured co-op resume', () => {
+    it('[P1] should return only Rule 4 suggestion for correctly structured co-op resume with projects', () => {
       const input: StructuralSuggestionInput = {
         candidateType: 'coop',
         parsedResume: {
@@ -428,6 +463,23 @@ describe('generateStructuralSuggestions', () => {
       const suggestions = generateStructuralSuggestions(input);
       // Should only check presence/heading rules, not ordering rules
       expect(() => generateStructuralSuggestions(input)).not.toThrow();
+    });
+
+    it('[P1] should not fire Rule 2 position check when skills present but sectionOrder incomplete', () => {
+      const input: StructuralSuggestionInput = {
+        candidateType: 'coop',
+        parsedResume: {
+          skills: 'JavaScript, Python',
+          education: 'BS CS',
+        },
+        sectionOrder: ['education'], // Skills present in resume but not in sectionOrder
+      };
+
+      const suggestions = generateStructuralSuggestions(input);
+      const rule2 = suggestions.find((s) => s.id === 'rule-coop-no-skills-at-top');
+
+      // Skills IS present in parsedResume but NOT in sectionOrder - should not fire positioning check
+      expect(rule2).toBeUndefined();
     });
 
     it('[P1] should handle null/undefined sections', () => {
