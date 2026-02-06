@@ -17,6 +17,8 @@ import {
   buildPreferencePrompt,
   getJobTypeVerbGuidance,
   getJobTypeFramingGuidance,
+  getCandidateTypeGuidance,
+  deriveEffectiveCandidateType,
 } from './preferences';
 import { getSonnetModel } from './models';
 import {
@@ -26,6 +28,7 @@ import {
 } from './chains';
 import { redactPII, restorePII } from './redactPII';
 import type { SectionATSContext } from './buildSectionATSContext';
+import type { CandidateType } from '@/lib/scoring/types';
 
 // ============================================================================
 // CONSTANTS
@@ -174,6 +177,7 @@ function createSummarySuggestionChain() {
  * @param userContext - User context from onboarding (optional, for LLM personalization)
  * @param resumeEducation - User's education section (optional, for co-op/internship context)
  * @param atsContext - ATS analysis context for consistency (optional, for gap-aware suggestions)
+ * @param candidateType - Detected candidate type (optional, for candidate-type-specific framing)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSummarySuggestion(
@@ -183,7 +187,8 @@ export async function generateSummarySuggestion(
   preferences?: OptimizationPreferences | null,
   userContext?: UserContext,
   resumeEducation?: string,
-  atsContext?: SectionATSContext
+  atsContext?: SectionATSContext,
+  candidateType?: CandidateType
 ): Promise<ActionResponse<SummarySuggestion>> {
   // Validation
   if (!resumeSummary || resumeSummary.trim().length === 0) {
@@ -205,6 +210,9 @@ export async function generateSummarySuggestion(
       },
     };
   }
+
+  // Derive effective candidate type (fallback from preferences.jobType)
+  const effectiveCandidateType = deriveEffectiveCandidateType(candidateType, preferences);
 
   // Calculate word counts for dual-length suggestions
   const originalWordCount = resumeSummary.trim().split(/\s+/).filter(w => w.length > 0).length;
@@ -269,9 +277,33 @@ export async function generateSummarySuggestion(
 
   // Build job-type-specific guidance (injected before general preferences for prominence)
   const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
+  const candidateTypeGuidance = `${getCandidateTypeGuidance(effectiveCandidateType, 'summary')}\n\n`;
+
+  // Add special framing for co-op with existing summary or career changer
+  let specialFraming = '';
+  if (effectiveCandidateType === 'coop' && resumeSummary.trim().length > 0) {
+    specialFraming = `**IMPORTANT - Co-op Candidate Has Summary:**
+This co-op candidate has a summary section. According to best practices, co-op candidates should NOT include a summary (wastes space on 1-page resume).
+- If summary is generic: Recommend REMOVING it entirely.
+- If summary contains important keywords: Suggest CONDENSING to 1 line maximum.
+- Include this recommendation in your explanation field.
+
+`;
+  } else if (effectiveCandidateType === 'career_changer') {
+    specialFraming = `**CRITICAL - Career Changer Summary:**
+The summary is the MOST IMPORTANT section for career changers. It must bridge the old career to the new career with explicit transition narrative.
+- Lead with transition statement: "Transitioning from [old field] to [new field]"
+- Include exact job title from JD
+- Add 2-3 new-career technical keywords
+- Include one quantified transferable achievement from previous career
+- Must be 2-3 sentences that clearly articulate career change viability.
+
+`;
+  }
+
   const jobTypeGuidance = preferences
-    ? `${getJobTypeVerbGuidance(preferences.jobType)}\n\n${getJobTypeFramingGuidance(preferences.jobType, 'summary', hasEducation)}\n\n`
-    : '';
+    ? `${specialFraming}${candidateTypeGuidance}${getJobTypeVerbGuidance(effectiveCandidateType)}\n\n${getJobTypeFramingGuidance(effectiveCandidateType, 'summary', hasEducation)}\n\n`
+    : `${specialFraming}${candidateTypeGuidance}`;
 
   const preferenceSection = preferences
     ? `\n${buildPreferencePrompt(preferences, userContext)}\n`

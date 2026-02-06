@@ -59,8 +59,8 @@ export interface QualityMetricLog {
   /** Unique identifier for this optimization */
   optimization_id: string;
 
-  /** Section type (summary, skills, experience, education, or 'all' for combined) */
-  section: 'summary' | 'skills' | 'experience' | 'education' | 'all';
+  /** Section type (summary, skills, experience, education, projects, or 'all' for combined) */
+  section: 'summary' | 'skills' | 'experience' | 'education' | 'projects' | 'all';
 
   /** Total suggestions evaluated */
   total_evaluated: number;
@@ -98,7 +98,7 @@ export interface QualityMetricLog {
  * Metrics for a specific section
  */
 export interface SectionMetrics {
-  section: 'summary' | 'skills' | 'experience';
+  section: 'summary' | 'skills' | 'experience' | 'education' | 'projects';
   total_evaluated: number;
   pass_rate: number;
   avg_score: number;

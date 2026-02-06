@@ -8,6 +8,7 @@
  */
 
 import type { OptimizationPreferences, UserContext, JobTypePreference } from '@/types';
+import type { CandidateType } from '@/lib/scoring/types';
 
 /**
  * Build a prompt section describing user preferences
@@ -165,12 +166,13 @@ export function buildPreferencePrompt(
  * Get job-type-specific action verb guidance
  *
  * Returns detailed guidance on appropriate action verbs based on whether
- * the target position is a co-op/internship or full-time role.
+ * the target position is a co-op/internship or full-time role, or for
+ * career changers transitioning between fields.
  *
- * @param jobType - The job type preference ('coop' or 'fulltime')
+ * @param jobType - The job type preference ('coop', 'fulltime') or candidate type ('career_changer')
  * @returns Formatted verb guidance string for the LLM prompt
  */
-export function getJobTypeVerbGuidance(jobType: JobTypePreference): string {
+export function getJobTypeVerbGuidance(jobType: JobTypePreference | CandidateType): string {
   if (jobType === 'coop') {
     return `**Action Verb Guidance (Co-op/Internship):**
 Use learning-focused, collaborative verbs that show growth:
@@ -180,6 +182,18 @@ Use learning-focused, collaborative verbs that show growth:
 - AVOID: "Led", "Owned", "Spearheaded", "Drove" (too senior for internship context)
 - AVOID: Overstating responsibility or impact beyond intern/co-op scope
 - CONNECT work to academic learning where relevant`;
+  }
+
+  if (jobType === 'career_changer') {
+    return `**Action Verb Guidance (Career Changer):**
+Use transferable-skill-focused verbs that bridge old career to new:
+- PREFERRED: "Transitioned", "Applied [X] expertise to", "Leveraged", "Adapted"
+- PREFERRED: "Collaborated across", "Bridged", "Integrated", "Reframed"
+- PREFERRED: "Demonstrated", "Developed", "Built", "Designed"
+- PREFERRED: Connection verbs: "Translated [old skill] to [new context]", "Combined [old] with [new]"
+- AVOID: Verbs that sound too junior ("Assisted", "Supported") — career changers are experienced professionals
+- AVOID: Verbs that don't show transferability — must connect prior career to new field
+- FOCUS: Connect prior-career verbs to new-career context — show how past informs future`;
   }
 
   return `**Action Verb Guidance (Full-time Position):**
@@ -195,16 +209,16 @@ Use impact-focused, ownership verbs that show results:
  * Get job-type-specific framing guidance for each section
  *
  * Returns section-specific guidance on how to frame content based on
- * the target job type, with awareness of education context.
+ * the target job type or candidate type, with awareness of education context.
  *
- * @param jobType - The job type preference ('coop' or 'fulltime')
- * @param section - The resume section ('summary', 'experience', 'skills', or 'education')
+ * @param jobType - The job type preference ('coop', 'fulltime') or candidate type ('career_changer')
+ * @param section - The resume section ('summary', 'experience', 'skills', 'education', or 'projects')
  * @param hasEducation - Whether education data is available for context
  * @returns Formatted framing guidance string for the LLM prompt
  */
 export function getJobTypeFramingGuidance(
-  jobType: JobTypePreference,
-  section: 'summary' | 'experience' | 'skills' | 'education',
+  jobType: JobTypePreference | CandidateType,
+  section: 'summary' | 'experience' | 'skills' | 'education' | 'projects',
   hasEducation: boolean = false
 ): string {
   if (jobType === 'coop') {
@@ -254,7 +268,58 @@ ${hasEducation ? '- Use education section to identify coursework-related skills'
 - Example additions:
   - "Relevant Coursework: Data Structures, Database Systems, Network Administration"
   - "Capstone Project: Developed full-stack web application using React and Node.js"
-  - "GPA: 3.7/4.0 | Dean's List (4 semesters)"`
+  - "GPA: 3.7/4.0 | Dean's List (4 semesters)"`,
+
+      projects: `**Co-op/Internship Projects Framing:**
+- Projects are PRIMARY experience section for co-op candidates
+- Format like job entries with company-style bullet points
+- Suggest 'Project Experience' or 'Academic Projects' as section heading
+- Emphasize individual contributions and skills learned
+- Connect to coursework and academic learning
+- Include: technologies used, problem solved, impact/outcome`
+    };
+    return guidance[section];
+  }
+
+  if (jobType === 'career_changer') {
+    const guidance: Record<string, string> = {
+      summary: `**Career Changer Summary Framing:**
+- Bridges old career to new — CRITICAL section for career changers
+- Lead with transition narrative — explicitly state career change direction
+- Include exact job title from JD, 2-3 new-career technical keywords, one quantified transferable achievement
+- Must explicitly state: "Transitioning from [old field] to [new field]"
+- Format: "[Years] in [old career], now [credential/training] to transition to [new field]"
+- Example: "10 years in financial analysis, completed M.S. in Data Science to transition to machine learning engineering"`,
+
+      experience: `**Career Changer Experience Framing:**
+- Reframe prior experience with transferable skills emphasis
+- Use new-career terminology to describe old achievements
+- Connect old achievements to new-field value propositions
+- Highlight analytical, leadership, and cross-functional skills
+- Example: Marketing manager → "Led data-driven campaigns analyzing customer behavior" (emphasizes data/analytical skills for tech transition)
+- Show how previous career provides unique perspective for new role`,
+
+      skills: `**Career Changer Skills Framing:**
+- Lead with new-career skills from master's program, bootcamp, or training
+- Group transferable skills separately from new technical skills
+- Use new-field terminology even for transferable skills
+- Include certifications prominently — proof of commitment to new career
+- Example structure: "Technical Skills: Python, SQL, TensorFlow | Transferable Skills: Project Management, Stakeholder Communication"`,
+
+      education: `**Career Changer Education Framing (PRIMARY CREDENTIAL):**
+- Master's degree, bootcamp, or certificate IS the pivot point — position prominently
+- Include all relevant coursework — demonstrates new-field competency
+- GPA if strong (3.5+) — proves academic excellence in new field
+- Capstone project details if relevant to target role
+- Position as demonstration of new-career credibility
+- Example: "Master of Science in Computer Science, University of [X], 2024 | GPA: 3.8 | Capstone: Built scalable e-commerce platform"`,
+
+      projects: `**Career Changer Projects Framing:**
+- Bridge gap between careers — show progression in new field
+- Emphasize capstone, bootcamp, certification projects prominently
+- Use skills-transfer language: "Applied financial modeling expertise to build predictive ML model"
+- Highlight how previous career informs new work uniquely
+- Format like experience entries — demonstrate professional-level execution`
     };
     return guidance[section];
   }
@@ -296,7 +361,164 @@ ${hasEducation ? '- Use education section to identify coursework-related skills'
 - Focus on advanced degrees, certifications, specialized training
 - Keep education section concise for experienced professionals
 - Example: "M.S. Computer Science, Stanford University, 2020"
-- Certifications and professional development can be more valuable than coursework`
+- Certifications and professional development can be more valuable than coursework`,
+
+    projects: `**Full-time Position Projects Framing:**
+- Supplement work experience — highlight standalone significant projects
+- Keep concise — projects section is lower priority than experience for full-time candidates
+- Open-source contributions, side projects, or major initiatives outside day job
+- Show technical breadth or exploration of new technologies
+- Only include if adds value beyond work experience`
   };
   return guidance[section];
+}
+
+/**
+ * Derive effective candidate type from explicit candidateType or preferences fallback
+ *
+ * Until Story 18.9 wires detectCandidateType() into the pipeline, this helper
+ * derives candidateType from preferences.jobType as a fallback.
+ *
+ * @param candidateType - Explicit candidate type (if provided)
+ * @param preferences - User preferences (used for jobType fallback)
+ * @returns Resolved CandidateType ('coop', 'fulltime', or 'career_changer')
+ */
+export function deriveEffectiveCandidateType(
+  candidateType?: CandidateType,
+  preferences?: { jobType?: string } | null
+): CandidateType {
+  return candidateType ?? (preferences?.jobType === 'coop' ? 'coop' : 'fulltime');
+}
+
+/**
+ * Get candidate-type-specific guidance for each section
+ *
+ * Returns section-specific guidance on how to frame content based on
+ * the candidate type detected from resume structure analysis.
+ *
+ * @param candidateType - The detected candidate type ('coop', 'fulltime', or 'career_changer')
+ * @param section - The resume section ('summary', 'skills', 'experience', 'education', or 'projects')
+ * @returns Formatted candidate-type guidance string for the LLM prompt
+ */
+export function getCandidateTypeGuidance(
+  candidateType: CandidateType,
+  section: 'summary' | 'skills' | 'experience' | 'education' | 'projects'
+): string {
+  if (candidateType === 'coop') {
+    const coopGuidance: Record<string, string> = {
+      summary: `**Co-op Candidate Summary Guidance:**
+- Co-op candidates should NOT include a summary. If one exists, suggest removing it or condensing to 1 line.
+- Wastes space on 1-page resume — education and projects are more valuable.
+- If summary exists: recommend removal if generic, or condensation to single line if keyword-rich.`,
+
+      skills: `**Co-op Candidate Skills Guidance:**
+- Include 'Familiar with'/'Exposure to' for emerging skills.
+- Highlight coursework-learned skills prominently.
+- Show breadth over depth — exposure to many technologies is expected.
+- Balance academic tools (Jupyter, MATLAB) with industry tools (Git, VS Code).`,
+
+      experience: `**Co-op Candidate Experience Guidance:**
+- Frame as learning experiences with growth mindset.
+- Connect work to coursework where relevant.
+- Use collaborative verbs — "Contributed to", "Worked with", "Supported".
+- Be realistic about scope — avoid overstating responsibility.
+- Mentorship and team collaboration should be highlighted.`,
+
+      education: `**Co-op Candidate Education Guidance:**
+- PRIMARY credential — most important section on resume.
+- ALWAYS suggest coursework — critical for demonstrating relevant knowledge.
+- GPA if 3.5+ is strongly recommended — proves academic excellence.
+- Academic projects should be detailed.
+- Expected graduation date format: "Expected May 2025" or "Expected Graduation: May 2025".
+- Dean's List, honors, academic awards belong here.`,
+
+      projects: `**Co-op Candidate Projects Guidance:**
+- PRIMARY experience section — format like job entries with bullet points.
+- Suggest 'Project Experience' or 'Academic Projects' as section heading.
+- Emphasize individual contributions and technical skills learned.
+- Connect projects to coursework where applicable.
+- Include technologies used, problem solved, and impact/outcome.`
+    };
+    return coopGuidance[section];
+  }
+
+  if (candidateType === 'career_changer') {
+    const careerChangerGuidance: Record<string, string> = {
+      summary: `**Career Changer Summary Guidance:**
+- CRITICAL section — must bridge old career to new.
+- Explicitly state transition narrative in first sentence.
+- Include: exact job title from JD, 2-3 new-career technical keywords, one transferable achievement.
+- Format: "[Years] experience in [old field], transitioning to [new field] through [credential]. Skilled in [new skills] with proven [transferable skill]."
+- Length: 2-3 sentences maximum.
+- Must clearly articulate why this candidate is viable despite career change.`,
+
+      skills: `**Career Changer Skills Guidance:**
+- Lead with new-career technical skills from master's program, bootcamp, or certification.
+- Follow with transferable skills from previous career (leadership, project management, communication).
+- Use new-field terminology even for transferable skills — reframe in target industry language.
+- Group skills: "Technical Skills" (new), "Transferable Skills" (from previous career).
+- Include certifications prominently — proof of new-career commitment.`,
+
+      experience: `**Career Changer Experience Guidance:**
+- Reframe prior experience with transferable skills emphasis.
+- Use new-career terminology to describe old work — translate achievements into target field language.
+- Connect old role achievements to new-field value propositions.
+- Highlight cross-functional, analytical, problem-solving, and leadership skills.
+- Example: "Led 10-person team (leadership) analyzing customer data (analytical skills) to improve retention (business impact)" → translates to tech product role.`,
+
+      education: `**Career Changer Education Guidance:**
+- PRIMARY credential — the master's degree, bootcamp, or certificate IS the pivot point.
+- Position prominently — this is proof of new-career competency.
+- Include all relevant coursework, capstone project, GPA if strong (3.5+).
+- Emphasize: "Master of Science in Computer Science" not just "M.S."
+- Capstone/thesis should be detailed if relevant to target role.
+- Demonstrate new-field expertise through academic credentials.`,
+
+      projects: `**Career Changer Projects Guidance:**
+- Bridge gap between careers — show progression in new field.
+- Emphasize capstone, bootcamp, certification projects prominently.
+- Use skills-transfer language: "Applied [old skill] to [new context]".
+- Highlight how previous career informs new work uniquely.
+- Format like experience entries — show professional-level project execution.`
+    };
+    return careerChangerGuidance[section];
+  }
+
+  // fulltime
+  const fulltimeGuidance: Record<string, string> = {
+    summary: `**Full-time Candidate Summary Guidance:**
+- Include if tailored and specific — skip if generic.
+- Lead with years of experience and domain expertise.
+- Quantify achievements — "5+ years", "led teams of 10+", "delivered $2M in savings".
+- Skip generic buzzwords — must be specific to this candidate and this role.
+- If summary is generic/buzzwordy, suggest removing entirely.`,
+
+    skills: `**Full-time Candidate Skills Guidance:**
+- Emphasize proficiency and production experience.
+- Advanced/expert-level skills should be highlighted.
+- Include leadership skills (mentoring, team leadership, stakeholder management).
+- Show depth in primary skill areas.
+- Certifications and specialized expertise belong prominently.`,
+
+    experience: `**Full-time Candidate Experience Guidance:**
+- Lead with impact and business outcomes.
+- Quantify results — percentages, dollar amounts, scale ("reduced costs by 40%", "led team of 8").
+- Show ownership and leadership even without formal title.
+- Demonstrate career progression and increasing responsibility.
+- Cross-functional collaboration and stakeholder management are key.`,
+
+    education: `**Full-time Candidate Education Guidance:**
+- Supporting credential only — degree and institution most important.
+- Skip GPA unless recent graduate (within 2-3 years) AND strong (3.5+).
+- Coursework generally not needed unless highly specialized.
+- Focus on advanced degrees, certifications, specialized training.
+- Keep concise — 1-2 lines for most experienced professionals.`,
+
+    projects: `**Full-time Candidate Projects Guidance:**
+- Supplement work experience — highlight standalone significant projects.
+- Keep concise — projects section is lower priority than experience.
+- Open-source contributions, side projects, or major initiatives outside day job.
+- Show technical breadth or exploration of new technologies.`
+  };
+  return fulltimeGuidance[section];
 }

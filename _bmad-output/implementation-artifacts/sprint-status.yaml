@@ -190,8 +190,8 @@ development_status:
   18-2-expand-resume-parsing-to-six-sections: done
   18-3-section-ordering-engine-and-structural-suggestions: done
   18-4-scoring-weight-alignment-and-career-changer-profile: done
-  18-5-projects-suggestion-generator: review
-  18-6-conditional-summary-and-candidate-type-suggestion-framing: backlog
+  18-5-projects-suggestion-generator: done
+  18-6-conditional-summary-and-candidate-type-suggestion-framing: done
   18-7-store-session-and-database-updates: backlog
   18-8-ui-dynamic-tab-ordering-projects-tab-and-structural-banner: backlog
   18-9-pipeline-integration-and-end-to-end-wiring: backlog

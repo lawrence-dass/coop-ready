@@ -145,7 +145,7 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
     expect(result.error).toBeNull();
     expect(result.data).not.toBeNull();
 
-    // Verify preferences reached generateSummarySuggestion (now with 7th arg: atsContext)
+    // Verify preferences reached generateSummarySuggestion (now with 8th arg: candidateType)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       baseRequest.resumeSummary,
       baseRequest.jobDescription,
@@ -153,10 +153,11 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       techSeniorPrefs,
       {}, // userContext (empty from mock)
       undefined, // resumeEducation
-      undefined // atsContext (from mock DB)
+      undefined, // atsContext (from mock DB)
+      'fulltime' // candidateType (derived from techSeniorPrefs.jobType)
     );
 
-    // Verify preferences reached generateSkillsSuggestion (now with 7th arg: atsContext)
+    // Verify preferences reached generateSkillsSuggestion (now with 8th arg: candidateType)
     expect(mocks.generateSkillsSuggestion).toHaveBeenCalledWith(
       baseRequest.resumeSkills,
       baseRequest.jobDescription,
@@ -164,10 +165,11 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       techSeniorPrefs,
       {}, // userContext (empty from mock)
       undefined, // resumeEducation
-      undefined // atsContext (from mock DB)
+      undefined, // atsContext (from mock DB)
+      'fulltime' // candidateType
     );
 
-    // Verify preferences reached generateExperienceSuggestion (now with 7th arg: atsContext)
+    // Verify preferences reached generateExperienceSuggestion (now with 8th arg: candidateType)
     expect(mocks.generateExperienceSuggestion).toHaveBeenCalledWith(
       baseRequest.resumeExperience,
       baseRequest.jobDescription,
@@ -175,7 +177,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       techSeniorPrefs,
       {}, // userContext (empty from mock)
       undefined, // resumeEducation
-      undefined // atsContext (from mock DB)
+      undefined, // atsContext (from mock DB)
+      'fulltime' // candidateType
     );
   });
 
@@ -191,7 +194,7 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       preferences: casualEntryPrefs,
     });
 
-    // Verify the different preferences were passed through (with userContext, resumeEducation, and atsContext)
+    // Verify the different preferences were passed through (with userContext, resumeEducation, atsContext, and candidateType)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
@@ -199,7 +202,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       casualEntryPrefs,
       {}, // userContext (empty from mock)
       undefined, // resumeEducation
-      undefined // atsContext (from mock DB)
+      undefined, // atsContext (from mock DB)
+      'coop' // candidateType (derived from casualEntryPrefs.jobType)
     );
 
     expect(mocks.generateSkillsSuggestion).toHaveBeenCalledWith(
@@ -209,7 +213,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       casualEntryPrefs,
       {}, // userContext (empty from mock)
       undefined, // resumeEducation
-      undefined // atsContext (from mock DB)
+      undefined, // atsContext (from mock DB)
+      'coop' // candidateType
     );
 
     expect(mocks.generateExperienceSuggestion).toHaveBeenCalledWith(
@@ -219,7 +224,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       casualEntryPrefs,
       {}, // userContext (empty from mock)
       undefined, // resumeEducation
-      undefined // atsContext (from mock DB)
+      undefined, // atsContext (from mock DB)
+      'coop' // candidateType
     );
   });
 
@@ -235,7 +241,7 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       // No preferences field
     });
 
-    // Verify undefined/null is passed when no preferences (with userContext, resumeEducation, and atsContext)
+    // Verify undefined/null is passed when no preferences (with userContext, resumeEducation, atsContext, and candidateType)
     expect(mocks.generateSummarySuggestion).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
@@ -243,7 +249,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       undefined,
       {}, // userContext (empty from mock)
       undefined, // resumeEducation
-      undefined // atsContext (from mock DB)
+      undefined, // atsContext (from mock DB)
+      'fulltime' // candidateType (derived from preferences - defaults to fulltime)
     );
   });
 
@@ -266,7 +273,8 @@ describe('Preferences Pipeline Integration (11.2-AC2)', () => {
       null,
       {}, // userContext (empty from mock)
       undefined, // resumeEducation
-      undefined // atsContext (from mock DB)
+      undefined, // atsContext (from mock DB)
+      'fulltime' // candidateType (derived from preferences - defaults to fulltime)
     );
   });
 });

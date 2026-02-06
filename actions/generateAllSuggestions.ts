@@ -23,6 +23,7 @@ import type {
 import type { SuggestionContext, JudgeResult, JudgeCriteriaScores } from '@/types/judge';
 import type { KeywordAnalysisResult } from '@/types/analysis';
 import type { ATSScoreV21 } from '@/lib/scoring/types';
+import { deriveEffectiveCandidateType } from '@/lib/ai/preferences';
 import { generateSummarySuggestion } from '@/lib/ai/generateSummarySuggestion';
 import { generateSkillsSuggestion } from '@/lib/ai/generateSkillsSuggestion';
 import { generateExperienceSuggestion } from '@/lib/ai/generateExperienceSuggestion';
@@ -350,22 +351,40 @@ export async function generateAllSuggestions(
       });
     }
 
-    // Fire all 5 generation calls in parallel (Story 11.2: pass preferences, userContext; Story 18.5: added projects)
+    // Derive effective candidate type from preferences (Story 18.6)
+    // Story 18.9 will replace this with actual detectCandidateType() call
+    const effectiveCandidateType = deriveEffectiveCandidateType(undefined, preferences);
+
+    // Conditional summary skip logic (Story 18.6 - AC #5, #7)
+    // Co-op without summary section: skip generation entirely (KB: wastes space on 1-page resume)
+    const shouldGenerateSummary = !(effectiveCandidateType === 'coop' && (!resumeSummary || resumeSummary.trim().length === 0));
+    // Career changer: ALWAYS generate summary (even from resumeContent fallback)
+    const forceSummary = effectiveCandidateType === 'career_changer';
+
+    if (!shouldGenerateSummary && !forceSummary) {
+      console.log('[SS:generateAll] Summary generation SKIPPED for co-op candidate without summary section');
+    }
+
+    // Fire all 5 generation calls in parallel (Story 11.2: pass preferences, userContext; Story 18.5: added projects; Story 18.6: candidateType)
     // Pass resumeEducation for co-op/internship context awareness
     // Pass atsContext for gap-aware suggestions (REQUIRED keywords prioritized over PREFERRED)
+    // Pass candidateType for candidate-type-specific framing (Story 18.6)
     // Education and projects are only generated if their sections exist in resume
     const [summaryResult, skillsResult, experienceResult, educationResult, projectsResult] =
       await Promise.allSettled([
-        generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences, userContext, resumeEducation, atsContexts.summary),
-        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.skills),
-        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.experience),
+        // Summary: conditional generation based on candidate type (Story 18.6 - AC #5, #7)
+        (shouldGenerateSummary || forceSummary)
+          ? generateSummarySuggestion(effectiveSummary, jobDescription, keywords, preferences, userContext, resumeEducation, atsContexts.summary, effectiveCandidateType)
+          : Promise.resolve({ data: null, error: null }),
+        generateSkillsSuggestion(effectiveSkills, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.skills, effectiveCandidateType),
+        generateExperienceSuggestion(effectiveExperience, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.experience, effectiveCandidateType),
         // Only generate education suggestions if education section exists
         effectiveEducation
-          ? generateEducationSuggestion(effectiveEducation, jobDescription, resumeContent, preferences, userContext, atsContexts.education)
+          ? generateEducationSuggestion(effectiveEducation, jobDescription, resumeContent, preferences, userContext, atsContexts.education, effectiveCandidateType)
           : Promise.resolve({ data: null, error: null }),
         // Story 18.5: Only generate projects suggestions if projects section exists
         effectiveProjects
-          ? generateProjectsSuggestion(effectiveProjects, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.projects)
+          ? generateProjectsSuggestion(effectiveProjects, jobDescription, resumeContent, preferences, userContext, resumeEducation, atsContexts.projects, effectiveCandidateType)
           : Promise.resolve({ data: null, error: null }),
       ]);
 
