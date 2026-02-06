@@ -568,6 +568,8 @@ export interface ATSScoreV2Input {
     skills?: string;
     experience?: string;
     education?: string;
+    projects?: string;
+    certifications?: string;
   };
 
   /** Job description text for role detection */

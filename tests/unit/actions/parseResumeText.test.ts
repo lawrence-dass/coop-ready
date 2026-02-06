@@ -50,7 +50,7 @@ describe('parseResumeText', () => {
     expect(result.data).toBeNull();
   });
 
-  it('should parse resume with all sections present', async () => {
+  it('[P0] should parse resume with all 4 sections (backward compatibility)', async () => {
     const mockCreate = getMockCreate();
     mockCreate.mockResolvedValue({
       content: [
@@ -61,6 +61,8 @@ describe('parseResumeText', () => {
             skills: 'JavaScript, TypeScript, React, Node.js',
             experience: 'Senior Developer at TechCorp (2020-2025)',
             education: 'BS Computer Science, MIT',
+            projects: null,
+            certifications: null,
           }),
         },
       ],
@@ -85,7 +87,165 @@ describe('parseResumeText', () => {
     expect(result.data?.skills).toBe('JavaScript, TypeScript, React, Node.js');
     expect(result.data?.experience).toBe('Senior Developer at TechCorp (2020-2025)');
     expect(result.data?.education).toBe('BS Computer Science, MIT');
+    expect(result.data?.projects).toBeUndefined();
+    expect(result.data?.certifications).toBeUndefined();
     expect(result.data?.uploadedAt).toBeInstanceOf(Date);
+  });
+
+  it('[P1] should parse resume with all 6 sections', async () => {
+    const mockCreate = getMockCreate();
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            summary: 'Software engineer with 5 years experience',
+            skills: 'JavaScript, TypeScript, React, Node.js',
+            experience: 'Senior Developer at TechCorp (2020-2025)',
+            education: 'BS Computer Science, MIT',
+            projects: 'E-commerce Platform: Built using React, Node.js, PostgreSQL',
+            certifications: 'AWS Certified Developer, Google Cloud Professional',
+          }),
+        },
+      ],
+    });
+
+    const rawText = `
+      John Doe
+      Software Engineer
+
+      Summary: Software engineer with 5 years experience
+      Skills: JavaScript, TypeScript, React, Node.js
+      Experience: Senior Developer at TechCorp (2020-2025)
+      Education: BS Computer Science, MIT
+      Projects: E-commerce Platform: Built using React, Node.js, PostgreSQL
+      Certifications: AWS Certified Developer, Google Cloud Professional
+    `;
+
+    const result = await parseResumeText(rawText);
+
+    expect(result.error).toBeNull();
+    expect(result.data).not.toBeNull();
+    expect(result.data?.summary).toBe('Software engineer with 5 years experience');
+    expect(result.data?.skills).toBe('JavaScript, TypeScript, React, Node.js');
+    expect(result.data?.experience).toBe('Senior Developer at TechCorp (2020-2025)');
+    expect(result.data?.education).toBe('BS Computer Science, MIT');
+    expect(result.data?.projects).toBe('E-commerce Platform: Built using React, Node.js, PostgreSQL');
+    expect(result.data?.certifications).toBe('AWS Certified Developer, Google Cloud Professional');
+  });
+
+  it('[P1] should handle projects section with null certifications', async () => {
+    const mockCreate = getMockCreate();
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            summary: 'Software engineer',
+            skills: 'Python, Django',
+            experience: 'Developer at StartupCo',
+            education: 'BS CS',
+            projects: 'Portfolio Website: React + Next.js',
+            certifications: null,
+          }),
+        },
+      ],
+    });
+
+    const result = await parseResumeText('Resume with projects only');
+
+    expect(result.error).toBeNull();
+    expect(result.data).not.toBeNull();
+    expect(result.data?.projects).toBe('Portfolio Website: React + Next.js');
+    expect(result.data?.certifications).toBeUndefined();
+  });
+
+  it('[P0] should include projects and certifications in prompt', async () => {
+    const mockCreate = getMockCreate();
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            summary: 'Test',
+            skills: 'Test',
+            experience: 'Test',
+            education: 'Test',
+            projects: null,
+            certifications: null,
+          }),
+        },
+      ],
+    });
+
+    await parseResumeText('Test resume content');
+
+    expect(mockCreate).toHaveBeenCalled();
+    const callArgs = mockCreate.mock.calls[0];
+    const promptContent = callArgs[0].messages[0].content;
+
+    // Verify prompt mentions 6 sections
+    expect(promptContent).toContain('6 sections');
+    expect(promptContent).toContain('Projects:');
+    expect(promptContent).toContain('Certifications:');
+    expect(promptContent).toContain('"projects"');
+    expect(promptContent).toContain('"certifications"');
+
+    // Verify disambiguation rules
+    expect(promptContent).toContain('Project Experience');
+    expect(promptContent).toContain('NOT "experience"');
+  });
+
+  it('[P1] should handle certifications section with null projects', async () => {
+    const mockCreate = getMockCreate();
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            summary: 'Software engineer',
+            skills: 'Python, Django',
+            experience: 'Developer at StartupCo',
+            education: 'BS CS',
+            projects: null,
+            certifications: 'AWS Certified Developer, PMP',
+          }),
+        },
+      ],
+    });
+
+    const result = await parseResumeText('Resume with certifications only');
+
+    expect(result.error).toBeNull();
+    expect(result.data).not.toBeNull();
+    expect(result.data?.projects).toBeUndefined();
+    expect(result.data?.certifications).toBe('AWS Certified Developer, PMP');
+  });
+
+  it('[P1] should set projects and certifications to undefined when null', async () => {
+    const mockCreate = getMockCreate();
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            summary: 'Test',
+            skills: 'Test',
+            experience: 'Test',
+            education: 'Test',
+            projects: null,
+            certifications: null,
+          }),
+        },
+      ],
+    });
+
+    const result = await parseResumeText('Test resume');
+
+    expect(result.error).toBeNull();
+    expect(result.data).not.toBeNull();
+    expect(result.data?.projects).toBeUndefined();
+    expect(result.data?.certifications).toBeUndefined();
   });
 
   it('should handle resume with missing sections (set to undefined)', async () => {
@@ -99,6 +259,8 @@ describe('parseResumeText', () => {
             skills: 'JavaScript, Python',
             experience: 'Developer at StartupCo',
             education: null,
+            projects: null,
+            certifications: null,
           }),
         },
       ],
@@ -114,6 +276,8 @@ describe('parseResumeText', () => {
     expect(result.data?.skills).toBe('JavaScript, Python');
     expect(result.data?.experience).toBe('Developer at StartupCo');
     expect(result.data?.education).toBeUndefined();
+    expect(result.data?.projects).toBeUndefined();
+    expect(result.data?.certifications).toBeUndefined();
   });
 
   it('should handle JSON wrapped in markdown code blocks', async () => {
@@ -127,6 +291,8 @@ describe('parseResumeText', () => {
             skills: 'Test skills',
             experience: 'Test experience',
             education: 'Test education',
+            projects: null,
+            certifications: null,
           }) + '\n```',
         },
       ],
@@ -181,6 +347,8 @@ describe('parseResumeText', () => {
             skills: 'Test',
             experience: 'Test',
             education: 'Test',
+            projects: null,
+            certifications: null,
           }),
         },
       ],
@@ -207,6 +375,8 @@ describe('parseResumeText', () => {
             skills: 'Test skills',
             experience: 'Test experience',
             education: 'Test education',
+            projects: null,
+            certifications: null,
           }),
         },
       ],
@@ -234,6 +404,8 @@ describe('parseResumeText', () => {
             skills: null,
             experience: null,
             education: null,
+            projects: null,
+            certifications: null,
           }),
         },
       ],

@@ -39,6 +39,12 @@ export interface Resume {
   /** Education section */
   education?: string;
 
+  /** Projects section - technical/academic projects */
+  projects?: string;
+
+  /** Certifications, awards, honors, licenses */
+  certifications?: string;
+
   /** Original filename for reference */
   filename?: string;
 
@@ -271,4 +277,4 @@ export type LoadingStep =
 /**
  * Resume section identifier
  */
-export type ResumeSection = 'summary' | 'skills' | 'experience' | 'education';
+export type ResumeSection = 'summary' | 'skills' | 'experience' | 'education' | 'projects' | 'certifications';

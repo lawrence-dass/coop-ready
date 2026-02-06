@@ -14,6 +14,8 @@ interface ParseResult {
   skills: string | null;
   experience: string | null;
   education: string | null;
+  projects: string | null;
+  certifications: string | null;
 }
 
 interface ParseResumeOptions {
@@ -66,14 +68,28 @@ export async function parseResumeText(
         messages: [
           {
             role: 'user',
-            content: `Parse the following resume into structured sections. Identify and extract: Summary (professional summary/objective), Skills, Experience (work history), and Education. If a section is not present or empty, set it to null.
+            content: `Parse the following resume into structured sections. Identify and extract these 6 sections:
+- Summary: Professional summary or objective statement
+- Skills: Technical and soft skills listing
+- Experience: Work history and employment
+- Education: Degrees, institutions, dates
+- Projects: Technical projects, academic projects, "Project Experience" (NOT work experience - these have project titles + technologies but NO company names)
+- Certifications: Certifications, awards, honors, licenses
+
+IMPORTANT: "Project Experience" or "Technical Projects" entries that list project titles with technologies should go in "projects", NOT "experience". Work experience with company names goes in "experience".
+
+Common certification headings: "Certifications", "Awards", "Awards & Certifications", "Licenses", "Honors"
+
+If a section is not present or empty, set it to null.
 
 Return ONLY valid JSON in this format:
 {
   "summary": "text or null",
   "skills": "text or null",
   "experience": "text or null",
-  "education": "text or null"
+  "education": "text or null",
+  "projects": "text or null",
+  "certifications": "text or null"
 }
 
 <user_content>
@@ -112,6 +128,8 @@ ${redactedText}
       skills: !!parsed.skills,
       experience: !!parsed.experience,
       education: !!parsed.education,
+      projects: !!parsed.projects,
+      certifications: !!parsed.certifications,
     });
 
     // Restore PII in parsed sections
@@ -119,6 +137,8 @@ ${redactedText}
     const skills = parsed.skills ? restorePII(parsed.skills, redactionMap) : null;
     const experience = parsed.experience ? restorePII(parsed.experience, redactionMap) : null;
     const education = parsed.education ? restorePII(parsed.education, redactionMap) : null;
+    const projects = parsed.projects ? restorePII(parsed.projects, redactionMap) : null;
+    const certifications = parsed.certifications ? restorePII(parsed.certifications, redactionMap) : null;
 
     // Build Resume object with metadata
     const resume: Resume = {
@@ -127,6 +147,8 @@ ${redactedText}
       skills: skills || undefined,
       experience: experience || undefined,
       education: education || undefined,
+      projects: projects || undefined,
+      certifications: certifications || undefined,
       filename: options.filename,
       fileSize: options.fileSize,
       uploadedAt: new Date(),
