@@ -181,3 +181,18 @@ development_status:
   17-5-implement-dashboard-stats-calculation: done
   17-6-dashboard-ui-cleanup: done
   17-7-epic-17-integration-and-verification-testing: done
+
+  # Epic 18: Candidate-Type-Aware Resume Structure
+  # Reference: _bmad-output/planning-artifacts/epic-18-candidate-type-aware-resume-structure.md
+  # Knowledge Base: docs/ats-resume-structure-knowledge-base.md
+  epic-18: in-progress
+  18-1-candidate-type-detection-and-classification: done
+  18-2-expand-resume-parsing-to-six-sections: backlog
+  18-3-section-ordering-engine-and-structural-suggestions: backlog
+  18-4-scoring-weight-alignment-and-career-changer-profile: backlog
+  18-5-projects-suggestion-generator: backlog
+  18-6-conditional-summary-and-candidate-type-suggestion-framing: backlog
+  18-7-store-session-and-database-updates: backlog
+  18-8-ui-dynamic-tab-ordering-projects-tab-and-structural-banner: backlog
+  18-9-pipeline-integration-and-end-to-end-wiring: backlog
+  18-10-comprehensive-testing: backlog

@@ -283,6 +283,31 @@ export type JobRole =
 export type JobType = 'coop' | 'fulltime';
 
 /**
+ * Candidate type classification - broader than JobType, includes career changers
+ */
+export type CandidateType = 'coop' | 'fulltime' | 'career_changer';
+
+/**
+ * Input parameters for candidate type detection
+ */
+export interface CandidateTypeInput {
+  userJobType?: JobType; // From OptimizationPreferences.jobType
+  careerGoal?: string; // From UserContext.careerGoal
+  resumeRoleCount?: number; // Count of roles in experience section
+  hasActiveEducation?: boolean; // Expected graduation date in future
+  totalExperienceYears?: number; // Estimated total years of experience
+}
+
+/**
+ * Result of candidate type detection with confidence metrics
+ */
+export interface CandidateTypeResult {
+  candidateType: CandidateType;
+  confidence: number; // 0.0 - 1.0
+  detectedFrom: 'user_selection' | 'onboarding' | 'resume_analysis' | 'default';
+}
+
+/**
  * V2.1 Component weights
  */
 export interface ComponentWeightsV21 {

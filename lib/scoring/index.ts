@@ -80,6 +80,9 @@ export type {
   ComponentWeightsV21,
   ActionPriority,
   ActionItem,
+  CandidateType,
+  CandidateTypeInput,
+  CandidateTypeResult,
 } from './types';
 
 export { getScoreTier } from './types';
@@ -99,6 +102,7 @@ export { calculateContentQuality, extractQuantifications, classifyActionVerb, ge
 export { calculateSectionScoreV21, evaluateEducationQuality, generateSectionActionItemsV21 } from './sectionScore';
 export { calculateFormatScoreV21, generateFormatActionItemsV21 } from './formatScore';
 export { detectJobType } from './jobTypeDetection';
+export { detectCandidateType } from './candidateTypeDetection';
 
 // Constants - V2
 export {
