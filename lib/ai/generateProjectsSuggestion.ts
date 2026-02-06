@@ -18,6 +18,8 @@ import {
   buildPreferencePrompt,
   getJobTypeVerbGuidance,
   getJobTypeFramingGuidance,
+  getCandidateTypeGuidance,
+  deriveEffectiveCandidateType,
 } from './preferences';
 import { getSonnetModel } from './models';
 import {
@@ -35,44 +37,6 @@ import type { SectionATSContext } from './buildSectionATSContext';
 const MAX_PROJECTS_LENGTH = 4000;
 const MAX_JD_LENGTH = 3000;
 const MAX_RESUME_LENGTH = 4000;
-
-// ============================================================================
-// CANDIDATE TYPE FRAMING
-// ============================================================================
-
-/**
- * Get candidate-type-specific framing for projects section
- */
-function getCandidateTypeProjectsGuidance(candidateType: CandidateType): string {
-  switch (candidateType) {
-    case 'coop':
-      return `**Candidate Context: Co-op/Internship Student**
-This is the candidate's PRIMARY experience section since they have limited work experience.
-- Format each project like a job entry (title, technologies, date range, bullets)
-- Suggest heading "Project Experience" (triggers ATS experience-level weighting)
-- Emphasize the individual's specific role and contributions, NOT team output
-- Include course projects, personal projects, hackathon projects, capstone work
-- Use learning-focused verbs: "Developed", "Implemented", "Designed", "Built"
-- Each project should have 2-3 bullets with action verb + contribution + quantified result`;
-
-    case 'career_changer':
-      return `**Candidate Context: Career Changer**
-Projects section bridges the gap between old and new career.
-- Emphasize master's capstone, bootcamp projects, certification projects
-- Highlight new-career skills demonstrated through hands-on work
-- Format like experience entries (title, technologies, dates, bullets)
-- 2-3 projects showing progression in new field
-- Use skills-transfer language: "Applied X background to solve Y problem"`;
-
-    case 'fulltime':
-    default:
-      return `**Candidate Context: Experienced Professional**
-Projects section supplements work experience.
-- Highlight standalone significant projects (open-source, side projects, Kaggle)
-- Focus on projects that demonstrate skills not shown in Experience section
-- Keep concise — 1-2 projects, 2 bullets each maximum`;
-  }
-}
 
 // ============================================================================
 // PROMPT TEMPLATE
@@ -301,8 +265,7 @@ export async function generateProjectsSuggestion(
   }
 
   // Derive candidateType from preferences if not explicitly provided
-  const effectiveCandidateType =
-    candidateType ?? (preferences?.jobType === 'coop' ? 'coop' : 'fulltime');
+  const effectiveCandidateType = deriveEffectiveCandidateType(candidateType, preferences);
 
   console.log(
     '[SS:genProjects] Generating projects suggestion (' +
@@ -367,13 +330,13 @@ export async function generateProjectsSuggestion(
       ? `<education_context>\nUse this to understand academic background and connect projects to coursework:\n${redactedEducation}\n</education_context>\n`
       : '';
 
-  // Build candidate-type-specific guidance
-  const candidateTypeGuidance = `\n${getCandidateTypeProjectsGuidance(effectiveCandidateType)}\n\n`;
+  // Build candidate-type-specific guidance using shared function
+  const candidateTypeGuidance = `\n${getCandidateTypeGuidance(effectiveCandidateType, 'projects')}\n\n`;
 
   // Build job-type-specific guidance (injected before general preferences for prominence)
   const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
   const jobTypeGuidance = preferences
-    ? `${getJobTypeVerbGuidance(preferences.jobType)}\n\n${getJobTypeFramingGuidance(preferences.jobType, 'experience', hasEducation)}\n\n`
+    ? `${getJobTypeVerbGuidance(effectiveCandidateType)}\n\n${getJobTypeFramingGuidance(effectiveCandidateType, 'projects', hasEducation)}\n\n`
     : '';
 
   const preferenceSection = preferences

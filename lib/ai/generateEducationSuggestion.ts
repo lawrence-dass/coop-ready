@@ -19,6 +19,8 @@ import {
   buildPreferencePrompt,
   getJobTypeVerbGuidance,
   getJobTypeFramingGuidance,
+  getCandidateTypeGuidance,
+  deriveEffectiveCandidateType,
 } from './preferences';
 import { getSonnetModel } from './models';
 import {
@@ -28,6 +30,7 @@ import {
 } from './chains';
 import { redactPII, restorePII } from './redactPII';
 import type { SectionATSContext } from './buildSectionATSContext';
+import type { CandidateType } from '@/lib/scoring/types';
 
 // ============================================================================
 // CONSTANTS
@@ -356,6 +359,8 @@ function detectFabrication(original: string, suggested: string): boolean {
  * @param resumeContent - Full resume content for context
  * @param preferences - User's optimization preferences (optional)
  * @param userContext - User context from onboarding (optional)
+ * @param atsContext - ATS analysis context for consistency (optional)
+ * @param candidateType - Detected candidate type (optional, for candidate-type-specific framing)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateEducationSuggestion(
@@ -364,7 +369,8 @@ export async function generateEducationSuggestion(
   resumeContent?: string,
   preferences?: OptimizationPreferences | null,
   userContext?: UserContext,
-  atsContext?: SectionATSContext
+  atsContext?: SectionATSContext,
+  candidateType?: CandidateType
 ): Promise<ActionResponse<EducationSuggestion>> {
   // Validation
   if (!resumeEducation || resumeEducation.trim().length === 0) {
@@ -449,10 +455,15 @@ export async function generateEducationSuggestion(
     ? `<full_resume_context>\n${processedResume}\n</full_resume_context>\n`
     : '';
 
+  // Derive effective candidate type (fallback from preferences.jobType)
+  const effectiveCandidateType = deriveEffectiveCandidateType(candidateType, preferences);
+
   // Build job-type-specific guidance for education section
+  const candidateTypeGuidance = `${getCandidateTypeGuidance(effectiveCandidateType, 'education')}\n\n`;
+
   const jobTypeGuidance = preferences
-    ? `${getJobTypeVerbGuidance(preferences.jobType)}\n\n${getJobTypeFramingGuidance(preferences.jobType, 'education', true)}\n\n`
-    : '';
+    ? `${candidateTypeGuidance}${getJobTypeVerbGuidance(effectiveCandidateType)}\n\n${getJobTypeFramingGuidance(effectiveCandidateType, 'education', true)}\n\n`
+    : candidateTypeGuidance;
 
   const preferenceSection = preferences
     ? `\n${buildPreferencePrompt(preferences, userContext)}\n`

@@ -16,6 +16,8 @@ import { SkillsSuggestion } from '@/types/suggestions';
 import {
   buildPreferencePrompt,
   getJobTypeFramingGuidance,
+  getCandidateTypeGuidance,
+  deriveEffectiveCandidateType,
 } from './preferences';
 import { getSonnetModel } from './models';
 import {
@@ -25,6 +27,7 @@ import {
 } from './chains';
 import { redactPII, restorePII } from './redactPII';
 import type { SectionATSContext } from './buildSectionATSContext';
+import type { CandidateType } from '@/lib/scoring/types';
 
 // ============================================================================
 // CONSTANTS
@@ -174,6 +177,7 @@ function createSkillsSuggestionChain() {
  * @param userContext - User context from onboarding (optional, for LLM personalization)
  * @param resumeEducation - User's education section (optional, for co-op/internship context)
  * @param atsContext - ATS analysis context for consistency (optional, for gap-aware suggestions)
+ * @param candidateType - Detected candidate type (optional, for candidate-type-specific framing)
  * @returns ActionResponse with suggestion or error
  */
 export async function generateSkillsSuggestion(
@@ -183,7 +187,8 @@ export async function generateSkillsSuggestion(
   preferences?: OptimizationPreferences | null,
   userContext?: UserContext,
   resumeEducation?: string,
-  atsContext?: SectionATSContext
+  atsContext?: SectionATSContext,
+  candidateType?: CandidateType
 ): Promise<ActionResponse<SkillsSuggestion>> {
   // Validation
   if (!resumeSkills || resumeSkills.trim().length === 0) {
@@ -269,11 +274,16 @@ export async function generateSkillsSuggestion(
       ? `<education_context>\nConsider coursework and academic projects when suggesting skills:\n${redactedEducation}\n</education_context>\n`
       : '';
 
+  // Derive effective candidate type (fallback from preferences.jobType)
+  const effectiveCandidateType = deriveEffectiveCandidateType(candidateType, preferences);
+
   // Build job-type-specific guidance (injected before general preferences for prominence)
   const hasEducation = !!resumeEducation && resumeEducation.trim().length > 0;
+  const candidateTypeGuidance = `${getCandidateTypeGuidance(effectiveCandidateType, 'skills')}\n\n`;
+
   const jobTypeGuidance = preferences
-    ? `${getJobTypeFramingGuidance(preferences.jobType, 'skills', hasEducation)}\n\n`
-    : '';
+    ? `${candidateTypeGuidance}${getJobTypeFramingGuidance(effectiveCandidateType, 'skills', hasEducation)}\n\n`
+    : candidateTypeGuidance;
 
   const preferenceSection = preferences
     ? `\n${buildPreferencePrompt(preferences, userContext)}\n`
