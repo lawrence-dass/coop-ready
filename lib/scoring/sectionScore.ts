@@ -17,6 +17,7 @@ import type {
   SectionScoreResultV21,
   EducationQualityResult,
   JobType,
+  CandidateType,
 } from './types';
 import { SECTION_THRESHOLDS, SECTION_CONFIG_V21 } from './constants';
 
@@ -272,7 +273,7 @@ export function generateSectionActionItems(result: SectionScoreResult): string[]
 export function evaluateEducationQuality(
   educationText: string,
   jdKeywords: string[],
-  jobType: JobType
+  candidateType: CandidateType
 ): EducationQualityResult {
   if (!educationText || educationText.trim().length === 0) {
     return {
@@ -335,11 +336,11 @@ export function evaluateEducationQuality(
       educationText
     );
 
-  // Calculate score (weights depend on job type)
+  // Calculate score (weights depend on candidate type)
   let score: number;
   const suggestions: string[] = [];
 
-  if (jobType === 'coop') {
+  if (candidateType === 'coop') {
     // For co-op, education is critical
     score =
       (hasRelevantCoursework ? 0.3 : 0) +
@@ -356,6 +357,22 @@ export function evaluateEducationQuality(
     if (!hasProjects) suggestions.push('Add capstone project or academic projects');
     if (!hasHonors && gpaStrong)
       suggestions.push("Add Dean's List or honors if applicable");
+  } else if (candidateType === 'career_changer') {
+    // For career changers, education is critical (recent degree/training is pivot credential)
+    score =
+      (hasRelevantCoursework ? 0.3 : 0) +
+      courseworkMatchScore * 0.25 +
+      (hasGPA ? (gpaStrong ? 0.12 : 0.06) : 0) + // Less emphasis on GPA than co-op
+      (hasProjects ? 0.18 : 0) + // More emphasis on projects/capstones
+      (hasHonors ? 0.08 : 0) +
+      (hasProperDateFormat ? 0.06 : 0);
+
+    if (!hasRelevantCoursework)
+      suggestions.push('Add relevant coursework, bootcamp, or certificate programs');
+    if (!hasProjects)
+      suggestions.push('Add capstone project or portfolio work from training');
+    if (!hasGPA)
+      suggestions.push('Add GPA if 3.5+ for recent degrees');
   } else {
     // For full-time, education is less critical
     score =
@@ -396,20 +413,24 @@ export interface SectionScoreInputV21 {
     projects?: string[];
     certifications?: string[];
   };
-  jobType: JobType;
+  jobType?: JobType; // Deprecated, use candidateType
+  candidateType?: CandidateType;
   jdKeywords: string[];
 }
 
 /**
  * Calculate section score for ATS V2.1
  *
- * Evaluates sections with job-type-aware thresholds and education quality.
+ * Evaluates sections with candidate-type-aware thresholds and education quality.
  */
 export function calculateSectionScoreV21(
   input: SectionScoreInputV21
 ): SectionScoreResultV21 {
-  const { sections, jobType, jdKeywords } = input;
-  const config = SECTION_CONFIG_V21[jobType];
+  const { sections, jdKeywords } = input;
+  // Derive candidateType from input (backward compatibility)
+  const candidateType =
+    input.candidateType ?? (input.jobType === 'coop' ? 'coop' : 'fulltime');
+  const config = SECTION_CONFIG_V21[candidateType];
 
   let achievedPoints = 0;
   let possiblePoints = 0;
@@ -417,7 +438,10 @@ export function calculateSectionScoreV21(
 
   // === SUMMARY ===
   const summaryConfig = config.summary;
-  possiblePoints += summaryConfig.maxPoints;
+  // Only add to possiblePoints if required or present (co-op summary is optional)
+  if (summaryConfig.required || (sections.summary && sections.summary.trim().length > 0)) {
+    possiblePoints += summaryConfig.maxPoints;
+  }
   const summaryLength = sections.summary?.trim().length ?? 0;
 
   if (summaryLength >= summaryConfig.minLength) {
@@ -440,7 +464,7 @@ export function calculateSectionScoreV21(
       maxPoints: summaryConfig.maxPoints,
       issues: [`Summary too short (${summaryLength}/${summaryConfig.minLength} chars)`],
     };
-  } else {
+  } else if (summaryConfig.required) {
     breakdown.summary = {
       present: false,
       meetsThreshold: false,
@@ -449,6 +473,7 @@ export function calculateSectionScoreV21(
       issues: ['No professional summary section'],
     };
   }
+  // If summary not required and not present, no penalty or breakdown entry needed
 
   // === SKILLS ===
   const skillsConfig = config.skills;
@@ -485,8 +510,16 @@ export function calculateSectionScoreV21(
 
   // === EXPERIENCE ===
   const expConfig = config.experience;
-  if (expConfig.required || (sections.experience && sections.experience.length > 0)) {
-    possiblePoints += expConfig.maxPoints;
+  // Co-op experience waiver: if projects has 3+ bullets, don't penalize for missing experience
+  const projectBulletCount = sections.projects?.length ?? 0;
+  const experiencePresent = (sections.experience?.length ?? 0) > 0;
+  const hasStrongProjects = candidateType === 'coop' && projectBulletCount >= 3;
+
+  if (expConfig.required || experiencePresent) {
+    // Only skip possiblePoints if experience is MISSING and waived by strong projects
+    if (experiencePresent || !hasStrongProjects) {
+      possiblePoints += expConfig.maxPoints;
+    }
     const bulletCount = sections.experience?.length ?? 0;
 
     if (bulletCount >= expConfig.minBullets) {
@@ -509,6 +542,15 @@ export function calculateSectionScoreV21(
           `Only ${bulletCount} experience bullets (recommend ${expConfig.minBullets}+)`,
         ],
       };
+    } else if (hasStrongProjects) {
+      // Co-op with strong projects: experience waived (no penalty)
+      breakdown.experience = {
+        present: false,
+        meetsThreshold: true, // Waived by strong projects
+        points: 0,
+        maxPoints: 0, // Not counted in possible points
+        issues: [],
+      };
     } else {
       breakdown.experience = {
         present: false,
@@ -530,7 +572,7 @@ export function calculateSectionScoreV21(
     educationQuality = evaluateEducationQuality(
       sections.education,
       jdKeywords,
-      jobType
+      candidateType
     );
 
     // Score is combination of presence and quality

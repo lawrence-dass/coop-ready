@@ -25,6 +25,7 @@ import type {
   JobType,
   JobRole,
   SeniorityLevel,
+  CandidateType,
 } from './types';
 import { getScoreTier } from './types';
 import {
@@ -261,21 +262,29 @@ export interface ATSScoreV21Input {
 
   /** Job type (affects thresholds) */
   jobType: JobType;
+
+  /** Candidate type (optional, derived from jobType if not provided) */
+  candidateType?: CandidateType;
 }
 
 /**
- * Get component weights based on role and seniority
+ * Get component weights based on role, seniority, and candidate type
  */
 function getComponentWeightsV21(
   role: JobRole,
   seniority: SeniorityLevel,
-  jobType: JobType
+  candidateType: CandidateType
 ): ComponentWeightsV21 {
   // Start with base weights
   let weights: ComponentWeightsV21 = { ...COMPONENT_WEIGHTS_V21 };
 
-  // Adjustments for co-op/entry level
-  if (jobType === 'coop' || seniority === 'entry') {
+  // Adjustments for candidate type (highest priority)
+  if (candidateType === 'coop') {
+    weights = { ...ROLE_WEIGHT_ADJUSTMENTS.coop_entry };
+  } else if (candidateType === 'career_changer') {
+    weights = { ...ROLE_WEIGHT_ADJUSTMENTS.career_changer };
+  } else if (seniority === 'entry') {
+    // Fulltime entry level uses coop weights
     weights = { ...ROLE_WEIGHT_ADJUSTMENTS.coop_entry };
   }
 
@@ -341,8 +350,9 @@ function detectJobRole(jdText: string): JobRole {
 /**
  * Detect seniority level from JD text
  */
-function detectSeniorityLevel(jdText: string, jobType: JobType): SeniorityLevel {
-  if (jobType === 'coop') return 'entry';
+function detectSeniorityLevel(jdText: string, candidateType: CandidateType): SeniorityLevel {
+  // Co-op and career changer default to entry for seniority detection purposes
+  if (candidateType === 'coop' || candidateType === 'career_changer') return 'mid';
 
   const jdLower = jdText.toLowerCase();
 
@@ -479,10 +489,13 @@ export function calculateATSScoreV21(input: ATSScoreV21Input): ATSScoreV21 {
     jobType,
   } = input;
 
+  // Derive candidate type from input (backward compatibility)
+  const candidateType = input.candidateType ?? (jobType === 'coop' ? 'coop' : 'fulltime');
+
   // Detect role and seniority
   const detectedRole = detectJobRole(jdText);
-  const detectedSeniority = detectSeniorityLevel(jdText, jobType);
-  const weights = getComponentWeightsV21(detectedRole, detectedSeniority, jobType);
+  const detectedSeniority = detectSeniorityLevel(jdText, candidateType);
+  const weights = getComponentWeightsV21(detectedRole, detectedSeniority, candidateType);
 
   // Extract JD keywords for various checks
   const jdKeywords = keywords.map((k) => k.keyword);
@@ -501,7 +514,7 @@ export function calculateATSScoreV21(input: ATSScoreV21Input): ATSScoreV21 {
 
   const sectionResult = calculateSectionScoreV21({
     sections,
-    jobType,
+    candidateType,
     jdKeywords,
   });
 
