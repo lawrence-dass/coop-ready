@@ -6,7 +6,18 @@
  *
  * Story: 11.2 - Implement Optimization Preferences (5 original preferences)
  * Story: 13.1 - Add Job Type and Modification Level Types (2 new preferences)
+ * Story: 18.1 - Add Candidate Type Detection and Classification
  */
+
+// ============================================================================
+// RE-EXPORTS FROM SCORING TYPES
+// ============================================================================
+
+export type {
+  CandidateType,
+  CandidateTypeInput,
+  CandidateTypeResult,
+} from '@/lib/scoring/types';
 
 // ============================================================================
 // PREFERENCE TYPE DEFINITIONS
