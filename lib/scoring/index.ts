@@ -104,6 +104,12 @@ export { calculateFormatScoreV21, generateFormatActionItemsV21 } from './formatS
 export { detectJobType } from './jobTypeDetection';
 export { detectCandidateType } from './candidateTypeDetection';
 
+// Section Ordering & Structural Suggestions - Story 18.3
+export { validateSectionOrder, RECOMMENDED_ORDER } from './sectionOrdering';
+export type { SectionOrderValidation, SectionOrderViolation } from './sectionOrdering';
+export { generateStructuralSuggestions } from './structuralSuggestions';
+export type { StructuralSuggestionInput } from './structuralSuggestions';
+
 // Constants - V2
 export {
   COMPONENT_WEIGHTS,
