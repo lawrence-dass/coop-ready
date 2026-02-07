@@ -60,7 +60,7 @@ export interface SuggestionCardProps {
   metrics?: string[];
 
   /** Section type for styling context */
-  sectionType: 'summary' | 'skills' | 'experience' | 'education';
+  sectionType: 'summary' | 'skills' | 'experience' | 'education' | 'projects';
 
   /** Why this works explanation (optional) */
   explanation?: string;
@@ -110,7 +110,7 @@ export function SuggestionCard({
 }: SuggestionCardProps) {
   // Version toggle state - default to Quick Edit when compact is available
   // Supported for summary and experience sections
-  const hasCompactVersion = (sectionType === 'summary' || sectionType === 'experience') && !!suggestedCompact;
+  const hasCompactVersion = (sectionType === 'summary' || sectionType === 'experience' || sectionType === 'projects') && !!suggestedCompact;
   const [showFull, setShowFull] = useState(false);
 
   // Determine which suggestion text to display
@@ -130,7 +130,7 @@ export function SuggestionCard({
       state.getFeedbackForSuggestion(suggestionId)
   );
   const recordSuggestionFeedback = useOptimizationStore(
-    (state: { recordSuggestionFeedback: (id: string, section: 'summary' | 'skills' | 'experience' | 'education', helpful: boolean | null) => Promise<void> }) =>
+    (state: { recordSuggestionFeedback: (id: string, section: 'summary' | 'skills' | 'experience' | 'education' | 'projects', helpful: boolean | null) => Promise<void> }) =>
       state.recordSuggestionFeedback
   );
 

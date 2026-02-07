@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Briefcase, Sparkles, GraduationCap } from 'lucide-react';
+import { FileText, Briefcase, Sparkles, GraduationCap, Code } from 'lucide-react';
 
 interface SectionSummaryCardProps {
   /** Section name (Summary, Skills, Experience) */
@@ -43,6 +43,8 @@ export function SectionSummaryCard({
         return <Briefcase className="w-5 h-5 text-green-600" />;
       case 'education':
         return <GraduationCap className="w-5 h-5 text-amber-600" />;
+      case 'projects':
+        return <Code className="w-5 h-5 text-indigo-600" />;
       default:
         return <FileText className="w-5 h-5 text-gray-600" />;
     }
