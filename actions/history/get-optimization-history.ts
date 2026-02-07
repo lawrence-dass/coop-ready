@@ -44,6 +44,8 @@ interface SessionRow {
   summary_suggestion: unknown | null;
   skills_suggestion: unknown | null;
   experience_suggestion: unknown | null;
+  education_suggestion: unknown | null;
+  projects_suggestion: unknown | null;
 }
 
 /**
@@ -183,6 +185,8 @@ function countSuggestions(row: SessionRow): number {
   if (row.summary_suggestion) count++;
   if (row.skills_suggestion) count++;
   if (row.experience_suggestion) count++;
+  if (row.education_suggestion) count++;
+  if (row.projects_suggestion) count++;
 
   return count;
 }
@@ -269,7 +273,7 @@ export async function getOptimizationHistory(): Promise<
     const { data, error: queryError } = await supabase
       .from('sessions')
       .select(
-        'id, created_at, title, job_title, company_name, resume_name, resume_content, jd_content, ats_score, compared_ats_score, summary_suggestion, skills_suggestion, experience_suggestion'
+        'id, created_at, title, job_title, company_name, resume_name, resume_content, jd_content, ats_score, compared_ats_score, summary_suggestion, skills_suggestion, experience_suggestion, education_suggestion, projects_suggestion'
       )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
