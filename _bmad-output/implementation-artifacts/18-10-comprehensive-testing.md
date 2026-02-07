@@ -1,6 +1,6 @@
 # Story 18.10: Comprehensive Testing
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -364,3 +364,37 @@ Created (6 test files, 71 tests passing + 1 skipped):
 **M2 MEDIUM (FIXED): Story file status inconsistency**
 - Story file said `ready-for-dev` but sprint-status said `in-progress`
 - Fix: Updated story status to `in-progress` to match
+
+---
+
+## Code Review #2 (Opus 4.6) — 2026-02-06
+
+### Issues Found and Fixed
+
+**H1 HIGH (FIXED): Structural edge case test asserted >=3 but claimed "ALL 4 violations"**
+- `structuralSuggestionsEdgeCases.test.ts:62` — test 7.2 header says "ALL 4 violations simultaneously" but assertion was `>=3`
+- Source code confirms all 4 rules (1-4) fire with the test data
+- Fix: Changed to `>=4` and added explicit rule ID checks for all 4 rules
+
+**H2 HIGH (FIXED): Pipeline integration tests used meaningless score thresholds**
+- `candidate-type-pipeline.test.ts:93` — `toBeGreaterThan(10)` is trivially weak; a near-empty resume scores ~50+
+- `candidate-type-pipeline.test.ts:166` — `toBeGreaterThan(20)` similarly weak for fulltime with good data
+- Fix: Raised to `>30` (coop) and `>40` (fulltime) to be meaningful assertions
+
+**M1 MEDIUM (FIXED): `as never` type assertion instead of proper typing**
+- `generateAllSuggestionsCandidateType.test.ts:322` — `as never` means "this value can never exist"; semantically wrong
+- Fix: Changed to `as Record<string, unknown>` for type safety
+
+**M2 MEDIUM (FIXED): Cross-type scoring differential used fragile `.not.toBe()` on overall scores**
+- `crossTypeScoring.test.ts:170` — career_changer and fulltime can coincidentally produce equal overall scores due to integer rounding
+- Fix: Added deterministic weight object comparison (`not.toEqual` on `weightsUsed`) alongside existing checks
+
+**M3 MEDIUM (FIXED): Summary penalty comparison lacked explanatory documentation**
+- `crossTypeScoring.test.ts:232-234` — assertion was correct but didn't explain WHY fulltime penalty >= coop penalty
+- Fix: Added comment explaining coop's `required=false` excludes missing summary from denominator
+
+### Issues Found — Not Fixed
+
+**L1 LOW (NOT FIXED): E2E tests all skipped with no CI enablement path**
+- All 5 E2E tests use `test.skip()` — intentional per story design but no env flag exists to unskip
+- Acceptable for now; E2E auth fixture is a future CI concern

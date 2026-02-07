@@ -58,8 +58,16 @@ describe('[P0] Structural Suggestions Edge Cases', () => {
       );
       expect(rule3).toBeDefined();
 
-      // Should have at least 3 suggestions (some rules may or may not fire based on exact detection)
-      expect(suggestions.length).toBeGreaterThanOrEqual(3);
+      // All 4 co-op rules should fire: Rule 1 (exp before edu), Rule 2 (skills not at top),
+      // Rule 3 (generic summary), Rule 4 (projects heading not "Project Experience")
+      expect(suggestions.length).toBeGreaterThanOrEqual(4);
+
+      // Verify each rule fired by checking IDs
+      const ruleIds = suggestions.map(s => s.id);
+      expect(ruleIds).toContain('rule-coop-exp-before-edu');      // Rule 1
+      expect(ruleIds).toContain('rule-coop-no-skills-at-top');    // Rule 2
+      expect(ruleIds).toContain('rule-coop-generic-summary');     // Rule 3
+      expect(ruleIds).toContain('rule-coop-projects-heading');    // Rule 4
 
       // Verify correct priorities exist
       const priorities = suggestions.map(s => s.priority);

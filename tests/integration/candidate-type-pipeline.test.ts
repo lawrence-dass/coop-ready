@@ -89,8 +89,9 @@ describe('[P0] Candidate-Type Pipeline Integration', () => {
 
       expect(result.overall).toBeGreaterThan(0);
       expect(result.metadata.version).toBe('v2.1');
-      // Coop should not heavily penalize missing summary/experience
-      expect(result.overall).toBeGreaterThan(10);
+      // Coop with 2/3 keyword matches and skills should score meaningfully
+      // (even with no experience, projects and skills carry weight for coop)
+      expect(result.overall).toBeGreaterThan(30);
     });
 
     it('should fire co-op structural rules when violations present', () => {
@@ -162,8 +163,8 @@ describe('[P0] Candidate-Type Pipeline Integration', () => {
       });
 
       expect(result.overall).toBeGreaterThan(0);
-      // Fulltime with good experience should score well
-      expect(result.overall).toBeGreaterThan(20);
+      // Fulltime with 5 years experience, 3 strong bullets, and 2/3 keywords should score well
+      expect(result.overall).toBeGreaterThan(40);
     });
 
     it('should fire fulltime structural rules when violations present', () => {

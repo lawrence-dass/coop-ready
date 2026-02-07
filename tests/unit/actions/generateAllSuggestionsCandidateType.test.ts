@@ -319,7 +319,7 @@ describe('[P0] generateAllSuggestions CandidateType Integration', () => {
         ...baseRequest,
         resumeSummary: '',
         candidateType: undefined,
-        preferences: { jobType: 'coop' } as never,
+        preferences: { jobType: 'coop' } as Record<string, unknown>,
       });
 
       // Summary should be SKIPPED for co-op with empty summary
