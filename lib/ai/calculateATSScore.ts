@@ -12,6 +12,7 @@ import type {
   JDQualifications,
   ResumeQualifications,
   JobType,
+  CandidateType,
 } from '@/lib/scoring/types';
 
 /**
@@ -218,6 +219,9 @@ export interface CalculateATSScoreV21Input {
 
   /** Job type (co-op vs fulltime) */
   jobType: JobType;
+
+  /** Candidate type (Story 18.9) - for applying type-specific scoring weights */
+  candidateType?: CandidateType;
 }
 
 /**
@@ -326,6 +330,7 @@ export async function calculateATSScoreV21Full(
       parsedResume,
       jdContent,
       jobType,
+      candidateType,
     } = input;
 
     // Validation
@@ -385,6 +390,7 @@ export async function calculateATSScoreV21Full(
       resumeText: parsedResume.rawText,
       jdText: jdContent,
       jobType,
+      candidateType,
     });
 
     console.log(

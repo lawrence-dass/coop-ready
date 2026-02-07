@@ -40,6 +40,7 @@ import {
   buildSectionATSContext,
   type SectionATSContext,
 } from '@/lib/ai/buildSectionATSContext';
+import type { CandidateType } from '@/lib/scoring/types';
 
 // ============================================================================
 // TYPES
@@ -66,6 +67,8 @@ interface GenerateAllRequest {
   keywords?: string[];
   /** User optimization preferences (Story 11.2) */
   preferences?: OptimizationPreferences | null;
+  /** Detected candidate type from optimize pipeline (Story 18.9) */
+  candidateType?: CandidateType;
 }
 
 export interface GenerateAllResult {
@@ -238,7 +241,7 @@ async function fetchATSContextsForSession(
       skills: buildSectionATSContext('skills', contextInput),
       experience: buildSectionATSContext('experience', contextInput),
       education: buildSectionATSContext('education', contextInput),
-      projects: undefined, // Story 18.5: gapAddressability.SectionType doesn't include 'projects' yet (Story 18.9)
+      projects: buildSectionATSContext('projects', contextInput), // Story 18.9: Now wired with gapAddressability 'projects' support
     };
   } catch (error) {
     console.error('[SS:generateAll] Error fetching ATS context:', error);
@@ -279,6 +282,7 @@ export async function generateAllSuggestions(
       jobDescription,
       keywords,
       preferences,
+      candidateType, // Story 18.9
     } = validation.data;
 
     // Fallback to full resume text if individual sections weren't parsed
@@ -330,7 +334,7 @@ export async function generateAllSuggestions(
     // Fetch ATS context from session for gap-aware suggestions
     // This ensures suggestions address REQUIRED keywords before PREFERRED
     const atsContexts = await fetchATSContextsForSession(sessionId, resumeContent);
-    const hasATSContext = !!(atsContexts.summary || atsContexts.skills || atsContexts.experience || atsContexts.education);
+    const hasATSContext = !!(atsContexts.summary || atsContexts.skills || atsContexts.experience || atsContexts.education || atsContexts.projects);
 
     console.log(
       '[SS:generateAll] Starting suggestion generation for session:',
@@ -351,9 +355,9 @@ export async function generateAllSuggestions(
       });
     }
 
-    // Derive effective candidate type from preferences (Story 18.6)
-    // Story 18.9 will replace this with actual detectCandidateType() call
-    const effectiveCandidateType = deriveEffectiveCandidateType(undefined, preferences);
+    // Use passed candidateType from optimize pipeline, or derive from preferences as fallback (Story 18.9)
+    // The optimize route now detects and passes candidateType — this ensures consistency
+    const effectiveCandidateType = candidateType ?? deriveEffectiveCandidateType(undefined, preferences);
 
     // Conditional summary skip logic (Story 18.6 - AC #5, #7)
     // Co-op without summary section: skip generation entirely (KB: wastes space on 1-page resume)

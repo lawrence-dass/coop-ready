@@ -18,7 +18,7 @@ import type { KeywordAnalysisResult, ExtractedKeyword, MatchedKeyword, KeywordCa
 
 export type GapAddressability = 'terminology' | 'potential' | 'unfixable';
 
-export type SectionType = 'summary' | 'skills' | 'experience' | 'education';
+export type SectionType = 'summary' | 'skills' | 'experience' | 'education' | 'projects';
 
 export interface ProcessedGap {
   keyword: string;
@@ -231,6 +231,7 @@ export function processGapAddressability(
     skills?: string;
     experience?: string;
     education?: string;
+    projects?: string;
   }
 ): GapProcessingResult {
   const processedGaps: ProcessedGap[] = [];
@@ -243,6 +244,7 @@ export function processGapAddressability(
         parsedSections.skills || '',
         parsedSections.experience || '',
         parsedSections.education || '',
+        parsedSections.projects || '',
       ].join(' ').toLowerCase()
     : fullText;
 

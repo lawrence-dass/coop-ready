@@ -127,3 +127,55 @@ export function detectCandidateType(
     detectedFrom: 'default',
   };
 }
+
+/**
+ * Extract resume analysis data for candidate type detection
+ *
+ * Uses lightweight heuristics to extract signals from raw resume text:
+ * - Role count: Count distinct date patterns
+ * - Active education: Check for future/expected graduation
+ * - Experience years: Calculate span from earliest to latest year
+ *
+ * @param resumeText - Raw resume content
+ * @returns Partial candidate type input with heuristic data
+ *
+ * Story: 18.9 Task 1 - Resume analysis extraction helper
+ *
+ * @example
+ * ```typescript
+ * const analysis = extractResumeAnalysisData(resumeText);
+ * // { resumeRoleCount: 3, hasActiveEducation: false, totalExperienceYears: 5 }
+ * ```
+ */
+export function extractResumeAnalysisData(
+  resumeText: string
+): Partial<CandidateTypeInput> {
+  // 1. Role count: Count distinct date-range patterns
+  // Matches patterns like "Jan 2020 – Present", "2019-2022", "Summer 2023"
+  const dateRangePattern =
+    /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{4}\s*[-–—]\s*(?:Present|Current|\w+\s+\d{4}|\d{4})/gi;
+  const dateRangeMatches = resumeText.match(dateRangePattern) || [];
+  const resumeRoleCount = dateRangeMatches.length;
+
+  // 2. Active education: Check for "Expected", "Anticipated", "Candidate for", future graduation year
+  const activeEducationPattern =
+    /\b(?:expected|anticipated|candidate for|graduating)\b.*(?:20(?:2[6-9]|[3-9]\d)|Spring|Fall|Summer|Winter)\b/i;
+  const hasActiveEducation = activeEducationPattern.test(resumeText);
+
+  // 3. Experience years: Find all 4-digit years and calculate span
+  const yearPattern = /\b(19\d{2}|20\d{2})\b/g;
+  const years = resumeText.match(yearPattern)?.map(Number) || [];
+
+  let totalExperienceYears = 0;
+  if (years.length > 0) {
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    totalExperienceYears = maxYear - minYear;
+  }
+
+  return {
+    resumeRoleCount,
+    hasActiveEducation,
+    totalExperienceYears,
+  };
+}

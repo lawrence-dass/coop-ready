@@ -62,6 +62,7 @@ export interface ATSContextInput {
     skills?: string;
     experience?: string;
     education?: string;
+    projects?: string; // Story 18.9
   };
 }
 
@@ -74,6 +75,7 @@ const SECTION_COMPONENT_MAP: Record<SectionType, (keyof ScoreBreakdownV21)[]> = 
   skills: ['keywords'],
   experience: ['keywords', 'contentQuality', 'qualificationFit'],
   education: ['qualificationFit', 'sections'],
+  projects: ['keywords', 'contentQuality'], // Story 18.9: Projects should incorporate keywords and demonstrate impact
 };
 
 // ============================================================================
@@ -340,7 +342,7 @@ function buildPromptContext(
 export function buildAllSectionsATSContext(
   input: ATSContextInput
 ): Record<SectionType, SectionATSContext> {
-  const sections: SectionType[] = ['summary', 'skills', 'experience', 'education'];
+  const sections: SectionType[] = ['summary', 'skills', 'experience', 'education', 'projects']; // Story 18.9: Added projects
 
   const result: Partial<Record<SectionType, SectionATSContext>> = {};
 
