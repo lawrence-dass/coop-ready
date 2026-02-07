@@ -37,6 +37,13 @@ import { withTimeout } from '@/lib/utils/withTimeout';
 import { redactPII } from '@/lib/ai/redactPII';
 import type { UserName } from '@/lib/ai/redactPII';
 import { aggregatePIIStats } from '@/lib/ai/aggregatePrivacyStats';
+import { detectCandidateType, extractResumeAnalysisData } from '@/lib/scoring/candidateTypeDetection';
+import { generateStructuralSuggestions } from '@/lib/scoring/structuralSuggestions';
+import { getUserContext } from '@/lib/supabase/user-context';
+import { getUserPreferences } from '@/lib/supabase/preferences';
+import { detectSectionOrder } from '@/lib/scoring/sectionOrdering';
+import type { CandidateType } from '@/lib/scoring/types';
+import type { StructuralSuggestion } from '@/types/suggestions';
 
 // ============================================================================
 // TYPES
@@ -55,6 +62,8 @@ interface OptimizationResult {
   sessionId: string;
   analysisTimeMs?: number; // Time taken to analyze resume in milliseconds
   privacyReport: OptimizationPrivacyReport; // PII redaction transparency
+  candidateType: CandidateType; // NEW: Story 18.9
+  structuralSuggestions: StructuralSuggestion[]; // NEW: Story 18.9
 }
 
 // ============================================================================
@@ -67,10 +76,12 @@ const TIMEOUT_MS = 60000; // 60 seconds
  * Extract basic resume sections using simple heuristics.
  * Full section parsing is handled by Epic 3.5.
  * Returns undefined for sections not found to avoid inflating section coverage score.
+ *
+ * Story 18.9: Expanded to include education, projects, certifications for structural suggestions
  */
-function extractBasicSections(rawText: string): Partial<Pick<Resume, 'summary' | 'skills' | 'experience'>> {
+function extractBasicSections(rawText: string): Partial<Pick<Resume, 'summary' | 'skills' | 'experience' | 'education' | 'projects' | 'certifications'>> {
   const lower = rawText.toLowerCase();
-  const sections: Partial<Pick<Resume, 'summary' | 'skills' | 'experience'>> = {};
+  const sections: Partial<Pick<Resume, 'summary' | 'skills' | 'experience' | 'education' | 'projects' | 'certifications'>> = {};
 
   if (lower.includes('summary') || lower.includes('objective') || lower.includes('profile')) {
     sections.summary = rawText;
@@ -80,6 +91,15 @@ function extractBasicSections(rawText: string): Partial<Pick<Resume, 'summary' |
   }
   if (lower.includes('experience') || lower.includes('employment') || lower.includes('work history')) {
     sections.experience = rawText;
+  }
+  if (lower.includes('education') || lower.includes('academic') || lower.includes('qualifications')) {
+    sections.education = rawText;
+  }
+  if (lower.includes('projects') || lower.includes('project experience')) {
+    sections.projects = rawText;
+  }
+  if (lower.includes('certifications') || lower.includes('awards') || lower.includes('licenses')) {
+    sections.certifications = rawText;
   }
 
   return sections;
@@ -181,6 +201,15 @@ async function runOptimizationPipeline(
 
     console.log('[SS:optimize] Privacy report:', privacyReport);
 
+    // Step 0c: Fetch user context and preferences for candidate type detection
+    // Story 18.9: Needed for detecting coop/fulltime/career_changer
+    const [userContext, preferencesResult] = await Promise.all([
+      getUserContext(),
+      getUserPreferences(),
+    ]);
+
+    console.log('[SS:optimize] User context loaded for candidate type detection');
+
     // Step 1 & 2: Extract keywords and qualifications in parallel
     // Note: prompt injection defense (XML wrapping) is handled by extractKeywords/extractQualifications
     const [keywordResult, qualResult] = await Promise.all([
@@ -220,6 +249,17 @@ async function runOptimizationPipeline(
     const jobType = detectJobType(request.jd_content);
     console.log('[SS:optimize] Detected job type:', jobType);
 
+    // Step 4b: Detect candidate type (coop/fulltime/career_changer)
+    // Story 18.9: Use preferences, onboarding data, and resume heuristics
+    const resumeAnalysis = extractResumeAnalysisData(request.resume_content);
+    const candidateTypeResult = detectCandidateType({
+      userJobType: preferencesResult.data?.jobType,
+      careerGoal: userContext.data?.careerGoal ?? undefined, // Convert null to undefined
+      ...resumeAnalysis,
+    });
+    const candidateType = candidateTypeResult.candidateType;
+    console.log('[SS:optimize] Detected candidate type:', candidateType, 'confidence:', candidateTypeResult.confidence);
+
     // Step 5: Calculate V2.1 ATS score
     // Basic section extraction - full parsing handled by Epic 3.5
     const parsedResume: Resume = {
@@ -235,6 +275,7 @@ async function runOptimizationPipeline(
       parsedResume,
       jdContent: request.jd_content,
       jobType,
+      candidateType, // NEW: Story 18.9 - Apply type-specific scoring weights
     });
 
     if (scoreResult.error) {
@@ -243,6 +284,24 @@ async function runOptimizationPipeline(
         error: scoreResult.error,
       };
     }
+
+    // Step 5b: Generate structural suggestions
+    // Story 18.9: Detect section order and generate recommendations
+    const sectionOrder = detectSectionOrder(request.resume_content);
+    const structuralSuggestions = generateStructuralSuggestions({
+      candidateType,
+      parsedResume: {
+        summary: parsedResume.summary || null,
+        skills: parsedResume.skills || null,
+        experience: parsedResume.experience || null,
+        education: parsedResume.education || null,
+        projects: parsedResume.projects || null,
+        certifications: parsedResume.certifications || null,
+      },
+      sectionOrder,
+      rawResumeText: request.resume_content,
+    });
+    console.log('[SS:optimize] Generated', structuralSuggestions.length, 'structural suggestions');
 
     // Step 6: Enhance keyword analysis with ATS keyword score
     // This helps users understand the difference between match rate (92%) and keyword score (100)
@@ -293,6 +352,8 @@ async function runOptimizationPipeline(
           keyword_analysis: enhancedKeywordAnalysis,
           ats_score: enhancedATSScore, // Now includes pipelineMetrics in metadata
           privacy_report: privacyReport, // Save privacy report for display
+          candidate_type: candidateType, // NEW: Story 18.9
+          structural_suggestions: structuralSuggestions, // NEW: Story 18.9
         })
         .eq('id', request.session_id);
 
@@ -325,6 +386,8 @@ async function runOptimizationPipeline(
         sessionId: request.session_id,
         analysisTimeMs, // Include timing in response for browser console
         privacyReport, // Show user what PII was redacted
+        candidateType, // NEW: Story 18.9
+        structuralSuggestions, // NEW: Story 18.9
       },
       error: null,
     };

@@ -43,9 +43,11 @@ export function AnalyzeButton({
   const setSkillsSuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.setSkillsSuggestion);
   const setExperienceSuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.setExperienceSuggestion);
   const setEducationSuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.setEducationSuggestion);
+  const setProjectsSuggestion = useOptimizationStore((state: ExtendedOptimizationStore) => state.setProjectsSuggestion); // Story 18.9
   const resumeContent = useOptimizationStore((state: ExtendedOptimizationStore) => state.resumeContent);
   const jobDescription = useOptimizationStore((state: ExtendedOptimizationStore) => state.jobDescription);
   const userPreferences = useOptimizationStore((state: ExtendedOptimizationStore) => state.userPreferences);
+  const candidateType = useOptimizationStore((state: ExtendedOptimizationStore) => state.candidateType); // Story 18.9
 
   // Don't show button if resume or JD is missing
   if (!hasResume || !hasJobDescription) {
@@ -102,10 +104,12 @@ export function AnalyzeButton({
             resumeSkills: resumeContent.skills || '',
             resumeExperience: resumeContent.experience || '',
             resumeEducation: resumeContent.education || '',
+            resumeProjects: resumeContent.projects || '', // Story 18.9
             resumeContent: resumeContent.rawText,
             jobDescription: jobDescription || '',
             keywords: data.keywordAnalysis?.matched?.map((k: { keyword: string }) => k.keyword),
             preferences: userPreferences, // Story 11.2: Pass user preferences
+            candidateType: candidateType ?? undefined, // Story 18.9 - Convert null to undefined
           }).then((suggestionsResult) => {
             // Update Zustand store when ready (for users who stay on current page)
             if (suggestionsResult.data) {
@@ -121,6 +125,10 @@ export function AnalyzeButton({
               }
               if (suggestionsResult.data.education) {
                 setEducationSuggestion(suggestionsResult.data.education);
+              }
+              // Story 18.9: Update projects suggestion
+              if (suggestionsResult.data.projects) {
+                setProjectsSuggestion(suggestionsResult.data.projects);
               }
 
               // Toast for partial failures

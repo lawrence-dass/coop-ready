@@ -137,3 +137,49 @@ export function validateSectionOrder(
     recommendedOrder,
   };
 }
+
+/**
+ * Detect the order of sections in a raw resume by finding heading patterns
+ *
+ * Scans resume text for section headings and returns them in order of appearance.
+ * Uses regex patterns to match common section heading variations.
+ *
+ * @param resumeText - Raw resume content
+ * @returns Array of section names in the order they appear
+ *
+ * Story: 18.9 Task 2 - Section order detection helper
+ *
+ * @example
+ * ```typescript
+ * const order = detectSectionOrder(resumeText);
+ * // ['summary', 'skills', 'experience', 'education', 'projects']
+ * ```
+ */
+export function detectSectionOrder(resumeText: string): string[] {
+  // Section heading patterns - match common variations
+  const HEADING_PATTERNS: Record<string, RegExp> = {
+    summary: /\b(summary|objective|profile|about|professional summary)\b/i,
+    skills: /\b(skills|technologies|technical skills|core competencies|technical competencies)\b/i,
+    experience: /\b(experience|employment|work history|professional experience|work experience)\b/i,
+    education: /\b(education|academic|qualifications|academic background)\b/i,
+    projects: /\b(projects|project experience|technical projects|portfolio)\b/i,
+    certifications: /\b(certifications|awards|licenses|honors|achievements)\b/i,
+  };
+
+  // Find first occurrence index for each section
+  const sectionIndices: Array<{ section: string; index: number }> = [];
+
+  for (const [sectionName, pattern] of Object.entries(HEADING_PATTERNS)) {
+    const match = resumeText.match(pattern);
+    if (match && match.index !== undefined) {
+      sectionIndices.push({
+        section: sectionName,
+        index: match.index,
+      });
+    }
+  }
+
+  // Sort by index (order of appearance) and return section names
+  sectionIndices.sort((a, b) => a.index - b.index);
+  return sectionIndices.map((item) => item.section);
+}

@@ -295,6 +295,8 @@ export function NewScanClient() {
           sessionId: string;
           analysisTimeMs?: number;
           privacyReport?: OptimizationPrivacyReport;
+          candidateType?: import('@/lib/scoring/types').CandidateType; // Story 18.9
+          structuralSuggestions?: import('@/types/suggestions').StructuralSuggestion[]; // Story 18.9
         }>;
 
         // Log analysis timing in browser console
@@ -317,6 +319,14 @@ export function NewScanClient() {
           // Store privacy report if available
           if (result.data.privacyReport) {
             useOptimizationStore.getState().setPrivacyReport(result.data.privacyReport);
+          }
+
+          // Story 18.9: Store candidateType and structuralSuggestions
+          if (result.data.candidateType) {
+            useOptimizationStore.getState().setCandidateType(result.data.candidateType);
+          }
+          if (result.data.structuralSuggestions) {
+            useOptimizationStore.getState().setStructuralSuggestions(result.data.structuralSuggestions);
           }
         }
 
@@ -343,10 +353,12 @@ export function NewScanClient() {
             resumeSkills: resumeContent.skills || '',
             resumeExperience: resumeContent.experience || '',
             resumeEducation: resumeContent.education || '',
+            resumeProjects: resumeContent.projects || '', // Story 18.9
             resumeContent: rawResumeText,
             jobDescription: jobDescription || '',
             keywords: keywordAnalysis.matched?.map((k: { keyword: string }) => k.keyword),
             preferences: userPreferences,
+            candidateType: result.data?.candidateType, // Story 18.9
           }).then((suggestionsResult) => {
             // Update Zustand store when ready (for edge cases where user stays on page)
             if (suggestionsResult.error) {
@@ -365,6 +377,10 @@ export function NewScanClient() {
               }
               if (suggestionsResult.data.education) {
                 store.setEducationSuggestion(suggestionsResult.data.education);
+              }
+              // Story 18.9: Update projects suggestion
+              if (suggestionsResult.data.projects) {
+                store.setProjectsSuggestion(suggestionsResult.data.projects);
               }
             }
           }).catch((err) => {
