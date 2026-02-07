@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getSessionById } from '@/lib/scan/queries';
-import { ClientSuggestionsPage } from './ClientSuggestionsPage';
-import { SuggestionsLoadingState } from './SuggestionsLoadingState';
+import { SuggestionsPageWrapper } from './SuggestionsPageWrapper';
 
 interface PageProps {
   params: Promise<{
@@ -38,15 +37,7 @@ export default async function SuggestionsPage({ params }: PageProps) {
     notFound();
   }
 
-  // Check if session has suggestions - show loading state if not yet available
-  if (!session.suggestions) {
-    return <SuggestionsLoadingState sessionId={sessionId} />;
-  }
-
-  // Pass session data to client component
-  // session.suggestions is guaranteed to exist due to the check above
-  return <ClientSuggestionsPage session={{
-    ...session,
-    suggestions: session.suggestions!,
-  }} />;
+  // Pass session data to client wrapper — if suggestions are null (e.g. DB write race condition),
+  // SuggestionsPageWrapper will fall back to Zustand store data from generateAllSuggestions
+  return <SuggestionsPageWrapper session={session} />;
 }

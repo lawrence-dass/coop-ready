@@ -115,28 +115,16 @@ export async function getSessionById(
     const candidateType = data.candidate_type as CandidateType | null;
     const structuralSuggestions = (data.structural_suggestions as StructuralSuggestion[]) ?? [];
 
-    // Try to use the suggestions column first, otherwise build from individual columns
-    let suggestions = data.suggestions;
-    if (!suggestions && (summarySuggestion || skillsSuggestion || experienceSuggestion || educationSuggestion || projectsSuggestion)) {
+    // Build suggestions from individual columns (primary source)
+    // The suggestions column is legacy and not actively populated
+    let suggestions = null;
+    if (summarySuggestion || skillsSuggestion || experienceSuggestion || educationSuggestion || projectsSuggestion) {
       suggestions = {
         summary: summarySuggestion ? [summarySuggestion] : [],
         skills: skillsSuggestion ? [skillsSuggestion] : [],
         experience: experienceSuggestion ? [experienceSuggestion] : [],
         education: educationSuggestion ? [educationSuggestion] : [],
         projects: projectsSuggestion ? [projectsSuggestion] : [],
-      };
-    }
-    // Merge individual columns into existing suggestions if missing
-    if (suggestions && educationSuggestion && !suggestions.education) {
-      suggestions = {
-        ...suggestions,
-        education: [educationSuggestion],
-      };
-    }
-    if (suggestions && projectsSuggestion && !suggestions.projects) {
-      suggestions = {
-        ...suggestions,
-        projects: [projectsSuggestion],
       };
     }
 
