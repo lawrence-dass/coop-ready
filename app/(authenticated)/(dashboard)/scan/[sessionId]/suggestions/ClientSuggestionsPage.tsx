@@ -521,16 +521,6 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
             <Upload className="mr-2 h-4 w-4" />
             Compare with Updated Resume
           </Button>
-
-          <Button
-            variant="ghost"
-            size="default"
-            disabled
-            title="Apply all feature coming soon"
-            data-testid="apply-all-button"
-          >
-            Apply All Suggestions (Coming Soon)
-          </Button>
         </div>
 
         {/* Comparison Summary - shown when comparison exists */}

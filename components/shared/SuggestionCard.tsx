@@ -10,7 +10,7 @@ import { CopyButton } from './CopyButton';
 import { FeedbackButtons } from './FeedbackButtons';
 import { useOptimizationStore, ExtendedOptimizationStore } from '@/store/useOptimizationStore';
 import { toast } from 'sonner';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Sparkles } from 'lucide-react';
 
 /** Impact tier type */
 type ImpactTier = 'critical' | 'high' | 'moderate';
@@ -243,7 +243,7 @@ export function SuggestionCard({
                   <button
                     onClick={() => setShowFull(true)}
                     className={cn(
-                      "px-2 py-1 rounded-r-md border-t border-r border-b transition-colors",
+                      "px-2 py-1 rounded-r-md border-t border-r border-b transition-colors flex items-center gap-1",
                       showFull
                         ? "bg-emerald-600 text-white border-emerald-600"
                         : "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
@@ -251,6 +251,7 @@ export function SuggestionCard({
                     aria-pressed={showFull}
                     aria-label="Show ATS optimized version for maximum score improvement"
                   >
+                    <Sparkles className="h-3 w-3" />
                     ATS Optimized
                   </button>
                 </div>
@@ -303,13 +304,14 @@ export function SuggestionCard({
                   <button
                     onClick={() => setShowFull(true)}
                     className={cn(
-                      "px-3 py-1.5 rounded-r-md border-t border-r border-b transition-colors",
+                      "px-3 py-1.5 rounded-r-md border-t border-r border-b transition-colors flex items-center gap-1.5",
                       showFull
                         ? "bg-emerald-600 text-white border-emerald-600"
                         : "bg-emerald-100 text-emerald-700 border-emerald-300"
                     )}
                     aria-pressed={showFull}
                   >
+                    <Sparkles className="h-3.5 w-3.5" />
                     ATS Optimized
                   </button>
                 </div>
