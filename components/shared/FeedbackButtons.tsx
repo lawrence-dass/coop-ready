@@ -9,7 +9,7 @@ export interface FeedbackButtonsProps {
   suggestionId: string;
 
   /** Which section this suggestion belongs to */
-  sectionType: 'summary' | 'skills' | 'experience' | 'education';
+  sectionType: 'summary' | 'skills' | 'experience' | 'education' | 'projects';
 
   /** Current feedback state: true = helpful, false = not helpful, null = no feedback */
   currentFeedback?: boolean | null;

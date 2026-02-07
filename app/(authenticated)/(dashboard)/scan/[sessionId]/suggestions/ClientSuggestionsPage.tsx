@@ -11,15 +11,18 @@ import { SuggestionCard } from '@/components/shared/SuggestionCard';
 import { ScoreComparisonSection } from './ScoreComparisonSection';
 import { SectionSummaryCard } from './SectionSummaryCard';
 import { CompareUploadDialog } from '@/components/scan/CompareUploadDialog';
-import { useOptimizationStore } from '@/store';
+import { StructuralSuggestionsBanner } from '@/components/shared/StructuralSuggestionsBanner';
 import { ROUTES } from '@/lib/constants/routes';
 import type {
   SummarySuggestion,
   SkillsSuggestion,
   ExperienceSuggestion,
   EducationSuggestion,
+  ProjectsSuggestion,
+  StructuralSuggestion,
 } from '@/types/suggestions';
 import type { ATSScore } from '@/types/analysis';
+import type { CandidateType } from '@/lib/scoring/types';
 
 interface SessionData {
   id: string;
@@ -35,22 +38,39 @@ interface SessionData {
     skills?: SkillsSuggestion[];
     experience?: ExperienceSuggestion[];
     education?: EducationSuggestion[];
+    projects?: ProjectsSuggestion[];
   };
   preferences: any;
   anonymousId: string | null;
   userId: string;
   comparedAtsScore?: ATSScore | null;
+  candidateType?: CandidateType | null;
+  structuralSuggestions?: StructuralSuggestion[];
 }
 
 interface ClientSuggestionsPageProps {
   session: SessionData;
 }
 
-type SectionType = 'summary' | 'skills' | 'experience' | 'education';
+type SectionType = 'summary' | 'skills' | 'experience' | 'education' | 'projects';
+
+// Tab order configuration by candidate type
+const TAB_ORDER: Record<CandidateType, SectionType[]> = {
+  coop: ['skills', 'education', 'projects', 'experience', 'summary'],
+  fulltime: ['summary', 'skills', 'experience', 'projects', 'education'],
+  career_changer: ['summary', 'skills', 'education', 'projects', 'experience'],
+};
+
+const TAB_LABELS: Record<SectionType, string> = {
+  summary: 'Summary',
+  skills: 'Skills',
+  experience: 'Experience',
+  education: 'Education',
+  projects: 'Projects',
+};
 
 export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<SectionType>('summary');
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Extract suggestions by section
@@ -58,6 +78,7 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
   const skillsSuggestions = session.suggestions.skills || [];
   const experienceSuggestions = session.suggestions.experience || [];
   const educationSuggestions = session.suggestions.education || [];
+  const projectsSuggestions = session.suggestions.projects || [];
 
   // Calculate total suggestions per section
   const summarySuggestionsCount = summarySuggestions.length;
@@ -74,14 +95,20 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
       return entryTotal + (entry.suggested_bullets?.length || 0);
     }, 0);
   }, 0);
+  const projectsSuggestionsCount = projectsSuggestions.reduce((total, projSugg) => {
+    return total + projSugg.project_entries.reduce((entryTotal, entry) => {
+      return entryTotal + (entry.suggested_bullets?.length || 0);
+    }, 0);
+  }, 0);
 
   // Calculate raw potential points per section
   const summaryRawPoints = summarySuggestions.reduce((sum, s) => sum + (s.point_value || 0), 0);
   const skillsRawPoints = skillsSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
   const experienceRawPoints = experienceSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
   const educationRawPoints = educationSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
+  const projectsRawPoints = projectsSuggestions.reduce((sum, s) => sum + (s.total_point_value || 0), 0);
 
-  const totalRawPoints = summaryRawPoints + skillsRawPoints + experienceRawPoints + educationRawPoints;
+  const totalRawPoints = summaryRawPoints + skillsRawPoints + experienceRawPoints + educationRawPoints + projectsRawPoints;
   const originalScore = session.analysis?.score.overall || 0;
 
   // Calculate achievable gain (capped at 100)
@@ -99,6 +126,42 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
   const skillsEffectivePoints = calculateEffectivePoints(skillsRawPoints);
   const experienceEffectivePoints = calculateEffectivePoints(experienceRawPoints);
   const educationEffectivePoints = calculateEffectivePoints(educationRawPoints);
+  const projectsEffectivePoints = calculateEffectivePoints(projectsRawPoints);
+
+  // Build counts and effectivePoints lookups for data-driven tabs
+  const counts: Record<SectionType, number> = {
+    summary: summarySuggestionsCount,
+    skills: skillsSuggestionsCount,
+    experience: experienceSuggestionsCount,
+    education: educationSuggestionsCount,
+    projects: projectsSuggestionsCount,
+  };
+
+  const effectivePoints: Record<SectionType, number> = {
+    summary: summaryEffectivePoints,
+    skills: skillsEffectivePoints,
+    experience: experienceEffectivePoints,
+    education: educationEffectivePoints,
+    projects: projectsEffectivePoints,
+  };
+
+  // Get ordered tabs based on candidate type, filtering to sections with data
+  const candidateType = session.candidateType || 'fulltime';
+  const orderedSections = TAB_ORDER[candidateType];
+  const orderedTabs = orderedSections.filter((section) => counts[section] > 0);
+
+  // Dynamic grid columns based on visible tab count
+  const GRID_COLS: Record<number, string> = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-2',
+    3: 'grid-cols-3',
+    4: 'grid-cols-4',
+    5: 'grid-cols-5',
+  };
+  const gridCols = GRID_COLS[orderedTabs.length] || 'grid-cols-4';
+
+  // Active section defaults to first ordered tab
+  const [activeSection, setActiveSection] = useState<SectionType>(orderedTabs[0] || 'summary');
 
   // For backward compatibility with ScoreComparisonSection
   const totalPotentialPoints = totalRawPoints;
@@ -124,6 +187,9 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
           potentialPoints={totalPotentialPoints}
         />
 
+        {/* Structural Suggestions Banner */}
+        <StructuralSuggestionsBanner suggestions={session.structuralSuggestions ?? []} />
+
         {/* Section Navigation Tabs */}
         <Card>
           <CardHeader>
@@ -131,39 +197,29 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
           </CardHeader>
           <CardContent>
             <Tabs value={activeSection} onValueChange={(val) => setActiveSection(val as SectionType)}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="summary" className="relative">
-                  Summary
-                  {summarySuggestionsCount > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {summarySuggestionsCount}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="skills" className="relative">
-                  Skills
-                  {skillsSuggestionsCount > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {skillsSuggestionsCount}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="experience" className="relative">
-                  Experience
-                  {experienceSuggestionsCount > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {experienceSuggestionsCount}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="education" className="relative">
-                  Education
-                  {educationSuggestionsCount > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {educationSuggestionsCount}
-                    </Badge>
-                  )}
-                </TabsTrigger>
+              <TabsList className={`grid w-full ${gridCols}`}>
+                {orderedTabs.map((section) => {
+                  const isCoopSummary = section === 'summary' && candidateType === 'coop';
+                  return (
+                    <TabsTrigger
+                      key={section}
+                      value={section}
+                      className={`relative ${isCoopSummary ? 'opacity-60' : ''}`}
+                    >
+                      {TAB_LABELS[section]}
+                      {counts[section] > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {counts[section]}
+                        </Badge>
+                      )}
+                      {isCoopSummary && (
+                        <Badge variant="outline" className="ml-1 text-xs opacity-60">
+                          Optional
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  );
+                })}
               </TabsList>
 
               {/* Summary Section */}
@@ -358,6 +414,81 @@ export function ClientSuggestionsPage({ session }: ClientSuggestionsPageProps) {
                             impact={bullet.impact}
                             keywords={bullet.keywords_incorporated}
                             sectionType="education"
+                            explanation={bullet.explanation}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </TabsContent>
+
+              {/* Projects Section */}
+              <TabsContent value="projects" className="mt-6 space-y-6">
+                <SectionSummaryCard
+                  sectionName="Projects"
+                  suggestionCount={projectsSuggestionsCount}
+                  potentialPoints={projectsEffectivePoints}
+                  description="Showcase technical projects with quantified impact and keyword alignment to demonstrate hands-on skills"
+                />
+
+                {projectsSuggestionsCount === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No projects suggestions available for this session.
+                  </div>
+                )}
+
+                {projectsSuggestions.map((projSugg, index) => (
+                  <div key={`projects-${index}`} className="space-y-6">
+                    {/* Heading suggestion banner (if provided) */}
+                    {projSugg.heading_suggestion && (
+                      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-4">
+                        <p className="text-sm font-medium text-indigo-800">
+                          Section Heading Recommendation:
+                        </p>
+                        <p className="text-sm text-indigo-700 mt-1">
+                          {projSugg.heading_suggestion}
+                        </p>
+                      </div>
+                    )}
+
+                    {projSugg.project_entries.map((entry, entryIndex) => (
+                      <div key={`proj-entry-${index}-${entryIndex}`} className="space-y-4">
+                        {/* Entry header */}
+                        <div className="mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {entry.title}
+                          </h3>
+                          {entry.technologies && entry.technologies.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {entry.technologies.map((tech, techIndex) => (
+                                <Badge key={techIndex} variant="outline" className="text-xs">
+                                  {tech}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {entry.dates && (
+                            <p className="text-sm text-gray-500 mt-1">{entry.dates}</p>
+                          )}
+                        </div>
+
+                        {/* Suggested bullets */}
+                        {entry.suggested_bullets.map((bullet, bulletIndex) => (
+                          <SuggestionCard
+                            key={`proj-bullet-${index}-${entryIndex}-${bulletIndex}`}
+                            suggestionId={`sug_projects_${index}_${entryIndex}_${bulletIndex}`}
+                            original={bullet.original}
+                            suggested={bullet.suggested}
+                            suggestedCompact={bullet.suggested_compact}
+                            originalWordCount={bullet.original_word_count}
+                            compactWordCount={bullet.compact_word_count}
+                            fullWordCount={bullet.full_word_count}
+                            points={bullet.point_value}
+                            impact={bullet.impact}
+                            keywords={bullet.keywords_incorporated}
+                            metrics={bullet.metrics_added}
+                            sectionType="projects"
                             explanation={bullet.explanation}
                           />
                         ))}
