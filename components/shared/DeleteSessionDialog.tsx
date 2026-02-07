@@ -91,8 +91,7 @@ export function DeleteSessionDialog({
         return;
       }
 
-      // Success
-      toast.success('Session deleted successfully');
+      // Success - let parent component handle success toast
       onDeleteSuccess();
       onOpenChange(false);
     });
