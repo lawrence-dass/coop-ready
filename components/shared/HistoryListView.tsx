@@ -230,7 +230,7 @@ function HistorySessionCard({ session, onClick }: HistorySessionCardProps) {
 
           {session.suggestionCount !== null && session.suggestionCount !== undefined && session.suggestionCount > 0 && (
             <div className="text-xs text-gray-500">
-              {session.suggestionCount} {session.suggestionCount === 1 ? 'suggestion' : 'suggestions'}
+              Suggestions in {session.suggestionCount} {session.suggestionCount === 1 ? 'area' : 'areas'}
             </div>
           )}
         </div>
