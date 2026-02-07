@@ -15,12 +15,10 @@ Archived files are preserved for:
 
 ```
 archive/
-├── discovery-phase/        # Product briefs, early research
-├── planning-redundant/     # Superseded planning documents
-└── epic-{N}-completed/     # Completed epic artifacts
-    ├── stories/            # Completed story files
-    ├── atdd-*.md          # Testing checklists
-    └── traceability-*.md  # Requirements mapping
+├── discovery-phase/        # PRD, UX spec, full epics, v05 plan
+├── epic-1-completed/       # through epic-16-completed
+├── epic-3-completed/       # (includes story files)
+└── ...
 ```
 
 ## Restoration

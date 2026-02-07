@@ -1,19 +1,6 @@
----
-project_name: 'submit_smart'
-user_name: 'Lawrence'
-date: '2026-01-24'
-sections_completed: ['technology_stack', 'implementation_rules', 'naming_conventions', 'directory_structure', 'security_rules', 'api_patterns', 'state_patterns', 'anti_patterns', 'constraints', 'usage_guidelines']
-source: 'architecture.md'
-status: 'complete'
-rule_count: 25
-optimized_for_llm: true
----
-
 # Project Context for AI Agents
 
-_This file contains critical rules and patterns that AI agents must follow when implementing code in this project. Focus on unobvious details that agents might otherwise miss._
-
----
+_Critical rules and patterns for implementing code in this project._
 
 ## Technology Stack & Versions
 
@@ -191,37 +178,13 @@ const UserData = { user_id: 1 };  // Should be userId in TypeScript
 
 ---
 
-## When to Load Additional Context
+## Additional Context (load only when needed)
 
-| Scenario | Load This File |
-|----------|----------------|
-| Routine implementation | **This file only** (sufficient for 90% of tasks) |
-| New component type not seen before | `architecture/architecture-patterns.md` |
-| Technology choice or trade-off | `architecture/architecture-decisions.md` |
-| Unsure where to place a file | `architecture/architecture-structure.md` |
-| Understanding project requirements | `architecture/architecture-overview.md` |
-| Checking implementation readiness | `architecture/architecture-validation.md` |
+| Scenario | Load |
+|----------|------|
+| New component patterns | `architecture/architecture-patterns.md` |
+| Technology trade-offs | `architecture/architecture-decisions.md` |
+| File placement questions | `architecture/architecture-structure.md` |
+| Project requirements | `architecture/architecture-overview.md` |
 
-**Rule:** Start with `project-context.md`. Only load architecture shards when facing a decision not covered here.
-
----
-
-## Usage Guidelines
-
-**For AI Agents:**
-
-- Read this file before implementing any code
-- Follow ALL rules exactly as documented
-- When in doubt, prefer the more restrictive option
-- Load architecture shards only when making decisions beyond routine implementation
-
-**For Humans:**
-
-- Keep this file lean and focused on agent needs
-- Update when technology stack changes
-- Review quarterly for outdated rules
-- Remove rules that become obvious over time
-
----
-
-_Last Updated: 2026-01-24 (added context loading guidance)_
+**This file is sufficient for 90% of tasks.** Only load architecture shards for decisions not covered here.

@@ -7,9 +7,7 @@ npm run dev                          # Start dev server
 npm run build && npm run test:all    # Build + full test suite
 ```
 
-## Tech Stack
-
-Next.js 16 + TypeScript + React 19 | Tailwind 4 + shadcn/ui | Supabase + LangChain | Zustand | Vitest + Playwright
+**Stack:** Next.js 16 + TypeScript + React 19 | Tailwind 4 + shadcn/ui | Supabase + LangChain | Zustand | Vitest + Playwright
 
 ## Critical Rules
 
@@ -61,9 +59,3 @@ Next.js 16 + TypeScript + React 19 | Tailwind 4 + shadcn/ui | Supabase + LangCha
 | ATS Scoring | `docs/reference/ats-scoring-system-specification-v2.1.md` |
 | Database | `docs/DATABASE.md` |
 | Environment | `docs/ENVIRONMENT.md` |
-
-## Recent Changes (Feb 2026)
-
-- **Anonymous User Removal** - All users must sign in; simplified RLS (user_id only)
-- **Deterministic ATS Scoring** - V2.1 algorithm in `/lib/scoring/` (no LLM for scoring)
-- **Modular Rules** - Rules now in `.claude/rules/` with path-scoped loading
