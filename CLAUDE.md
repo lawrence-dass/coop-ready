@@ -49,6 +49,32 @@ npm run build && npm run test:all    # Build + full test suite
 | Modify shadcn component | Create wrapper, don't edit `/components/ui/` |
 | Add global state | Create store in `/store/` |
 
+## Test Strategy
+
+### Budget
+- Max 5 unit tests per story
+- E2E tests only in epic-integration (1 test per user journey)
+- Total target: ~100-120 tests across entire project
+
+### Decision Table
+
+| What Changed | Test With | Don't Test With |
+|-------------|-----------|-----------------|
+| UI component | E2E only | Unit |
+| Server action | Unit (contract only) | Integration |
+| Scoring/calculation | Unit | E2E |
+| AI pipeline | Contract (shape only) | Content assertions |
+| Auth flow | E2E only | Unit |
+| Store logic | Through component E2E | Isolated unit |
+
+### Rules
+- Never test shadcn components directly
+- Never assert on AI-generated content
+- Never test rendering — test behavior
+- If it needs 3+ mocks, test at a higher level instead
+- Every test must have a `[P0]` or `[P1]` tag
+- Unit test the math, E2E test the flows, contract test the AI, skip everything else
+
 ## Documentation Index
 
 | What | Where |
