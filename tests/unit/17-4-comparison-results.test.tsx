@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { ComparisonResultsClient } from '@/components/scan/ComparisonResultsClient';
 import type { ATSScoreV21 } from '@/lib/scoring/types';
+import '@testing-library/jest-dom/vitest';
 
 /**
  * Story 17.4: Comparison Results Display Unit Tests
@@ -24,6 +25,18 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+}));
+
+// Mock ScoreCircle to avoid rendering SVG internals
+vi.mock('@/components/shared/ScoreCircle', () => ({
+  ScoreCircle: ({ score }: { score: number }) => (
+    <div data-testid="score-circle">{score}</div>
+  ),
+}));
+
+// Mock ScoreBreakdownCard to avoid deep breakdown detail requirements
+vi.mock('@/components/shared/ScoreBreakdownCard', () => ({
+  ScoreBreakdownCard: () => <div data-testid="score-breakdown">Breakdown</div>,
 }));
 
 /**
@@ -68,7 +81,7 @@ describe('Story 17.4: Comparison Results Display', () => {
   });
 
   test('[P0] 17.4-CRD-001: Renders with positive improvement', () => {
-    // GIVEN: Improved scores (65 → 78)
+    // GIVEN: Improved scores (65 -> 78)
     const originalScore = createMockScore(65, 'Competitive');
     const comparedScore = createMockScore(78, 'Strong');
 
@@ -95,7 +108,7 @@ describe('Story 17.4: Comparison Results Display', () => {
   });
 
   test('[P0] 17.4-CRD-002: Shows celebratory message for large improvement (20+ points)', () => {
-    // GIVEN: Large improvement (60 → 85)
+    // GIVEN: Large improvement (60 -> 85)
     const originalScore = createMockScore(60, 'Competitive');
     const comparedScore = createMockScore(85, 'Excellent');
 
@@ -116,7 +129,7 @@ describe('Story 17.4: Comparison Results Display', () => {
   });
 
   test('[P1] 17.4-CRD-003: Highlights tier change', () => {
-    // GIVEN: Score with tier change (Competitive → Strong)
+    // GIVEN: Score with tier change (Competitive -> Strong)
     const originalScore = createMockScore(65, 'Competitive');
     const comparedScore = createMockScore(78, 'Strong');
 
@@ -129,12 +142,12 @@ describe('Story 17.4: Comparison Results Display', () => {
       />
     );
 
-    // THEN: Shows tier change badge
-    expect(screen.getByText(/Competitive.*→.*Strong/i)).toBeInTheDocument();
+    // THEN: Shows tier change badge (uses literal arrow character)
+    expect(screen.getByText(/Competitive.*→.*Strong/)).toBeInTheDocument();
   });
 
   test('[P0] 17.4-CRD-004: Handles no improvement gracefully', () => {
-    // GIVEN: Identical scores (70 → 70)
+    // GIVEN: Identical scores (70 -> 70)
     const score = createMockScore(70, 'Strong');
 
     // WHEN: Component renders
@@ -160,7 +173,7 @@ describe('Story 17.4: Comparison Results Display', () => {
   });
 
   test('[P0] 17.4-CRD-005: Shows appropriate message for score decrease', () => {
-    // GIVEN: Decreased score (75 → 68)
+    // GIVEN: Decreased score (75 -> 68)
     const originalScore = createMockScore(75, 'Strong');
     const comparedScore = createMockScore(68, 'Competitive');
 
@@ -241,19 +254,3 @@ describe('Story 17.4: Comparison Results Display', () => {
     expect(screen.getByText(/see how your updated resume compares/i)).toBeInTheDocument();
   });
 });
-
-/**
- * Integration Test Plan (Manual/E2E)
- *
- * The following scenarios should be tested in E2E tests:
- *
- * [P0] Navigate from suggestions to comparison upload
- * [P0] Complete comparison upload flow
- * [P0] Verify navigation to /scan/[sessionId]/comparison
- * [P0] Score circles render with correct colors
- * [P0] Score breakdown cards show side-by-side comparison
- * [P0] Back navigation returns to suggestions page
- * [P0] Mobile responsive layout works correctly
- * [P1] Animation/transition effects for celebratory messages
- * [P1] Tier change badge styling and visibility
- */

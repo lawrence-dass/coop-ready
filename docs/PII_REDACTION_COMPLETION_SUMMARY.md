@@ -196,7 +196,7 @@ You should see redaction stats logged for each LLM operation:
 ### 2. Verify Suggestions Still Contain PII
 
 Upload a resume with:
-- Email: test@example.com
+- Email: lawrence.dass@outlook.in
 - Phone: (555) 123-4567
 - LinkedIn: https://linkedin.com/in/testuser
 

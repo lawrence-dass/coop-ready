@@ -122,7 +122,7 @@ Factories generate realistic test data:
 import { createUser, createResume } from '../support/fixtures/factories/user.factory';
 
 const user = createUser(); // Random user data
-const specificUser = createUser({ email: 'test@example.com' }); // Override fields
+const specificUser = createUser({ email: 'lawrence.dass@outlook.in' }); // Override fields
 const resume = createResume({ fileName: 'my-resume.pdf' });
 ```
 

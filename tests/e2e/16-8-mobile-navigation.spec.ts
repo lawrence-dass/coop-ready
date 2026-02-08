@@ -21,7 +21,7 @@ const isPlaceholderSupabase =
   !supabaseUrl || supabaseUrl.includes('placeholder') || supabaseUrl === '';
 
 // Test credentials
-const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'test@example.com';
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'lawrence.dass@outlook.in';
 const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'password123';
 
 /**

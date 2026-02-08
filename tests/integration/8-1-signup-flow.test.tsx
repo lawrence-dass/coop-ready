@@ -55,7 +55,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
     mockSignup.mockResolvedValue({
       data: {
         userId: 'user-123',
-        email: 'test@example.com',
+        email: 'lawrence.dass@outlook.in',
         requiresVerification: false,
       },
       error: null,
@@ -64,7 +64,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
     render(<SignupForm onSuccess={onSuccess} />);
 
     // Fill in the form
-    await user.type(screen.getByTestId('email-input'), 'test@example.com');
+    await user.type(screen.getByTestId('email-input'), 'lawrence.dass@outlook.in');
     await user.type(screen.getByTestId('password-input'), 'Password123!');
     await user.type(
       screen.getByTestId('confirm-password-input'),
@@ -78,14 +78,14 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
     // Wait for the signup action to be called
     await waitFor(() => {
       expect(mockSignup).toHaveBeenCalledWith(
-        'test@example.com',
+        'lawrence.dass@outlook.in',
         'Password123!'
       );
     });
 
     // Verify success callback was called
     await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalledWith('user-123', 'test@example.com');
+      expect(onSuccess).toHaveBeenCalledWith('user-123', 'lawrence.dass@outlook.in');
     });
   });
 
@@ -117,7 +117,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
     mockSignup.mockResolvedValue({
       data: {
         userId: 'user-123',
-        email: 'test@example.com',
+        email: 'lawrence.dass@outlook.in',
         requiresVerification: true,
       },
       error: null,
@@ -126,7 +126,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
     render(<SignupForm onVerificationRequired={onVerificationRequired} />);
 
     // Fill and submit form
-    await user.type(screen.getByTestId('email-input'), 'test@example.com');
+    await user.type(screen.getByTestId('email-input'), 'lawrence.dass@outlook.in');
     await user.type(screen.getByTestId('password-input'), 'Password123!');
     await user.type(
       screen.getByTestId('confirm-password-input'),
@@ -137,7 +137,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
 
     // Verify verification callback was called
     await waitFor(() => {
-      expect(onVerificationRequired).toHaveBeenCalledWith('test@example.com');
+      expect(onVerificationRequired).toHaveBeenCalledWith('lawrence.dass@outlook.in');
     });
   });
 
@@ -182,7 +182,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
               resolve({
                 data: {
                   userId: 'user-123',
-                  email: 'test@example.com',
+                  email: 'lawrence.dass@outlook.in',
                   requiresVerification: false,
                 },
                 error: null,
@@ -195,7 +195,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
     render(<SignupForm />);
 
     // Fill form
-    await user.type(screen.getByTestId('email-input'), 'test@example.com');
+    await user.type(screen.getByTestId('email-input'), 'lawrence.dass@outlook.in');
     await user.type(screen.getByTestId('password-input'), 'Password123!');
     await user.type(
       screen.getByTestId('confirm-password-input'),
@@ -223,7 +223,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
     render(<SignupForm />);
 
     // Fill with mismatched passwords
-    await user.type(screen.getByTestId('email-input'), 'test@example.com');
+    await user.type(screen.getByTestId('email-input'), 'lawrence.dass@outlook.in');
     await user.type(screen.getByTestId('password-input'), 'Password123!');
     await user.type(
       screen.getByTestId('confirm-password-input'),
@@ -249,7 +249,7 @@ describe('[P0] Story 8.1: Email/Password Registration Integration', () => {
     render(<SignupForm />);
 
     // Fill form but don't accept terms
-    await user.type(screen.getByTestId('email-input'), 'test@example.com');
+    await user.type(screen.getByTestId('email-input'), 'lawrence.dass@outlook.in');
     await user.type(screen.getByTestId('password-input'), 'Password123!');
     await user.type(
       screen.getByTestId('confirm-password-input'),

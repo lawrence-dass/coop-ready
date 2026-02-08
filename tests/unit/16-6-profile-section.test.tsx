@@ -7,27 +7,28 @@ import '@testing-library/jest-dom/vitest';
  * Story 16.6: ProfileSection Component Unit Tests
  *
  * Tests the ProfileSection component rendering user information correctly.
+ * ProfileSection now accepts { email, firstName, lastName } props.
+ * Shows "Profile" card title, "Name", and "Email".
  *
  * Priority Distribution:
- * - P0: 4 tests (renders all fields, displays email, formats date, shows userId)
+ * - P0: 4 tests (renders all fields, displays email, shows name, handles null name)
  */
 
 describe('Story 16.6: ProfileSection Component', () => {
   const mockUser = {
     email: 'user@example.com',
-    createdAt: '2026-01-24T10:30:00Z',
-    userId: 'user-123-abc',
+    firstName: 'John' as string | null,
+    lastName: 'Doe' as string | null,
   };
 
   test('[P0] 16.6-UI-001: should render profile section with all fields', () => {
     // WHEN: Rendering ProfileSection with user data
     render(<ProfileSection {...mockUser} />);
 
-    // THEN: Should display all profile fields
-    expect(screen.getByText(/Profile Information/i)).toBeInTheDocument();
-    expect(screen.getByText(/Email/i)).toBeInTheDocument();
-    expect(screen.getByText(/Member Since/i)).toBeInTheDocument();
-    expect(screen.getByText(/User ID/i)).toBeInTheDocument();
+    // THEN: Should display profile title, name, and email fields
+    expect(screen.getByText('Profile')).toBeInTheDocument();
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(screen.getByText('Email')).toBeInTheDocument();
   });
 
   test('[P0] 16.6-UI-002: should display user email correctly', () => {
@@ -38,34 +39,42 @@ describe('Story 16.6: ProfileSection Component', () => {
     expect(screen.getByText('user@example.com')).toBeInTheDocument();
   });
 
-  test('[P0] 16.6-UI-003: should format account creation date correctly', () => {
-    // WHEN: Rendering ProfileSection with creation date
+  test('[P0] 16.6-UI-003: should display user full name correctly', () => {
+    // WHEN: Rendering ProfileSection with firstName and lastName
     render(<ProfileSection {...mockUser} />);
 
-    // THEN: Should format date as "Member since [formatted date]"
-    expect(screen.getByText(/Jan 24, 2026/i)).toBeInTheDocument();
+    // THEN: Should show the full name
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
   });
 
-  test('[P0] 16.6-UI-004: should display user ID for debugging', () => {
-    // WHEN: Rendering ProfileSection with userId
-    render(<ProfileSection {...mockUser} />);
-
-    // THEN: Should show userId value
-    expect(screen.getByText('user-123-abc')).toBeInTheDocument();
-  });
-
-  test('[P1] 16.6-UI-005: should handle different date formats', () => {
-    // GIVEN: Different date format
-    const differentDateUser = {
-      ...mockUser,
-      createdAt: '2026-12-31T23:59:59Z',
+  test('[P0] 16.6-UI-004: should handle null name gracefully', () => {
+    // GIVEN: User with null firstName and lastName
+    const nullNameUser = {
+      email: 'user@example.com',
+      firstName: null,
+      lastName: null,
     };
 
     // WHEN: Rendering ProfileSection
-    render(<ProfileSection {...differentDateUser} />);
+    render(<ProfileSection {...nullNameUser} />);
 
-    // THEN: Should format date correctly
-    expect(screen.getByText(/Dec 31, 2026/i)).toBeInTheDocument();
+    // THEN: Should show "Not provided" placeholder
+    expect(screen.getByText('Not provided')).toBeInTheDocument();
+  });
+
+  test('[P1] 16.6-UI-005: should handle partial name (only firstName)', () => {
+    // GIVEN: User with only firstName
+    const partialNameUser = {
+      email: 'user@example.com',
+      firstName: 'Jane' as string | null,
+      lastName: null,
+    };
+
+    // WHEN: Rendering ProfileSection
+    render(<ProfileSection {...partialNameUser} />);
+
+    // THEN: Should show just the firstName
+    expect(screen.getByText('Jane')).toBeInTheDocument();
   });
 
   test('[P1] 16.6-UI-006: should use card layout for visual separation', () => {

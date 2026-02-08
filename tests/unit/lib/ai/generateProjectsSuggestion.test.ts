@@ -65,6 +65,8 @@ vi.mock('@/lib/ai/preferences', () => ({
   buildPreferencePrompt: vi.fn(() => ''),
   getJobTypeVerbGuidance: vi.fn(() => ''),
   getJobTypeFramingGuidance: vi.fn(() => ''),
+  getCandidateTypeGuidance: vi.fn(() => ''),
+  deriveEffectiveCandidateType: vi.fn((candidateType?: string, prefs?: { jobType?: string }) => candidateType || prefs?.jobType || 'fulltime'),
 }));
 
 // Standard mock LLM response reused across tests

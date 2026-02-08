@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { usePrivacyConsent } from '@/hooks/usePrivacyConsent';
 import { getPrivacyConsent } from '@/actions/privacy/get-privacy-consent';
 
@@ -249,15 +249,20 @@ describe('usePrivacyConsent', () => {
         error: null,
       });
 
-      // Trigger refetch
-      await result.current.refetch();
-
-      await waitFor(() => {
-        expect(result.current.privacyAccepted).toBe(true);
+      // Trigger refetch wrapped in act
+      await act(async () => {
+        await result.current.refetch();
       });
 
-      expect(result.current.privacyAcceptedAt).toEqual(refetchTimestamp);
+      // Verify fetch was called twice (initial + refetch)
       expect(mockGetPrivacyConsent).toHaveBeenCalledTimes(2);
+
+      // Verify store was updated with new consent status
+      // Note: Since the Zustand mock isn't reactive, we verify via the store setter
+      expect(mockStoreState.setPrivacyAccepted).toHaveBeenCalledWith(
+        true,
+        refetchTimestamp
+      );
     });
 
     it('[P2] refetch clears previous error state', async () => {

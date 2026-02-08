@@ -48,9 +48,11 @@ describe('Story 9.2: getUserResumes Server Action', () => {
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: mockResumes,
-              error: null,
+            order: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: mockResumes,
+                error: null,
+              }),
             }),
           }),
         }),
@@ -107,9 +109,11 @@ describe('Story 9.2: getUserResumes Server Action', () => {
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: null,
-              error: { message: 'Connection timeout' },
+            order: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: null,
+                error: { message: 'Connection timeout' },
+              }),
             }),
           }),
         }),
@@ -141,9 +145,11 @@ describe('Story 9.2: getUserResumes Server Action', () => {
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: [],
-              error: null,
+            order: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null,
+              }),
             }),
           }),
         }),
