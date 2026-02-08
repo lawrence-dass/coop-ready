@@ -52,7 +52,7 @@ describe('Story 3.4: extractDocxText Server Action', () => {
     });
     expect(result.error).toBeNull();
     expect(mockExtractRawText).toHaveBeenCalledWith({
-      arrayBuffer: expect.any(ArrayBuffer)
+      buffer: expect.any(Buffer)
     });
   });
 

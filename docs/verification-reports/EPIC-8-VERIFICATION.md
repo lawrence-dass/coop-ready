@@ -30,7 +30,7 @@ This document provides a comprehensive verification checklist for Epic 8 (User A
 
 **Manual Verification Steps:**
 1. Navigate to registration page `/auth/register`
-2. Enter valid email (e.g., `test@example.com`)
+2. Enter valid email (e.g., `lawrence.dass@outlook.in`)
 3. Enter strong password (min 8 chars, meets validation)
 4. Click "Sign Up" button
 5. Verify account created in Supabase Auth dashboard

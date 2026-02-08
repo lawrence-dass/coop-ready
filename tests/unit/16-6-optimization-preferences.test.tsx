@@ -9,10 +9,14 @@ import '@testing-library/jest-dom/vitest';
  * Story 16.6: OptimizationPreferencesSection Component Unit Tests
  *
  * Tests the preferences form validation, rendering, and submission.
+ * Component uses Zod validation with lowercase enum values:
+ *   jobType: 'coop' | 'fulltime'
+ *   modLevel: 'conservative' | 'moderate' | 'aggressive'
+ * No Industry Focus or Keywords fields.
  *
  * Priority Distribution:
  * - P0: 5 tests (renders form, validation, save button state, submission, success)
- * - P1: 3 tests (error handling, field validation, optional fields)
+ * - P1: 3 tests (error handling, field validation, loading state)
  */
 
 // Mock the server action
@@ -30,10 +34,8 @@ vi.mock('sonner', () => ({
 
 describe('Story 16.6: OptimizationPreferencesSection Component', () => {
   const mockPreferences = {
-    jobType: 'Full-time' as const,
-    modLevel: 'Moderate' as const,
-    industry: 'Technology',
-    keywords: 'React, TypeScript',
+    jobType: 'fulltime' as const,
+    modLevel: 'moderate' as const,
   };
 
   const mockUserId = 'user-123-abc';
@@ -42,28 +44,36 @@ describe('Story 16.6: OptimizationPreferencesSection Component', () => {
     vi.clearAllMocks();
   });
 
+  /**
+   * Helper: change the job type select to trigger form dirty state.
+   * In happy-dom, shadcn Select renders as a native <select>.
+   * We use fireEvent.change on the native select to trigger RHF's field.onChange.
+   */
+  async function changeJobTypeSelect(container: HTMLElement, value: string) {
+    // The shadcn Select renders a hidden native <select> for accessibility
+    // Find it by the name attribute or by navigating the DOM
+    const selects = container.querySelectorAll('select');
+    // First select is jobType
+    if (selects.length > 0) {
+      fireEvent.change(selects[0], { target: { value } });
+    } else {
+      // Fallback: try combobox approach
+      const triggers = screen.getAllByRole('combobox');
+      const user = userEvent.setup();
+      await user.click(triggers[0]);
+      const option = await screen.findByText('Co-op / Internship');
+      await user.click(option);
+    }
+  }
+
   test('[P0] 16.6-FORM-001: should render all form fields correctly', () => {
     // WHEN: Rendering preferences section
     render(<OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />);
 
-    // THEN: Should display all form fields
+    // THEN: Should display form title and fields (Job Type, Modification Level only)
     expect(screen.getByText(/Optimization Preferences/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Job Type/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Modification Level/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Industry Focus/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Keywords/i)).toBeInTheDocument();
-  });
-
-  test('[P0] 16.6-FORM-002: should initialize form with current preferences', () => {
-    // WHEN: Rendering with existing preferences
-    render(<OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />);
-
-    // THEN: Form fields should show current values
-    const industryInput = screen.getByLabelText(/Industry Focus/i) as HTMLInputElement;
-    const keywordsInput = screen.getByLabelText(/Keywords/i) as HTMLInputElement;
-
-    expect(industryInput.value).toBe('Technology');
-    expect(keywordsInput.value).toBe('React, TypeScript');
+    expect(screen.getByText(/Job Type/i)).toBeInTheDocument();
+    expect(screen.getByText(/Modification Level/i)).toBeInTheDocument();
   });
 
   test('[P0] 16.6-FORM-003: should disable save button when form is pristine', () => {
@@ -75,45 +85,34 @@ describe('Story 16.6: OptimizationPreferencesSection Component', () => {
     expect(saveButton).toBeDisabled();
   });
 
-  test('[P0] 16.6-FORM-004: should enable save button when form is modified', async () => {
-    // GIVEN: Form is rendered
-    const user = userEvent.setup();
-    render(<OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />);
-
-    // WHEN: User modifies a field
-    const industryInput = screen.getByLabelText(/Industry Focus/i);
-    await user.clear(industryInput);
-    await user.type(industryInput, 'Healthcare');
-
-    // THEN: Save button should be enabled
-    await waitFor(() => {
-      const saveButton = screen.getByRole('button', { name: /Save Preferences/i });
-      expect(saveButton).not.toBeDisabled();
-    });
-  });
-
   test('[P0] 16.6-FORM-005: should submit form with updated preferences', async () => {
     // GIVEN: Mock successful save
     vi.mocked(updateUserPreferences).mockResolvedValue({
-      data: { ...mockPreferences, industry: 'Healthcare' },
+      data: { ...mockPreferences, jobType: 'coop' as const },
       error: null,
     });
 
-    const user = userEvent.setup();
-    render(<OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />);
+    const { container } = render(
+      <OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />
+    );
 
-    // WHEN: User updates and saves preferences
-    const industryInput = screen.getByLabelText(/Industry Focus/i);
-    await user.clear(industryInput);
-    await user.type(industryInput, 'Healthcare');
+    // WHEN: User changes job type via native select
+    await changeJobTypeSelect(container, 'coop');
 
     const saveButton = screen.getByRole('button', { name: /Save Preferences/i });
+
+    // Wait for form to register the change
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled();
+    });
+
+    const user = userEvent.setup();
     await user.click(saveButton);
 
-    // THEN: Should call updateUserPreferences with correct data (no userId needed - gets from auth)
+    // THEN: Should call updateUserPreferences with correct data
     await waitFor(() => {
       expect(updateUserPreferences).toHaveBeenCalledWith(expect.objectContaining({
-        industry: 'Healthcare',
+        jobType: 'coop',
       }));
     });
   });
@@ -125,16 +124,20 @@ describe('Story 16.6: OptimizationPreferencesSection Component', () => {
       error: null,
     });
 
-    const user = userEvent.setup();
     const { toast } = await import('sonner');
-    render(<OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />);
+    const { container } = render(
+      <OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />
+    );
 
     // WHEN: User modifies and saves
-    const industryInput = screen.getByLabelText(/Industry Focus/i);
-    await user.clear(industryInput);
-    await user.type(industryInput, 'Finance');
+    await changeJobTypeSelect(container, 'coop');
 
     const saveButton = screen.getByRole('button', { name: /Save Preferences/i });
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled();
+    });
+
+    const user = userEvent.setup();
     await user.click(saveButton);
 
     // THEN: Should show success toast
@@ -150,16 +153,20 @@ describe('Story 16.6: OptimizationPreferencesSection Component', () => {
       error: { message: 'Failed to save preferences', code: 'VALIDATION_ERROR' },
     });
 
-    const user = userEvent.setup();
     const { toast } = await import('sonner');
-    render(<OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />);
+    const { container } = render(
+      <OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />
+    );
 
-    // WHEN: User tries to save
-    const industryInput = screen.getByLabelText(/Industry Focus/i);
-    await user.clear(industryInput);
-    await user.type(industryInput, 'New Industry');
+    // WHEN: User tries to save after changing a value
+    await changeJobTypeSelect(container, 'coop');
 
     const saveButton = screen.getByRole('button', { name: /Save Preferences/i });
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled();
+    });
+
+    const user = userEvent.setup();
     await user.click(saveButton);
 
     // THEN: Should show error toast
@@ -174,18 +181,22 @@ describe('Story 16.6: OptimizationPreferencesSection Component', () => {
       () => new Promise((resolve) => setTimeout(() => resolve({ data: mockPreferences, error: null }), 100))
     );
 
-    const user = userEvent.setup();
-    render(<OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />);
+    const { container } = render(
+      <OptimizationPreferencesSection userId={mockUserId} preferences={mockPreferences} />
+    );
 
     // WHEN: User initiates save
-    const industryInput = screen.getByLabelText(/Industry Focus/i);
-    await user.clear(industryInput);
-    await user.type(industryInput, 'Test');
+    await changeJobTypeSelect(container, 'coop');
 
     const saveButton = screen.getByRole('button', { name: /Save Preferences/i });
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled();
+    });
+
+    const user = userEvent.setup();
     await user.click(saveButton);
 
-    // THEN: Button should show loading state
+    // THEN: Button should show loading state (disabled during pending)
     expect(saveButton).toBeDisabled();
   });
 
@@ -200,27 +211,5 @@ describe('Story 16.6: OptimizationPreferencesSection Component', () => {
     // Expect select to be rendered (validation of enum happens at submission)
     const selectTriggers = screen.getAllByRole('combobox');
     expect(selectTriggers.length).toBeGreaterThanOrEqual(1);
-  });
-
-  test('[P1] 16.6-FORM-010: should allow optional fields to be empty', async () => {
-    // GIVEN: Preferences with null optional fields
-    const minimalPreferences = {
-      jobType: 'Full-time' as const,
-      modLevel: 'Minimal' as const,
-      industry: null,
-      keywords: null,
-    };
-
-    vi.mocked(updateUserPreferences).mockResolvedValue({
-      data: minimalPreferences,
-      error: null,
-    });
-
-    // WHEN: Rendering and saving with empty optional fields
-    render(<OptimizationPreferencesSection userId={mockUserId} preferences={minimalPreferences} />);
-
-    // THEN: Form should render without errors
-    expect(screen.getByLabelText(/Industry Focus/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Keywords/i)).toBeInTheDocument();
   });
 });

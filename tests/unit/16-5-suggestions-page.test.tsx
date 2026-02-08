@@ -57,9 +57,9 @@ describe('Story 16.5: Suggestions Page Components', () => {
         />
       );
 
-      // THEN: Should show +20 improvement
+      // THEN: Should show +20 improvement with qualitative label
       expect(container.textContent).toContain('+20');
-      expect(container.textContent).toContain('40.0%'); // (20/50) * 100
+      expect(container.textContent).toContain('Significant improvement');
     });
 
     test('[P0] 16.5-UI-003: should cap projected score at 100', () => {

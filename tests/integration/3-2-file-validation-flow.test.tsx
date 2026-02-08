@@ -1,33 +1,36 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import Home from '@/app/page';
+import { FileValidationError } from '@/components/shared/FileValidationError';
 import { useOptimizationStore } from '@/store';
-import { AuthProvider } from '@/components/providers/AuthProvider';
-
-// Mock Supabase client
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: vi.fn(() => ({
-    auth: {
-      getSession: vi.fn().mockResolvedValue({
-        data: { session: null },
-        error: null
-      }),
-      onAuthStateChange: vi.fn(() => ({
-        data: { subscription: { unsubscribe: vi.fn() } }
-      })),
-      signInAnonymously: vi.fn().mockResolvedValue({
-        data: { user: { id: 'anon-123', is_anonymous: true } },
-        error: null
-      }),
-    },
-  })),
-}));
 
 /**
  * Story 3.2: File Validation Integration Tests
  *
- * Tests the complete file validation flow from upload to error display.
+ * Tests the FileValidationError component in integration with the Zustand store.
+ *
+ * Architecture note: The upload flow now lives at /scan/new (NewScanClient),
+ * and app/page.tsx is a Server Component (LandingPage) that redirects
+ * authenticated users to /dashboard. These tests validate the
+ * FileValidationError component behavior with store state.
  */
+
+/**
+ * Helper: renders FileValidationError driven by store state
+ */
+function FileValidationErrorFromStore() {
+  const fileError = useOptimizationStore((s) => s.fileError);
+  const setFileError = useOptimizationStore((s) => s.setFileError);
+
+  if (!fileError) return null;
+
+  return (
+    <FileValidationError
+      code={fileError.code as 'FILE_TOO_LARGE' | 'INVALID_FILE_TYPE'}
+      message={fileError.message}
+      onDismiss={() => setFileError(null)}
+    />
+  );
+}
 
 describe('Story 3.2: File Validation Integration', () => {
   beforeEach(() => {
@@ -41,11 +44,7 @@ describe('Story 3.2: File Validation Integration', () => {
       message: 'File too large. Maximum size is 5MB.',
     });
 
-    render(
-      <AuthProvider>
-        <Home />
-      </AuthProvider>
-    );
+    render(<FileValidationErrorFromStore />);
 
     // Error should be displayed
     expect(screen.getByText(/file too large/i)).toBeInTheDocument();
@@ -53,11 +52,7 @@ describe('Story 3.2: File Validation Integration', () => {
   });
 
   test('[P0] 3.2-INT-002: should hide FileValidationError when no error in store', () => {
-    render(
-      <AuthProvider>
-        <Home />
-      </AuthProvider>
-    );
+    render(<FileValidationErrorFromStore />);
 
     // No error should be displayed
     expect(screen.queryByText(/file too large/i)).not.toBeInTheDocument();
@@ -70,11 +65,7 @@ describe('Story 3.2: File Validation Integration', () => {
       message: 'Invalid file type. Please upload a PDF or DOCX file.',
     });
 
-    render(
-      <AuthProvider>
-        <Home />
-      </AuthProvider>
-    );
+    render(<FileValidationErrorFromStore />);
 
     expect(screen.getByText(/invalid file type/i)).toBeInTheDocument();
 
@@ -92,11 +83,7 @@ describe('Story 3.2: File Validation Integration', () => {
       message: 'File too large. Maximum size is 5MB.',
     });
 
-    render(
-      <AuthProvider>
-        <Home />
-      </AuthProvider>
-    );
+    render(<FileValidationErrorFromStore />);
 
     expect(screen.getByText('File too large. Maximum size is 5MB.')).toBeInTheDocument();
   });
@@ -107,11 +94,7 @@ describe('Story 3.2: File Validation Integration', () => {
       message: 'Invalid file type. Please upload a PDF or DOCX file.',
     });
 
-    render(
-      <AuthProvider>
-        <Home />
-      </AuthProvider>
-    );
+    render(<FileValidationErrorFromStore />);
 
     expect(screen.getByText('Invalid file type. Please upload a PDF or DOCX file.')).toBeInTheDocument();
   });

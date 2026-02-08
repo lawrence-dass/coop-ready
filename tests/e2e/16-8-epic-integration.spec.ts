@@ -158,8 +158,8 @@ test.describe('Epic 16 Integration: Authentication Redirect @P0', () => {
           // Navigation might be interrupted by redirect (expected in webkit)
         }
 
-        // THEN: User is redirected to login page
-        await expect(page).toHaveURL('/auth/login');
+        // THEN: User is redirected to login page (may include query params)
+        await expect(page).toHaveURL(/\/auth\/login/);
       }
     });
 
