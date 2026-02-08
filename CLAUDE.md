@@ -51,29 +51,46 @@ npm run build && npm run test:all    # Build + full test suite
 
 ## Test Strategy
 
-### Budget
-- Max 5 unit tests per story
-- E2E tests only in epic-integration (1 test per user journey)
-- Total target: ~100-120 tests across entire project
+> Principle: Unit test the math, E2E test the flows, contract test the AI, skip everything else.
 
-### Decision Table
+### Priority Definitions
+- **`[P0]`** — If this fails, users cannot use the app (auth, upload, scoring, suggestions)
+- **`[P1]`** — If this fails, a feature is degraded but app works (preferences, history, settings)
+- Every test MUST have a `[P0]` or `[P1]` tag. No untagged tests.
 
-| What Changed | Test With | Don't Test With |
-|-------------|-----------|-----------------|
-| UI component | E2E only | Unit |
-| Server action | Unit (contract only) | Integration |
-| Scoring/calculation | Unit | E2E |
-| AI pipeline | Contract (shape only) | Content assertions |
-| Auth flow | E2E only | Unit |
-| Store logic | Through component E2E | Isolated unit |
+### What to Test (Decision Table)
 
-### Rules
-- Never test shadcn components directly
-- Never assert on AI-generated content
-- Never test rendering — test behavior
-- If it needs 3+ mocks, test at a higher level instead
-- Every test must have a `[P0]` or `[P1]` tag
-- Unit test the math, E2E test the flows, contract test the AI, skip everything else
+| What Changed | Test With | Skip |
+|-------------|-----------|------|
+| Pure logic (scoring, parsing, validation) | Unit (Vitest) | E2E |
+| Server action | Unit — contract shape only | Integration |
+| AI pipeline | Contract — assert shape, length bounds, error codes | Content/quality assertions |
+| UI with business logic (forms, conditional state) | Integration (RTL + Vitest) | E2E |
+| UI layout/styling only | Nothing — visual review | All automated tests |
+| Auth flow | E2E (Playwright) | Unit |
+| Complete user journey | E2E (Playwright) | Unit, Integration |
+
+### What NOT to Test
+- shadcn components directly (pre-tested library code)
+- Component rendering/prop passing without business logic
+- AI-generated content (non-deterministic — assert shape, not words)
+- Metrics, observability, migration scripts
+- Zustand store internals (test through components that use them)
+
+### Test Budget
+- **Simple story** (UI tweak, config change): 0-2 tests
+- **Medium story** (new component with logic, new action): 3-6 tests
+- **Complex story** (scoring algorithm, AI pipeline): 8-15 tests
+- **E2E tests**: 1 per user journey, created only during epic-integration
+- If a test breaks during refactor (not a bug), evaluate if it's worth keeping — delete if redundant
+
+### BMAD Workflow Instructions
+
+| Workflow | Test Responsibility | Do NOT |
+|----------|-------------------|--------|
+| `dev-story` | Unit tests for deterministic logic only | Create component rendering tests, E2E tests, or integration tests |
+| `code-review` | Review test quality and relevance | Suggest adding more tests — only flag missing critical paths |
+| `epic-integration` | E2E tests (1 per user journey) | Create unit tests or duplicate existing coverage |
 
 ## Documentation Index
 
